@@ -1,12 +1,13 @@
-package xnats
+package natsrpc
 
 import (
-	"errors"
 	"fmt"
 	"go/ast"
 	"reflect"
+	"time"
 
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/encoders/protobuf"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -16,7 +17,6 @@ const (
 )
 
 var (
-	errorFuncType  = errors.New("handler must be a function like [func(pb *proto.MyUser, reply string, err string)]")
 	valEmptyString = reflect.ValueOf("")
 )
 
@@ -87,57 +87,54 @@ func isExportedOrBuiltinType(t reflect.Type) bool {
 	return ast.IsExported(t.Name()) || t.PkgPath() == ""
 }
 
-type method struct {
-	cb     func(*nats.Msg)
-	replay bool
-	name   string
-}
-
-// cb(*req,*resp)
-func parseMethod(m reflect.Method) (*method, error) {
-	const paraNum = 3
-
-	mType := m.Type
-	numArgs := mType.NumIn()
-	if paraNum != numArgs {
-		return nil, errorFuncType
+func NewNATSClient(cfg *Config, name string) (*nats.EncodedConn, error) {
+	if cfg.ReconnectWait <= 0 {
+		cfg.ReconnectWait = 3
+	}
+	if cfg.MaxReconnects <= 0 {
+		cfg.MaxReconnects = 99999999
+	}
+	if cfg.RequestTimeout <= 0 {
+		cfg.RequestTimeout = 3
 	}
 
-	argType := mType.In(0)
-	if argType.Kind() != reflect.Ptr {
-		return nil, errorFuncType
+	// 设置参数
+	opts := make([]nats.Option, 0)
+	opts = append(opts, nats.Name(name))
+	if len(cfg.User) > 0 {
+		opts = append(opts, nats.UserInfo(cfg.User, cfg.Pwd))
 	}
-
-	repType := mType.In(1)
-	if repType.Kind() != reflect.Ptr {
-		return nil, errorFuncType
-	}
-
-	oPtr := reflect.New(argType.Elem())
-	_, ok := oPtr.Interface().(proto.Message)
-	if !ok {
-		return nil, errorFuncType
-	}
-
-	oPtr = reflect.New(repType.Elem())
-	_, ok = oPtr.Interface().(proto.Message)
-	if !ok {
-		return nil, errorFuncType
-	}
-
-	cbValue := reflect.ValueOf(m)
-
-	h := func(m *nats.Msg) {
-		argVal := reflect.New(argType.Elem())
-		pb := argVal.Interface().(proto.Message)
-		if err := proto.Unmarshal(m.Data, pb); nil != err {
-			//l4g.Error("[nats(%s)] cb proto.Unmarshal error=[%s]", s.name, err.Error())
-		} else {
-			replyVal := reflect.New(repType.Elem())
-			//repPB := replyVal.Interface().(proto.Message)
-			cbValue.Call([]reflect.Value{argVal, replyVal})
+	opts = append(opts, nats.ReconnectWait(time.Second*time.Duration(cfg.ReconnectWait)))
+	opts = append(opts, nats.MaxReconnects(int(cfg.MaxReconnects)))
+	opts = append(opts, nats.ReconnectHandler(func(nc *nats.Conn) {
+		//l4g.Warn("[nats(%s)] Reconnected [%s]", name, nc.ConnectedUrl())
+	}))
+	opts = append(opts, nats.DiscoveredServersHandler(func(nc *nats.Conn) {
+		//l4g.Info("[nats(%s)] DiscoveredServersHandler", name, nc.DiscoveredServers())
+	}))
+	opts = append(opts, nats.DisconnectHandler(func(nc *nats.Conn) {
+		//l4g.Warn("[nats(%s)] Disconnect", name)
+	}))
+	opts = append(opts, nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
+		if nil != err {
+			//l4g.Warn("[nats(%s)] DisconnectErrHandler,error=[%v]", name, err)
 		}
-		//l4g.Debug("[nats(%s)] sync callback sub=[%s] reply=[%s]", s.name, m.Subject, m.Reply)
+	}))
+	opts = append(opts, nats.ClosedHandler(func(nc *nats.Conn) {
+		//l4g.Info("[nats(%s)] ClosedHandler", name)
+	}))
+	opts = append(opts, nats.ErrorHandler(func(nc *nats.Conn, subs *nats.Subscription, err error) {
+		//l4g.Warn("[nats(%s)] ErrorHandler subs=[%s] error=[%s]", name, subs.Subject, err.Error())
+	}))
+
+	// 创建nats client
+	nc, err := nats.Connect(cfg.Server, opts...)
+	if err != nil {
+		return nil, err
 	}
-	return &method{cb: h, replay: true, name: m.Type.String()}, nil
+	enc, err1 := nats.NewEncodedConn(nc, protobuf.PROTOBUF_ENCODER)
+	if nil != err1 {
+		return nil, err1
+	}
+	return enc, nil
 }

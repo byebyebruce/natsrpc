@@ -1,18 +1,17 @@
-package xnats
+package natsrpc
 
 type serviceOptions struct {
-	grouped   bool
+	group     string
 	namespace string
-	sync      bool
 	id        string
+	timeout   int64
 }
 
 func newDefaultOption() serviceOptions {
 	return serviceOptions{
-		grouped:   false,
 		namespace: "default",
-		sync:      false,
-		id:        "0",
+		id:        "",
+		timeout:   3,
 	}
 }
 
@@ -20,9 +19,9 @@ func newDefaultOption() serviceOptions {
 type ServiceOption func(options *serviceOptions)
 
 // WithGrouped
-func WithGrouped(grouped bool) ServiceOption {
+func WithGroup(group string) ServiceOption {
 	return func(options *serviceOptions) {
-		options.grouped = grouped
+		options.group = group
 	}
 }
 
@@ -33,9 +32,16 @@ func WithNamespace(namespace string) ServiceOption {
 	}
 }
 
-// WithSyncHandler
-func WithSyncHandler(sync bool) ServiceOption {
+// WithID
+func WithID(id string) ServiceOption {
 	return func(options *serviceOptions) {
-		options.sync = sync
+		options.id = id
+	}
+}
+
+// WithTimeout
+func WithTimeout(timeout int64) ServiceOption {
+	return func(options *serviceOptions) {
+		options.timeout = timeout
 	}
 }

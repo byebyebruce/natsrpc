@@ -1,4 +1,4 @@
-package xnats
+package natsrpc
 
 import (
 	"fmt"
