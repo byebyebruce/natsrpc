@@ -3,6 +3,7 @@ package natsrpc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
@@ -80,8 +81,8 @@ func parseMethod(val reflect.Value, m reflect.Method) (*method, error) {
 		return nil, errorFuncType
 	}
 
-	cbValue := reflect.ValueOf(m)
-
+	f := m.Func
+	fmt.Println(f.String(), f)
 	h := func(ctx context.Context, data []byte) interface{} {
 		ctxVal := reflect.ValueOf(ctx)
 		reqVal := reflect.New(reqType.Elem())
@@ -91,12 +92,12 @@ func parseMethod(val reflect.Value, m reflect.Method) (*method, error) {
 			//l4g.Error("[nats(%s)] cb proto.Unmarshal error=[%s]", s.name, err.Error())
 		}
 
-		respVal := reflect.New(respType.Elem())
 		if nil == respType {
-			cbValue.Call([]reflect.Value{val, ctxVal, reqVal})
+			f.Call([]reflect.Value{val, ctxVal, reqVal})
 			return nil
 		} else {
-			cbValue.Call([]reflect.Value{val, ctxVal, reqVal, respVal})
+			respVal := reflect.New(respType.Elem())
+			f.Call([]reflect.Value{val, ctxVal, reqVal, respVal})
 			return respVal.Interface()
 		}
 

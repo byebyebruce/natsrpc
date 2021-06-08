@@ -97,6 +97,7 @@ func (s *Server) Register(serv interface{}, options ...ServiceOption) (*service,
 			}()
 		}
 
+		fmt.Println(subject)
 		sub, subErr := s.client.QueueSubscribe(subject, service.options.group, handler)
 		if nil != subErr {
 			return nil, subErr
