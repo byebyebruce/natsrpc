@@ -14,7 +14,7 @@ type service struct {
 	server      *Server
 	val         reflect.Value
 	subscribers []*nats.Subscription
-	methods     []*method
+	methods     map[string]*method
 	options     serviceOptions
 }
 
@@ -34,15 +34,16 @@ func newService(server *Server, i interface{}, option serviceOptions) (*service,
 	s := &service{
 		server:  server,
 		options: option,
+		methods: map[string]*method{},
 	}
 
 	s.val = reflect.ValueOf(i)
-	name := reflect.Indirect(s.val).Type().Name()
-	if !ast.IsExported(name) {
-		log.Fatalf("rpc server: %s is not a valid s name", name)
+	typeName := reflect.Indirect(s.val).Type().Name()
+	if !ast.IsExported(typeName) {
+		log.Fatalf("rpc server: %s is not a valid s name", typeName)
 	}
 
-	s.name = fmt.Sprintf("%s.%s", option.namespace, name)
+	s.name = fmt.Sprintf("%s.%s", option.namespace, typeName)
 	if "" != option.id {
 		s.name += "." + option.id
 	}
@@ -50,6 +51,16 @@ func newService(server *Server, i interface{}, option serviceOptions) (*service,
 	if nil != err {
 		return nil, err
 	}
-	s.methods = ms
+
+	for _, v := range ms {
+		if "" == v.name {
+			return nil, fmt.Errorf("method is empty %v", *v)
+		}
+		if _, ok := s.methods[v.name]; ok {
+			return nil, fmt.Errorf("method [%s] duplicate", v.name)
+		}
+		s.methods[v.name] = v
+	}
+
 	return s, nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -33,11 +34,10 @@ type Config struct {
 
 // joinSubject 把subject用.分割组合
 func joinSubject(typeName string, subjectPostfix ...interface{}) string {
+
 	sub := typeName
-	if nil != subjectPostfix {
-		for _, v := range subjectPostfix {
-			sub += fmt.Sprintf(".%v", v)
-		}
+	for i := len(subjectPostfix) - 1; i >= 0; i-- {
+		sub = fmt.Sprintf("%v.", subjectPostfix[i]) + sub
 	}
 	return sub
 }
@@ -137,4 +137,8 @@ func NewNATSClient(cfg *Config, name string) (*nats.EncodedConn, error) {
 		return nil, err1
 	}
 	return enc, nil
+}
+
+func typeName(p reflect.Type) string {
+	return strings.Trim(p.String(), "*")
 }

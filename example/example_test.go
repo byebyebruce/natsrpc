@@ -23,9 +23,10 @@ func (a *A) Func2(ctx context.Context, req *helloworld.HelloRequest, repl *hello
 }
 
 func Test_Service(t *testing.T) {
-	server, err := natsrpc.NewServerWithConfig(&natsrpc.Config{
+	cfg := &natsrpc.Config{
 		Server: "nats://172.25.156.5:4242,nats://172.25.156.5:4252,nats://172.25.156.5:4262",
-	}, "test")
+	}
+	server, err := natsrpc.NewServerWithConfig(cfg, "test")
 	if nil != err {
 		t.Error(err)
 	}
@@ -38,5 +39,14 @@ func Test_Service(t *testing.T) {
 		t.Error(err)
 	}
 
+	client, _ := natsrpc.NewClient(cfg, "client", 0)
+	reply := &helloworld.HelloReply{}
+	if err := client.RequestSync(&helloworld.HelloRequest{
+		Name: "hello",
+	}, reply, "myspace", "group", "1"); nil != err {
+		t.Error(err)
+	}
+
+	fmt.Println(*reply)
 	s.Close()
 }

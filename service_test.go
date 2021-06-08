@@ -15,8 +15,8 @@ func (a *A) Func1(ctx context.Context, req *helloworld.HelloRequest) {
 	fmt.Println(req.Name)
 }
 
-func (a *A) Func2(ctx context.Context, req *helloworld.HelloRequest, repl *helloworld.HelloReply) {
-	repl.Message = req.Name
+func (a *A) Func2(ctx context.Context, req *helloworld.HelloReply, repl *helloworld.HelloReply) {
+	repl.Message = req.Message
 	fmt.Println(repl.Message)
 }
 

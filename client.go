@@ -107,7 +107,7 @@ func (cli *Client) RawConn() *nats.EncodedConn {
 // subjectPostfix是subject的后缀 例如：m是*pb.MyUser类型的对象，subjectPostfix是1000410001，那subject是 "*pb.MyUser.1000410001"
 func (cli *Client) Notify(m proto.Message, subjectPostfix ...interface{}) {
 	argVal := reflect.TypeOf(m)
-	sub := joinSubject(argVal.String(), subjectPostfix...)
+	sub := joinSubject(typeName(argVal), subjectPostfix...)
 	if err := cli.enc.Publish(sub, m); nil != err {
 		log.Printf("[nats(%s)] Notify sub=[%s] error=[%s]", cli.name, sub, err.Error())
 	} else {
@@ -153,7 +153,7 @@ func (cli *Client) Request(m proto.Message, cb interface{}, subjectPostfix ...in
 // subjectPostfix是subject的后缀 例如：m是*pb.MyUser类型的对象，subjectPostfix是1000410001，那subject是 "*pb.MyUser.1000410001"
 func (cli *Client) RequestSync(req proto.Message, resp proto.Message, subjectPostfix ...interface{}) error {
 	argVal := reflect.TypeOf(req)
-	sub := joinSubject(argVal.String(), subjectPostfix...)
+	sub := joinSubject(typeName(argVal), subjectPostfix...)
 	log.Printf("[nats(%s)] RequestSync sub=[%s]", cli.name, sub)
 	return cli.enc.Request(sub, req, resp, cli.requestTimeout)
 }

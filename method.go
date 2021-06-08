@@ -102,5 +102,5 @@ func parseMethod(val reflect.Value, m reflect.Method) (*method, error) {
 
 		//l4g.Debug("[nats(%s)] sync callback sub=[%s] reply=[%s]", s.name, m.Subject, m.Reply)
 	}
-	return &method{handler: h, replay: true, name: m.Name}, nil
+	return &method{handler: h, replay: true, name: typeName(reqType)}, nil
 }
