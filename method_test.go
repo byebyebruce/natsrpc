@@ -2,31 +2,70 @@ package natsrpc
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
+	helloworld "github.com/byebyebruce/natsrpc/testdata"
 	"github.com/golang/protobuf/proto"
-	"google.golang.org/grpc/examples/helloworld/helloworld"
 )
 
 type MethodTest struct {
 }
 
-func (a *MethodTest) Func2(ctx context.Context, req *helloworld.HelloRequest, repl *helloworld.HelloReply) {
+func (a *MethodTest) Func1(ctx context.Context, req *helloworld.HelloRequest, repl *helloworld.HelloReply) {
 	repl.Message = req.Name
-	fmt.Println(repl.Message)
 }
 
-func TestParse(t *testing.T) {
-	ret, err := parseStruct(&MethodTest{})
+type MethodErrorTest struct {
+}
+
+func (a *MethodErrorTest) Func1(repl *helloworld.HelloReply) {
+
+}
+
+func Test_Parse(t *testing.T) {
+	_, err := parseMethod(&MethodTest{})
 	if nil != err {
 		t.Error(err)
 	}
-	a := &helloworld.HelloRequest{Name: "req"}
+	_, err = parseMethod(&MethodErrorTest{})
+	if nil == err {
+		t.Error(err)
+	}
+}
+
+func TestMethod_Handle(t *testing.T) {
+	ret, err := parseMethod(&MethodTest{})
+	if nil != err {
+		t.Error(err)
+	}
+	param := "hello"
+	a := &helloworld.HelloRequest{Name: param}
 	b, _ := proto.Marshal(a)
 	for _, v := range ret {
+		reply, err := v.handle(context.Background(), b)
+		if nil != err {
+			t.Error(err)
+		}
 
-		fmt.Println(v.handler(context.Background(), b).(*helloworld.HelloReply))
+		if reply.(*helloworld.HelloReply).Message != param {
+			t.Error("reply.Message!=param")
+		}
 	}
+}
 
+func BenchmarkMethod_Handle(b *testing.B) {
+	ret, err := parseMethod(&MethodTest{})
+	if nil != err {
+		b.Error(err)
+	}
+	param := "hello"
+	a := &helloworld.HelloRequest{Name: param}
+	bs, _ := proto.Marshal(a)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := ret[0].handle(context.Background(), bs)
+		if nil != err {
+			b.Error(err)
+		}
+	}
 }

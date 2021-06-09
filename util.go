@@ -1,7 +1,6 @@
 package natsrpc
 
 import (
-	"fmt"
 	"go/ast"
 	"reflect"
 	"strings"
@@ -9,21 +8,10 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/encoders/protobuf"
-
-	"github.com/golang/protobuf/proto"
-)
-
-const (
-	callbackParameter = 3 // 回掉函数参数个数
-)
-
-var (
-	valEmptyString = reflect.ValueOf("")
 )
 
 // Config 配置
 type Config struct {
-	//Cluster        string `xml:"cluster"`         // 集群名字,为了同一个nats-server各个集群下互相不影响
 	Server         string `xml:"server" yaml:"server"`                   // nats://127.0.0.1:4222,nats://127.0.0.1:4223
 	User           string `xml:"user" yaml:"user"`                       // 用户名
 	Pwd            string `xml:"pwd" yaml:"pwd"`                         // 密码
@@ -32,62 +20,11 @@ type Config struct {
 	MaxReconnects  int32  `xml:"max_reconnects" yaml:"max_reconnects"`   // 重连次数
 }
 
-// joinSubject 把subject用.分割组合
-func joinSubject(typeName string, subjectPostfix ...interface{}) string {
-
-	sub := typeName
-	for i := len(subjectPostfix) - 1; i >= 0; i-- {
-		sub = fmt.Sprintf("%v.", subjectPostfix[i]) + sub
-	}
-	return sub
-}
-
-// Handler 消息处理函数
-// 格式：func(pb *proto.MyUser, reply string, err string)
-type Handler interface{}
-
-// msg 异步回掉消息，用reflect.Value主要为了不在主线程掉reflect.ValueOf
-type msg struct {
-	handler reflect.Value // 回掉函数的value
-	arg     reflect.Value // 参数的value
-	reply   reflect.Value // 回复字符串的value
-	err     reflect.Value // 错误字符串的value
-}
-
-func checkHandler(cb interface{}) (reflect.Type, error) {
-	cbType := reflect.TypeOf(cb)
-	if cbType.Kind() != reflect.Func {
-		return nil, errorFuncType
-	}
-
-	numArgs := cbType.NumIn()
-	if callbackParameter != numArgs {
-		return nil, errorFuncType
-	}
-
-	argType := cbType.In(0)
-	if argType.Kind() != reflect.Ptr {
-		return nil, errorFuncType
-	}
-	if cbType.In(1).Kind() != reflect.String {
-		return nil, errorFuncType
-	}
-	if cbType.In(2).Kind() != reflect.String {
-		return nil, errorFuncType
-	}
-	oPtr := reflect.New(argType.Elem())
-	_, ok := oPtr.Interface().(proto.Message)
-	if !ok {
-		return nil, errorFuncType
-	}
-	return argType, nil
-}
-
 func isExportedOrBuiltinType(t reflect.Type) bool {
 	return ast.IsExported(t.Name()) || t.PkgPath() == ""
 }
 
-func NewNATSClient(cfg *Config, name string) (*nats.EncodedConn, error) {
+func NewNATSConn(cfg Config, name string) (*nats.EncodedConn, error) {
 	if cfg.ReconnectWait <= 0 {
 		cfg.ReconnectWait = 3
 	}
@@ -127,7 +64,7 @@ func NewNATSClient(cfg *Config, name string) (*nats.EncodedConn, error) {
 		//l4g.Warn("[nats(%s)] ErrorHandler subs=[%s] error=[%s]", name, subs.Subject, err.Error())
 	}))
 
-	// 创建nats client
+	// 创建nats enc
 	nc, err := nats.Connect(cfg.Server, opts...)
 	if err != nil {
 		return nil, err
@@ -141,4 +78,15 @@ func NewNATSClient(cfg *Config, name string) (*nats.EncodedConn, error) {
 
 func typeName(p reflect.Type) string {
 	return strings.Trim(p.String(), "*")
+}
+
+func combineSubject(prefix string, s ...string) string {
+	ret := prefix
+	for _, v := range s {
+		if "" == v {
+			continue
+		}
+		ret += "." + v
+	}
+	return ret
 }

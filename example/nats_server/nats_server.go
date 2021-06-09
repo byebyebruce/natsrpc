@@ -1,4 +1,4 @@
-package example
+package nats_server
 
 import (
 	"fmt"
@@ -10,18 +10,19 @@ import (
 var DefaultTestOptions = server.Options{
 	Host:                  "127.0.0.1",
 	Port:                  4222,
-	NoLog:                 true,
+	NoLog:                 false,
 	NoSigs:                true,
 	MaxControlLine:        4096,
 	DisableShortFirstPing: true,
 }
 
+// RunServer run nats server
 func RunServer(opts *server.Options) *server.Server {
 	if opts == nil {
 		opts = &DefaultTestOptions
 	}
 	// Optionally override for individual debugging of tests
-
+	opts.Trace = true
 	s, err := server.NewServer(opts)
 	if err != nil || s == nil {
 		panic(fmt.Sprintf("No NATS Server object returned: %v", err))

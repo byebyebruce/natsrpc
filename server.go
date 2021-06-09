@@ -3,30 +3,35 @@ package natsrpc
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
 	"github.com/nats-io/nats.go"
 )
 
-// Server NATS客户端
+// Server server
 type Server struct {
-	mu         sync.Mutex
-	client     *nats.EncodedConn // NATS的Conn
-	serviceMap map[string]*service
+	conn     *nats.EncodedConn   // NATS Conn
+	mu       sync.Mutex          // lock
+	services map[string]*service // 服务 name->service
 }
 
 // NewServer 构造器
 func NewServer(enc *nats.EncodedConn) (*Server, error) {
+	if !enc.Conn.IsConnected() {
+		return nil, fmt.Errorf("enc is not connected")
+	}
 	d := &Server{
-		client:     enc,
-		serviceMap: make(map[string]*service),
+		conn:     enc,
+		services: make(map[string]*service),
 	}
 	return d, nil
 }
 
-func NewServerWithConfig(cfg *Config, name string) (*Server, error) {
-	client, err := NewNATSClient(cfg, name)
+// NewServerWithConfig NewServerWithConfig
+func NewServerWithConfig(cfg Config, name string) (*Server, error) {
+	client, err := NewNATSConn(cfg, name)
 	if nil != err {
 		return nil, err
 	}
@@ -37,7 +42,7 @@ func NewServerWithConfig(cfg *Config, name string) (*Server, error) {
 func (s *Server) ClearSubscription() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for _, v := range s.serviceMap {
+	for _, v := range s.services {
 		for _, vv := range v.subscribers {
 			vv.Unsubscribe()
 		}
@@ -46,65 +51,87 @@ func (s *Server) ClearSubscription() {
 }
 
 // Close 关闭
-// 是否需要处理完通道里的消息
 func (s *Server) Close() {
 	s.ClearSubscription()
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.client.FlushTimeout(time.Duration(3 * time.Second))
-	s.client.Close()
+	s.conn.FlushTimeout(time.Duration(3 * time.Second))
+	s.conn.Close()
 }
 
+// Unregister 反注册
 func (s *Server) Unregister(service *service) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, ok := s.serviceMap[service.name]; ok {
-		delete(s.serviceMap, service.name)
+	if _, ok := s.services[service.name]; ok {
+		for _, v := range service.subscribers {
+			v.Unsubscribe()
+		}
+		service.subscribers = nil
+		delete(s.services, service.name)
 	}
 	return false
 }
 
-func (s *Server) Register(serv interface{}, options ...ServiceOption) (*service, error) {
+// Register 注册服务
+func (s *Server) Register(serv interface{}, options ...Option) (*service, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	option := newDefaultOption()
+	option := defaultOption()
 	for _, v := range options {
 		v(&option)
 	}
 
-	service, err := newService(s, serv, option)
+	// new 一个服务
+	service, err := newService(serv, option)
 	if nil != err {
 		return nil, err
 	}
-	if _, ok := s.serviceMap[service.name]; ok {
-		return nil, fmt.Errorf("service %s duplicate", service.name)
-	}
 
-	for _, v := range service.methods {
-		subject := service.name + "." + v.name
-		handler := func(msg *nats.Msg) {
+	// 检查是否重复
+	service.server = s
+	if _, ok := s.services[service.name]; ok {
+		return nil, fmt.Errorf("service [%s] duplicate", service.name)
+	}
+	// TODO 如果报错了是否要unsub？
+	if err := s.subscribeMethod(service); nil != err {
+		return nil, err
+	}
+	s.services[service.name] = service
+	return service, nil
+}
+
+// subscribeMethod 订阅服务的方法
+func (s *Server) subscribeMethod(service *service) error {
+	// 订阅
+	for subject, v := range service.methods {
+		m := v
+		cb := func(msg *nats.Msg) {
 			go func() {
-				ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(service.options.timeout))
+				ctx, cancel := context.WithTimeout(context.Background(), service.options.timeout)
 				defer cancel()
-				reply := v.handler(ctx, msg.Data)
-				if "" != msg.Reply && nil != reply {
-					if !s.client.Conn.IsClosed() {
-						s.client.Publish(msg.Reply, reply)
+
+				// handle
+				if reply, err := m.handle(ctx, msg.Data); nil != err {
+					log.Printf("m.handle error[%v]", err)
+				} else {
+					// reply
+					if "" != msg.Reply && nil != reply {
+						if !s.conn.Conn.IsClosed() {
+							s.conn.Publish(msg.Reply, reply)
+						}
 					}
 				}
 			}()
 		}
 
-		fmt.Println(subject)
-		sub, subErr := s.client.QueueSubscribe(subject, service.options.group, handler)
+		sub, subErr := s.conn.QueueSubscribe(subject, service.options.group, cb)
 		if nil != subErr {
-			return nil, subErr
+			return subErr
 		}
 		service.subscribers = append(service.subscribers, sub)
 	}
-
-	s.serviceMap[service.name] = service
-	return service, nil
+	return nil
 }

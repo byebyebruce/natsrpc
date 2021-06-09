@@ -3,64 +3,64 @@ package natsrpc
 import (
 	"fmt"
 	"go/ast"
-	"log"
 	"reflect"
 
 	"github.com/nats-io/nats.go"
 )
 
+// service 服务
 type service struct {
-	name        string
-	server      *Server
-	val         reflect.Value
-	subscribers []*nats.Subscription
-	methods     map[string]*method
-	options     serviceOptions
+	name        string               // 名字
+	server      *Server              // server
+	val         reflect.Value        // 值
+	subscribers []*nats.Subscription // nats订阅
+	methods     map[string]*method   // 方法集合
+	options     options              // 设置
 }
 
+// 名字
 func (s *service) Name() string {
 	return s.name
 }
 
-func (s *service) Close() {
-	for _, v := range s.subscribers {
-		v.Unsubscribe()
-	}
-	s.subscribers = nil
-	s.server.Unregister(s)
+// Close 关闭
+// 会取消所有订阅
+func (s *service) Close() bool {
+	return s.server.Unregister(s)
 }
 
-func newService(server *Server, i interface{}, option serviceOptions) (*service, error) {
-	s := &service{
-		server:  server,
-		options: option,
-		methods: map[string]*method{},
+// newService 创建服务
+func newService(i interface{}, option options) (*service, error) {
+	val := reflect.ValueOf(i)
+	if val.Kind() != reflect.Ptr {
+		return nil, fmt.Errorf("service must be a pointer")
 	}
-
-	s.val = reflect.ValueOf(i)
-	typeName := reflect.Indirect(s.val).Type().Name()
+	typeName := reflect.Indirect(val).Type().Name()
 	if !ast.IsExported(typeName) {
-		log.Fatalf("rpc server: %s is not a valid s name", typeName)
+		return nil, fmt.Errorf("service [%s] must be exported", typeName)
 	}
 
-	s.name = fmt.Sprintf("%s.%s", option.namespace, typeName)
-	if "" != option.id {
-		s.name += "." + option.id
-	}
-	ms, err := parseStruct(i)
+	ms, err := parseMethod(i)
 	if nil != err {
 		return nil, err
 	}
-
-	for _, v := range ms {
-		if "" == v.name {
-			return nil, fmt.Errorf("method is empty %v", *v)
-		}
-		if _, ok := s.methods[v.name]; ok {
-			return nil, fmt.Errorf("method [%s] duplicate", v.name)
-		}
-		s.methods[v.name] = v
+	if 0 == len(ms) {
+		return nil, fmt.Errorf("service [%s] has no exported method", typeName)
 	}
 
+	s := &service{
+		val:     val,
+		options: option,
+		methods: map[string]*method{},
+		name:    combineSubject(option.namespace, typeName),
+	}
+
+	for _, v := range ms {
+		if _, ok := s.methods[v.name]; ok {
+			return nil, fmt.Errorf("service [%s] duplicate method [%s]", typeName, v.name)
+		}
+		sub := combineSubject(s.name, v.name, s.options.id)
+		s.methods[sub] = v
+	}
 	return s, nil
 }

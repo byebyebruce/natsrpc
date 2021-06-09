@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"google.golang.org/grpc/examples/helloworld/helloworld"
+	helloworld "github.com/byebyebruce/natsrpc/testdata"
 )
 
 type A struct {
@@ -21,7 +21,7 @@ func (a *A) Func2(ctx context.Context, req *helloworld.HelloReply, repl *hellowo
 }
 
 func Test_newService(t *testing.T) {
-	s, err := newService(nil, &A{}, newDefaultOption())
+	s, err := newService(&A{}, defaultOption())
 	if nil != err {
 		t.Error(err)
 	}
