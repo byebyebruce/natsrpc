@@ -41,12 +41,13 @@ func main() {
 		natsrpc.WithTimeout(time.Second)}
 
 	if *singleThreadService {
+		fnChan := make(chan func())
 		go func() {
-			for f := range server.SingleThreadCb() {
+			for f := range fnChan {
 				f()
 			}
 		}()
-		opts = append(opts, natsrpc.WithServiceSingleThread())
+		opts = append(opts, natsrpc.WithSingleThreadCallback(fnChan))
 	}
 
 	s, err := server.Register(&service.ExampleService{}, opts...)

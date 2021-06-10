@@ -1,7 +1,9 @@
 package natsrpc
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
@@ -59,14 +61,49 @@ func (c *Client) ID(id interface{}) *Client {
 	return &ret
 }
 
+// singleThreadMode 单线程回调模式
+func (c *Client) singleThreadMode() bool {
+	return nil != c.opt.singleThreadCbChan
+}
+
 // Publish 发布
 func (c *Client) Publish(message proto.Message) error {
 	sub := combineSubject(c.name, typeName(reflect.TypeOf(message)), c.opt.id)
-	return c.enc.Publish(sub, message)
+	if c.singleThreadMode() { // 单线程模型不阻塞
+		go c.enc.Publish(sub, message)
+	} else {
+		return c.enc.Publish(sub, message)
+	}
+	return nil
 }
 
 // Request 请求
 func (c *Client) Request(req proto.Message, rep proto.Message) error {
+	if c.singleThreadMode() { // 单线程模式不能同步请求
+		panic("should call AsyncRequest in single thread mode")
+	}
 	sub := combineSubject(c.name, typeName(reflect.TypeOf(req)), c.opt.id)
 	return c.enc.Request(sub, req, rep, c.opt.timeout)
+}
+
+// AsyncRequest 异步请求
+func (c *Client) AsyncRequest(req proto.Message, rep proto.Message, cb func(proto.Message, error)) {
+	if !c.singleThreadMode() { // 非单线程模式不能异步请求
+		panic("call AsyncRequest only in single thread mode")
+	}
+	go func() { // 不阻塞主线程
+		sub := combineSubject(c.name, typeName(reflect.TypeOf(req)), c.opt.id)
+		ctx, cancel := context.WithTimeout(context.Background(), c.opt.timeout)
+		defer cancel()
+		err := c.enc.Request(sub, req, rep, c.opt.timeout)
+		f := func() { // 回调
+			cb(rep, err)
+		}
+		select {
+		case c.opt.singleThreadCbChan <- f:
+		case <-ctx.Done():
+			log.Println("AsyncRequest", sub, err)
+		}
+	}()
+
 }

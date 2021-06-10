@@ -7,11 +7,11 @@ import (
 
 // options 设置
 type options struct {
-	namespace           string        // 空间(划分隔离)
-	group               string        // sub组(有分组的话，该组内只有1个sub能收到，否则全部收到
-	id                  string        // id
-	timeout             time.Duration // 请求/handle的超时
-	serviceSingleThread bool          // 服务单线程处理
+	namespace          string        // 空间(划分隔离)
+	group              string        // sub组(有分组的话，该组内只有1个sub能收到，否则全部收到
+	id                 string        // id
+	timeout            time.Duration // 请求/handle的超时
+	singleThreadCbChan chan func()   // 单线程回调通道
 }
 
 // defaultOption 默认设置
@@ -54,9 +54,12 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
-// WithServiceSingleThread 服务单线程处理
-func WithServiceSingleThread() Option {
+// WithSingleThreadCallback 服务单线程处理
+func WithSingleThreadCallback(singleThreadCbChan chan func()) Option {
 	return func(options *options) {
-		options.serviceSingleThread = true
+		if nil == singleThreadCbChan {
+			panic("singleThreadCbChan is nil")
+		}
+		options.singleThreadCbChan = singleThreadCbChan
 	}
 }

@@ -12,10 +12,10 @@ import (
 
 // Server server
 type Server struct {
-	conn               *nats.EncodedConn   // NATS Conn
-	mu                 sync.Mutex          // lock
-	services           map[string]*service // 服务 name->service
-	singleThreadCbChan chan func()         // 单线程回调通道
+	conn     *nats.EncodedConn   // NATS Conn
+	mu       sync.Mutex          // lock
+	services map[string]*service // 服务 name->service
+
 }
 
 // NewServer 构造器
@@ -24,9 +24,8 @@ func NewServer(enc *nats.EncodedConn) (*Server, error) {
 		return nil, fmt.Errorf("enc is not connected")
 	}
 	d := &Server{
-		conn:               enc,
-		services:           make(map[string]*service),
-		singleThreadCbChan: make(chan func()), // TODO cap ?
+		conn:     enc,
+		services: make(map[string]*service),
 	}
 	return d, nil
 }
@@ -120,7 +119,7 @@ func (s *Server) subscribeMethod(service *service) error {
 					err   error
 				)
 
-				if service.options.serviceSingleThread { // 单线程处理
+				if nil != service.options.singleThreadCbChan { // 单线程处理
 					over := make(chan struct{})
 					fn := func() {
 						defer close(over)
@@ -129,7 +128,7 @@ func (s *Server) subscribeMethod(service *service) error {
 					select {
 					case <-ctx.Done():
 						err = ctx.Err()
-					case s.singleThreadCbChan <- fn:
+					case service.options.singleThreadCbChan <- fn:
 						select {
 						case <-ctx.Done():
 							err = ctx.Err()
@@ -161,8 +160,4 @@ func (s *Server) subscribeMethod(service *service) error {
 		service.subscribers = append(service.subscribers, sub)
 	}
 	return nil
-}
-
-func (s *Server) SingleThreadCb() <-chan func() {
-	return s.singleThreadCbChan
 }
