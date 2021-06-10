@@ -22,7 +22,7 @@ func RunServer(opts *server.Options) *server.Server {
 		opts = &DefaultTestOptions
 	}
 	// Optionally override for individual debugging of tests
-	opts.Trace = true
+	//opts.Trace = true
 	s, err := server.NewServer(opts)
 	if err != nil || s == nil {
 		panic(fmt.Sprintf("No NATS Server object returned: %v", err))

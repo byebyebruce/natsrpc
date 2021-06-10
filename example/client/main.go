@@ -8,10 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	helloworld "github.com/byebyebruce/natsrpc/testdata"
-
 	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/example"
+	"github.com/byebyebruce/natsrpc/example/service"
+	helloworld "github.com/byebyebruce/natsrpc/testdata"
 )
 
 var (
@@ -35,7 +34,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	client, err := natsrpc.NewClient(conn, &example.MyService{},
+	client, err := natsrpc.NewClient(conn, &service.ExampleService{},
 		natsrpc.WithNamespace(*namespace),
 		natsrpc.WithGroup(*group),
 		//natsrpc.WithID(*id),

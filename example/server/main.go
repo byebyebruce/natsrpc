@@ -8,8 +8,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/byebyebruce/natsrpc/example/service"
+
 	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/example"
 )
 
 var (
@@ -37,7 +38,7 @@ func main() {
 		natsrpc.WithGroup(*group),
 		natsrpc.WithID(*id),
 		natsrpc.WithTimeout(time.Second)}
-	s, err := server.Register(&example.MyService{}, opts...)
+	s, err := server.Register(&service.ExampleService{}, opts...)
 	if nil != err {
 		panic(err)
 	}
