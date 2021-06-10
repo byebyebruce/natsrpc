@@ -12,9 +12,10 @@ import (
 
 // Server server
 type Server struct {
-	conn     *nats.EncodedConn   // NATS Conn
-	mu       sync.Mutex          // lock
-	services map[string]*service // 服务 name->service
+	conn               *nats.EncodedConn   // NATS Conn
+	mu                 sync.Mutex          // lock
+	services           map[string]*service // 服务 name->service
+	singleThreadCbChan chan func()         // 单线程回调通道
 }
 
 // NewServer 构造器
@@ -23,8 +24,9 @@ func NewServer(enc *nats.EncodedConn) (*Server, error) {
 		return nil, fmt.Errorf("enc is not connected")
 	}
 	d := &Server{
-		conn:     enc,
-		services: make(map[string]*service),
+		conn:               enc,
+		services:           make(map[string]*service),
+		singleThreadCbChan: make(chan func()), // TODO cap ?
 	}
 	return d, nil
 }
@@ -113,15 +115,40 @@ func (s *Server) subscribeMethod(service *service) error {
 				ctx, cancel := context.WithTimeout(context.Background(), service.options.timeout)
 				defer cancel()
 
-				// handle
-				if reply, err := m.handle(ctx, msg.Data); nil != err {
-					log.Printf("m.handle error[%v]", err)
-				} else {
-					// reply
-					if "" != msg.Reply && nil != reply {
-						if !s.conn.Conn.IsClosed() {
-							s.conn.Publish(msg.Reply, reply)
+				var (
+					reply interface{}
+					err   error
+				)
+
+				if service.options.serviceSingleThread { // 单线程处理
+					over := make(chan struct{})
+					fn := func() {
+						defer close(over)
+						reply, err = m.handle(ctx, msg.Data)
+					}
+					select {
+					case <-ctx.Done():
+						err = ctx.Err()
+					case s.singleThreadCbChan <- fn:
+						select {
+						case <-ctx.Done():
+							err = ctx.Err()
+						case <-over:
 						}
+					}
+				} else { // 多线程处理
+					reply, err = m.handle(ctx, msg.Data)
+				}
+				// handle
+				if nil != err {
+					log.Printf("m.handle error[%v]", err)
+					return
+				}
+
+				// reply
+				if "" != msg.Reply && nil != reply {
+					if !s.conn.Conn.IsClosed() {
+						s.conn.Publish(msg.Reply, reply)
 					}
 				}
 			}()
@@ -134,4 +161,8 @@ func (s *Server) subscribeMethod(service *service) error {
 		service.subscribers = append(service.subscribers, sub)
 	}
 	return nil
+}
+
+func (s *Server) SingleThreadCb() <-chan func() {
+	return s.singleThreadCbChan
 }

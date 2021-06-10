@@ -14,10 +14,11 @@ import (
 )
 
 var (
-	server    = flag.String("server", "nats://127.0.0.1:4222", "nats server")
-	namespace = flag.String("ns", "testsapce", "namespace")
-	group     = flag.String("g", "", "subscribe group")
-	id        = flag.String("id", "", "service id")
+	server              = flag.String("server", "nats://127.0.0.1:4222", "nats server")
+	namespace           = flag.String("ns", "testsapce", "namespace")
+	group               = flag.String("g", "", "subscribe group")
+	id                  = flag.String("id", "", "service id")
+	singleThreadService = flag.Bool("sts", false, "service single thread handle")
 )
 
 func main() {
@@ -38,6 +39,16 @@ func main() {
 		natsrpc.WithGroup(*group),
 		natsrpc.WithID(*id),
 		natsrpc.WithTimeout(time.Second)}
+
+	if *singleThreadService {
+		go func() {
+			for f := range server.SingleThreadCb() {
+				f()
+			}
+		}()
+		opts = append(opts, natsrpc.WithServiceSingleThread())
+	}
+
 	s, err := server.Register(&service.ExampleService{}, opts...)
 	if nil != err {
 		panic(err)
