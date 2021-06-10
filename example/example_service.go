@@ -1,4 +1,4 @@
-package service
+package example
 
 import (
 	"context"
@@ -16,7 +16,7 @@ func (a *ExampleService) Notify(ctx context.Context, req *helloworld.HelloReply)
 }
 
 func (a *ExampleService) Request(ctx context.Context, req *helloworld.HelloRequest, repl *helloworld.HelloReply) {
-	fmt.Println("begin ExampleService Request")
+	fmt.Println("begin ExampleService Request", req.Name)
 	repl.Message = req.Name
-	fmt.Println("end ExampleService Request->", repl.Message)
+	fmt.Println("end ExampleService Request->", req.Name)
 }

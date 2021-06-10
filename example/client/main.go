@@ -11,7 +11,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/example/service"
+	"github.com/byebyebruce/natsrpc/example"
 	helloworld "github.com/byebyebruce/natsrpc/testdata"
 )
 
@@ -51,7 +51,7 @@ func main() {
 			}
 		}()
 	}
-	client, err := natsrpc.NewClient(conn, &service.ExampleService{}, opt...)
+	client, err := natsrpc.NewClient(conn, &example.ExampleService{}, opt...)
 	if nil != err {
 		panic(err)
 	}

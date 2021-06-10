@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/byebyebruce/natsrpc/example/service"
+	"github.com/byebyebruce/natsrpc/example"
 
 	"github.com/byebyebruce/natsrpc"
 )
@@ -50,7 +50,7 @@ func main() {
 		opts = append(opts, natsrpc.WithSingleThreadCallback(fnChan))
 	}
 
-	s, err := server.Register(&service.ExampleService{}, opts...)
+	s, err := server.Register(&example.ExampleService{}, opts...)
 	if nil != err {
 		panic(err)
 	}
