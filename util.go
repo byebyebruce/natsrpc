@@ -26,7 +26,7 @@ func isExportedOrBuiltinType(t reflect.Type) bool {
 
 func NewNATSConn(cfg Config, name string) (*nats.EncodedConn, error) {
 	if cfg.ReconnectWait <= 0 {
-		cfg.ReconnectWait = 3
+		cfg.ReconnectWait = 1
 	}
 	if cfg.MaxReconnects <= 0 {
 		cfg.MaxReconnects = 99999999
