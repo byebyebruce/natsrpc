@@ -8,6 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/nats-io/nats.go"
+
 	"github.com/golang/protobuf/proto"
 
 	"github.com/byebyebruce/natsrpc"
@@ -31,7 +33,7 @@ func main() {
 	cfg := natsrpc.Config{
 		Server: *server,
 	}
-	conn, err := natsrpc.NewNATSConn(cfg, "example_client"+*id)
+	conn, err := natsrpc.NewNATSConn(cfg, nats.Name("example_client"+*id))
 	if nil != err {
 		panic(err)
 	}

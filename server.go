@@ -31,8 +31,8 @@ func NewServer(enc *nats.EncodedConn) (*Server, error) {
 }
 
 // NewServerWithConfig NewServerWithConfig
-func NewServerWithConfig(cfg Config, name string) (*Server, error) {
-	client, err := NewNATSConn(cfg, name)
+func NewServerWithConfig(cfg Config, option ...nats.Option) (*Server, error) {
+	client, err := NewNATSConn(cfg, option...)
 	if nil != err {
 		return nil, err
 	}

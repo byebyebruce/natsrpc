@@ -42,7 +42,7 @@ func NewClient(enc *nats.EncodedConn, service interface{}, opts ...Option) (*Cli
 
 // NewClientWithConfig
 func NewClientWithConfig(cfg Config, name string, s interface{}, opts ...Option) (*Client, error) {
-	client, err := NewNATSConn(cfg, name)
+	client, err := NewNATSConn(cfg, nats.Name(name))
 	if nil != err {
 		return nil, err
 	}

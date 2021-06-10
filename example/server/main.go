@@ -8,7 +8,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/byebyebruce/natsrpc/example"
+	"github.com/nats-io/nats.go"
+
+	"github.com/byebyebruce/natsrpc/example/service"
 
 	"github.com/byebyebruce/natsrpc"
 )
@@ -28,7 +30,7 @@ func main() {
 		Server: *server,
 	}
 
-	server, err := natsrpc.NewServerWithConfig(cfg, "example_server"+*id)
+	server, err := natsrpc.NewServerWithConfig(cfg, nats.Name("example_server"+*id))
 	if nil != err {
 		panic(err)
 	}

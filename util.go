@@ -2,6 +2,7 @@ package natsrpc
 
 import (
 	"go/ast"
+	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -20,11 +21,13 @@ type Config struct {
 	MaxReconnects  int32  `xml:"max_reconnects" yaml:"max_reconnects"`   // 重连次数
 }
 
+// isExportedOrBuiltinType 是导出或内置类型
 func isExportedOrBuiltinType(t reflect.Type) bool {
 	return ast.IsExported(t.Name()) || t.PkgPath() == ""
 }
 
-func NewNATSConn(cfg Config, name string) (*nats.EncodedConn, error) {
+// NewNATSConn 构造一个nats conn
+func NewNATSConn(cfg Config, option ...nats.Option) (*nats.EncodedConn, error) {
 	if cfg.ReconnectWait <= 0 {
 		cfg.ReconnectWait = 1
 	}
@@ -37,32 +40,33 @@ func NewNATSConn(cfg Config, name string) (*nats.EncodedConn, error) {
 
 	// 设置参数
 	opts := make([]nats.Option, 0)
-	opts = append(opts, nats.Name(name))
 	if len(cfg.User) > 0 {
 		opts = append(opts, nats.UserInfo(cfg.User, cfg.Pwd))
 	}
 	opts = append(opts, nats.ReconnectWait(time.Second*time.Duration(cfg.ReconnectWait)))
 	opts = append(opts, nats.MaxReconnects(int(cfg.MaxReconnects)))
 	opts = append(opts, nats.ReconnectHandler(func(nc *nats.Conn) {
-		//l4g.Warn("[nats(%s)] Reconnected [%s]", name, nc.ConnectedUrl())
+		log.Printf("[nats] Reconnected [%s]\n", nc.ConnectedUrl())
 	}))
 	opts = append(opts, nats.DiscoveredServersHandler(func(nc *nats.Conn) {
-		//l4g.Info("[nats(%s)] DiscoveredServersHandler", name, nc.DiscoveredServers())
-	}))
-	opts = append(opts, nats.DisconnectHandler(func(nc *nats.Conn) {
-		//l4g.Warn("[nats(%s)] Disconnect", name)
+		log.Printf("[nats] DiscoveredServersHandler [%s]\n", nc.ConnectedUrl())
 	}))
 	opts = append(opts, nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
 		if nil != err {
-			//l4g.Warn("[nats(%s)] DisconnectErrHandler,error=[%v]", name, err)
+			log.Printf("[nats] DisconnectErrHandler [%v]\n", err)
 		}
 	}))
 	opts = append(opts, nats.ClosedHandler(func(nc *nats.Conn) {
-		//l4g.Info("[nats(%s)] ClosedHandler", name)
+		log.Printf("[nats] ClosedHandler\n")
 	}))
 	opts = append(opts, nats.ErrorHandler(func(nc *nats.Conn, subs *nats.Subscription, err error) {
-		//l4g.Warn("[nats(%s)] ErrorHandler subs=[%s] error=[%s]", name, subs.Subject, err.Error())
+		if nil != err {
+			log.Printf("[nats] ErrorHandler subs[%v] error[%v]\n", subs.Subject, err)
+		}
 	}))
+
+	// 后面的可以覆盖前面的设置
+	opts = append(opts, option...)
 
 	// 创建nats enc
 	nc, err := nats.Connect(cfg.Server, opts...)
@@ -76,10 +80,12 @@ func NewNATSConn(cfg Config, name string) (*nats.EncodedConn, error) {
 	return enc, nil
 }
 
+// typeName 类型名字
 func typeName(p reflect.Type) string {
 	return strings.Trim(p.String(), "*")
 }
 
+// combineSubject 组合字符串成subject
 func combineSubject(prefix string, s ...string) string {
 	ret := prefix
 	for _, v := range s {

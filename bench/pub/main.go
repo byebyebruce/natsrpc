@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/nats-io/nats.go"
+
 	helloworld "github.com/byebyebruce/natsrpc/testdata"
 
 	"github.com/byebyebruce/natsrpc"
@@ -46,7 +48,7 @@ func main() {
 	op := []natsrpc.Option{natsrpc.WithNamespace("bench_pub")}
 
 	for i := 0; i < *sn; i++ {
-		server, err := natsrpc.NewServerWithConfig(cfg, fmt.Sprintf("bench_pub_server_%d", i))
+		server, err := natsrpc.NewServerWithConfig(cfg, nats.Name(fmt.Sprintf("bench_pub_server_%d", i)))
 		if nil != err {
 			panic(err)
 		}
