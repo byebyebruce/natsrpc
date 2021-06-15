@@ -53,8 +53,6 @@ func (s *Server) ClearSubscription() {
 
 // Close 关闭
 func (s *Server) Close() {
-	s.ClearSubscription()
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.conn.FlushTimeout(time.Duration(3 * time.Second))

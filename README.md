@@ -13,7 +13,7 @@ NATSRPC 是一个基于nats的简单rpc
 `go get github.com/byebyebruce/natsrpc`
 
 ## 示例
-[Client](example/client/main.go)
-[Server](example/server/main.go)
-[Service](example/example_service.go)
-* 运行示例需要部署gnatsd，如果没有可以临时启动`go run example/nats_server/main/main.go`
+* [Client](example/client/main.go)
+* [Server](example/server/main.go)
+* [Service](example/example_service.go)
+> 运行示例需要部署gnatsd，如果没有可以临时启动`go run example/nats_server/main/main.go`
