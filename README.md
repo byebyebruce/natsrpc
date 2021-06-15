@@ -17,3 +17,6 @@ NATSRPC 是一个基于nats的简单rpc
 * [Server](example/server/main.go)
 * [Service](example/example_service.go)
 > 运行示例需要部署gnatsd，如果没有可以临时启动`go run example/nats_server/main/main.go`
+
+## TODO
+[ ] 自动生成client代码
