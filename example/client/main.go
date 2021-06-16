@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/byebyebruce/natsrpc/example/api/impl"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -13,7 +14,6 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/example"
 	helloworld "github.com/byebyebruce/natsrpc/testdata"
 )
 
@@ -53,7 +53,7 @@ func main() {
 			}
 		}()
 	}
-	client, err := natsrpc.NewClient(conn, &example.ExampleService{}, opt...)
+	client, err := natsrpc.NewClient(conn, &impl.ExampleService{}, opt...)
 	if nil != err {
 		panic(err)
 	}
@@ -96,9 +96,7 @@ func main() {
 					if err := client.ID(*id).Request(req, reply); nil != err {
 						panic(err)
 					}
-					if reply.Message != req.Name {
-						panic("reply.Message")
-					}
+
 					fmt.Println("reply", reply.Message)
 				}
 

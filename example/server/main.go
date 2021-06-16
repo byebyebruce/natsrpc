@@ -3,14 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/byebyebruce/natsrpc/example/api/impl"
+	"github.com/byebyebruce/natsrpc/example/api/service"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/nats-io/nats.go"
-
-	"github.com/byebyebruce/natsrpc/example/service"
 
 	"github.com/byebyebruce/natsrpc"
 )
@@ -52,7 +52,7 @@ func main() {
 		opts = append(opts, natsrpc.WithSingleThreadCallback(fnChan))
 	}
 
-	s, err := server.Register(&example.ExampleService{}, opts...)
+	s, err := service.RegisterExampleService(server,&impl.ExampleService{}, opts...)
 	if nil != err {
 		panic(err)
 	}

@@ -55,12 +55,12 @@ func (s *Server) ClearSubscription() {
 func (s *Server) Close() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.conn.FlushTimeout(time.Duration(3 * time.Second))
+	_ = s.conn.FlushTimeout(3 * time.Second)
 	s.conn.Close()
 }
 
 // Unregister 反注册
-func (s *Server) Unregister(service *service) bool {
+func (s *Server) unregister(service *service) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.services[service.name]; ok {
@@ -74,7 +74,7 @@ func (s *Server) Unregister(service *service) bool {
 }
 
 // Register 注册服务
-func (s *Server) Register(serv interface{}, options ...Option) (*service, error) {
+func (s *Server) Register(serv interface{}, options ...Option) (Service, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

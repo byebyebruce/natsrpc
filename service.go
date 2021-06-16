@@ -8,6 +8,11 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+type Service interface {
+	Name() string
+	Close() bool
+}
+
 // service 服务
 type service struct {
 	name        string               // 名字
@@ -26,7 +31,7 @@ func (s *service) Name() string {
 // Close 关闭
 // 会取消所有订阅
 func (s *service) Close() bool {
-	return s.server.Unregister(s)
+	return s.server.unregister(s)
 }
 
 // newService 创建服务
