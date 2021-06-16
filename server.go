@@ -74,17 +74,14 @@ func (s *Server) unregister(service *service) bool {
 }
 
 // Register 注册服务
-func (s *Server) Register(serv interface{}, options ...Option) (Service, error) {
+func (s *Server) Register(serv interface{}, opts ...Option) (Service, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	option := defaultOption()
-	for _, v := range options {
-		v(&option)
-	}
+	opt := MakeOptions(opts...)
 
 	// new 一个服务
-	service, err := newService(serv, option)
+	service, err := newService(serv, opt)
 	if nil != err {
 		return nil, err
 	}

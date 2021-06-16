@@ -21,7 +21,7 @@ func (a *A) Func2(ctx context.Context, req *helloworld.HelloReply, repl *hellowo
 }
 
 func Test_newService(t *testing.T) {
-	s, err := newService(&A{}, defaultOption())
+	s, err := newService(&A{}, MakeOptions())
 	if nil != err {
 		t.Error(err)
 	}

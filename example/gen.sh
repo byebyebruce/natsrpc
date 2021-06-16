@@ -5,8 +5,9 @@ set -ex
 cur=$(cd $(dirname $0); pwd)
 root="$cur/.."
 
+cd "$root"
 go run "$root/cmd" \
 -ip=github.com/byebyebruce/natsrpc \
--s="$root/example/api/example.go" \
--d="$root/example/api/service/example.go" \
+-s="example/api/example.go" \
+-d="example/api/service/example.go" \
 -op=service

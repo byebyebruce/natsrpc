@@ -13,14 +13,17 @@ type Service interface {
 	Close() bool
 }
 
+type server interface {
+	unregister(*service) bool
+}
 // service 服务
 type service struct {
 	name        string               // 名字
-	server      *Server              // server
+	server      server               // server
 	val         reflect.Value        // 值
 	subscribers []*nats.Subscription // nats订阅
 	methods     map[string]*method   // 方法集合
-	options     options              // 设置
+	options     Options              // 设置
 }
 
 // 名字
@@ -35,7 +38,7 @@ func (s *service) Close() bool {
 }
 
 // newService 创建服务
-func newService(i interface{}, option options) (*service, error) {
+func newService(i interface{}, option Options) (*service, error) {
 	val := reflect.ValueOf(i)
 	if val.Kind() != reflect.Ptr {
 		return nil, fmt.Errorf("service must be a pointer")

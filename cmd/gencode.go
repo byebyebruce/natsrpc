@@ -15,7 +15,7 @@ import (
 
 var (
 	inPackage = flag.String("ip", "", "in package name")
-	src         = flag.String("s", "", "src file")
+	src         = flag.String("s", "", "src file(the path must be relative to go.mod)")
 	dest        = flag.String("d", "", "dest file")
 	outPackage = flag.String("op", "", "out package name")
 )
@@ -27,11 +27,13 @@ type TmplParam struct {
 
 type TmplMethod struct {
 	Name  string
+	Comment string
 	Param []TmplParam
 }
 
 type TmplService struct {
 	Name   string
+	Comment string
 	Method []TmplMethod
 }
 
@@ -83,7 +85,7 @@ func main() {
 	}
 
 	// Print the AST.
-	ast.Print(fset, f)
+	//ast.Print(fset, f)
 
 	tmpl := Tmpl{
 		OutPackage: *outPackage,
@@ -108,10 +110,12 @@ func main() {
 
 		ts := TmplService{
 			Name:s.Name.Name,
+			Comment:s.Comment.Text(),
 		}
 		for _,m := range i.Methods.List {
 			tm := TmplMethod{
 				Name: m.Names[0].Name,
+				Comment:m.Comment.Text(),
 			}
 			for i,p:= range m.Type.(*ast.FuncType).Params.List {
 				tp := TmplParam{}

@@ -30,7 +30,7 @@ func main() {
 		Server: *server,
 	}
 
-	server, err := natsrpc.NewServerWithConfig(cfg, nats.Name("example_server"+*id))
+	server, err := natsrpc.NewNatsRPCWithConfig(cfg, nats.Name("example_server"+*id))
 	if nil != err {
 		panic(err)
 	}

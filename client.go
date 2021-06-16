@@ -13,17 +13,14 @@ import (
 // Client client
 type Client struct {
 	enc  *nats.EncodedConn // NATS Conn
-	opt  options           // 选项
+	opt  Options           // 选项
 	name string            // 名字
 }
 
 // NewClient 构造器
 // TODO 这里的service只提供了一个服务名字
 func NewClient(enc *nats.EncodedConn, service interface{}, opts ...Option) (*Client, error) {
-	opt := defaultOption()
-	for _, v := range opts {
-		v(&opt)
-	}
+	opt := MakeOptions(opts...)
 	if !enc.Conn.IsConnected() {
 		return nil, fmt.Errorf("enc is not connected")
 	}

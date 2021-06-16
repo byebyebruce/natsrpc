@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// options 设置
-type options struct {
+// Options 设置
+type Options struct {
 	namespace          string        // 空间(划分隔离)
 	group              string        // sub组(有分组的话，该组内只有1个sub能收到，否则全部收到
 	id                 string        // id
@@ -14,49 +14,59 @@ type options struct {
 	singleThreadCbChan chan func()   // 单线程回调通道
 }
 
-// defaultOption 默认设置
-func defaultOption() options {
-	return options{
+// isSingleThreadMode 单线程模式
+func (o Options) isSingleThreadMode() bool {
+	return nil != o.singleThreadCbChan
+}
+
+// Option Option
+type Option func(options *Options)
+
+// MakeOptions 构造options
+func MakeOptions(opts ...Option) Options{
+	ret := Options{
 		namespace: "default",
 		id:        "",
 		timeout:   time.Duration(3) * time.Second,
 	}
+	for _,v := range opts {
+		v(&ret)
+	}
+	return ret
 }
 
-// Option Option
-type Option func(options *options)
 
 // WithGroup 订阅组
 func WithGroup(group string) Option {
-	return func(options *options) {
+	return func(options *Options) {
 		options.group = group
 	}
 }
 
 // WithNamespace 空间集群
 func WithNamespace(namespace string) Option {
-	return func(options *options) {
+	return func(options *Options) {
 		options.namespace = namespace
 	}
 }
 
 // WithID id
 func WithID(id interface{}) Option {
-	return func(options *options) {
+	return func(options *Options) {
 		options.id = fmt.Sprintf("%v", id)
 	}
 }
 
 // WithTimeout 超时时间
 func WithTimeout(timeout time.Duration) Option {
-	return func(options *options) {
+	return func(options *Options) {
 		options.timeout = timeout
 	}
 }
 
 // WithSingleThreadCallback 服务单线程处理
 func WithSingleThreadCallback(singleThreadCbChan chan func()) Option {
-	return func(options *options) {
+	return func(options *Options) {
 		if nil == singleThreadCbChan {
 			panic("singleThreadCbChan is nil")
 		}

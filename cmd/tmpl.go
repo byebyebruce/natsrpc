@@ -6,7 +6,6 @@ package {{.OutPackage}}
 import (
 	"context"
 
-
 	{{- range  .Imports}}
 	{{.}}
 	{{- end}}
@@ -15,10 +14,42 @@ import (
 )
 {{- range .Service}}
 
-// Register{{.Name}} 
-func Register{{.Name}}(server *natsrpc.Server, s {{$.Package}}.{{.Name}}, opts ...natsrpc.Option) (natsrpc.Service, error) {
-	return server.Register(s, opts...)
+// Register{{.Name}} {{.Comment}}
+func Register{{.Name}}(rpc *natsrpc.NatsRPC, s {{$.Package}}.{{.Name}}, opts ...natsrpc.Option) (natsrpc.Service, error) {
+	return rpc.Register(s, opts...)
 }
+
+// New{{.Name}}Client {{.Comment}}
+func New{{.Name}}Client(rpc *natsrpc.NatsRPC, opts ...natsrpc.Option) (*{{.Name}}Client, error) {
+	c := &{{.Name}}Client{
+		rpc:rpc,
+		opt:natsrpc.MakeOptions(opts...),
+	}
+	return c, nil
+}
+
+{{- $clientName := .Name}}
+
+// {{.Name}}Client
+type {{.Name}}Client struct {
+	rpc 	*natsrpc.NatsRPC
+	opt  	natsrpc.Options
+}
+
+{{- range .Method}}
+// {{.Name}} {{.Comment}}
+func (c *{{$clientName}}Client){{.Name}}(
+	{{- range $i, $v := .Param -}}
+		{{- if ne $i 0 -}}
+		, 
+		{{- end -}}
+		{{ $v.Name }} {{ $v.Type }}
+	{{- end -}}
+) error {
+	return nil
+}
+{{- end}}
+
 {{- end}}
 
 
