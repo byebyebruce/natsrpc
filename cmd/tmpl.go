@@ -12,6 +12,7 @@ import (
 	{{- end}}
 
 	"github.com/byebyebruce/natsrpc"
+	"github.com/golang/protobuf/proto"
 )
 {{- range .Service}}
 
@@ -46,26 +47,41 @@ func (c *{{.Name}}Client) ID(id interface{}) *{{.Name}}Client {
 
 {{ range .Method}}
 	{{- $paramLength := len .Param -}}
-	// {{.Name}} {{.Comment}}
-	func (c *{{$clientName}}Client) {{.Name}}(
-		{{- if eq $paramLength 2 -}}
-			{{- $req :=index .Param 1 -}}
-			{{ $req.Name }} *{{ $req.Type -}}
-		) error {
+	{{- $req :=index .Param 1 -}}
+
+	{{- if eq $paramLength 2 -}}
+		// Publish{{.Name}} {{.Comment}}
+		func (c *{{$clientName}}Client) Publish{{.Name}}({{ $req.Name }} *{{ $req.Type -}}) error {
 			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$clientName}}.{{.Name}}", c.opt.ID())
 			return c.rpc.Publish(sub, {{ $req.Name }}, c.opt)
-		{{- else if eq $paramLength 3 -}}
-			{{- $req :=index .Param 1 -}}
-			{{- $rep :=index .Param 2 -}}
-			ctx context.Context, {{ $req.Name }} *{{ $req.Type -}}
-		) (*{{ $rep.Type }}, error) {
+		}
+	{{- end}}
+
+	{{- if eq $paramLength 3 -}}
+		{{- $rep :=index .Param 2 -}}
+
+		// Request{{.Name}} {{.Comment}}
+		func (c *{{$clientName}}Client) Request{{.Name}}(ctx context.Context, {{ $req.Name }} *{{ $req.Type }}) (*{{ $rep.Type }}, error) {
 			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$clientName}}.{{.Name}}", c.opt.ID())
 			rep := &{{ $rep.Type }}{}
 			err := c.rpc.Request(ctx, sub, {{ $req.Name }}, rep, c.opt)
 			return rep, err
-		{{- end}}
-	}
-	{{ end }}
+		}
+
+		// AsyncRequest{{.Name}} {{.Comment}}
+		func (c *{{$clientName}}Client) AsyncRequest{{.Name}}({{ $req.Name }} *{{ $req.Type }}, cb func(*{{ $rep.Type }}, error)){
+			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$clientName}}.{{.Name}}", c.opt.ID())
+			rep := &{{ $rep.Type }}{}
+			f := func(_ proto.Message, err error) {
+				cb(rep, err)
+			}
+			c.rpc.AsyncRequest(sub, {{ $req.Name }}, rep, c.opt, f)
+		}
+	{{- end}}
+	
+
+	
+{{ end }}
 	
 {{- end}}
 `

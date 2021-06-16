@@ -8,6 +8,6 @@ root="$cur/.."
 cd "$root"
 go run "$root/cmd" \
 -ip=github.com/byebyebruce/natsrpc \
--s="testdata/helloworld.go" \
--d="testdata/autogen/helloworld.go" \
+-s="testdata/greeter.go" \
+-d="testdata/autogen/greeter.go" \
 -op=service

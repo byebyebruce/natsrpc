@@ -12,7 +12,6 @@ import (
 
 	"github.com/byebyebruce/natsrpc"
 	"github.com/byebyebruce/natsrpc/testdata/pb"
-	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/nats.go"
 )
 
@@ -52,7 +51,7 @@ func main() {
 			}
 		}()
 	}
-	client, err := service.NewExampleClient(rpc, opt...)
+	client, err := service.NewGreeterClient(rpc, opt...)
 	if nil != err {
 		panic(err)
 	}
@@ -76,10 +75,9 @@ func main() {
 					Name: fmt.Sprintf("hello %d", next),
 				}
 
-				reply := &pb.HelloReply{}
 				if *singleThread {
 					wg.Add(1)
-					client.ID(*id).AsyncRequest(req, reply, func(message proto.Message, err error) {
+					client.ID(*id).AsyncRequestAreYouOK(req, func(reply *pb.HelloReply, err error) {
 						defer wg.Done()
 						fmt.Println("begin AsyncRequest", reply.Message)
 						if nil != err {
@@ -92,11 +90,11 @@ func main() {
 					})
 
 				} else {
-					if err := client.ID(*id).Request(req, reply); nil != err {
+					if reply, err := client.ID(*id).RequestAreYouOK(nil, req); nil != err {
 						panic(err)
+					} else {
+						fmt.Println("reply", reply.Message)
 					}
-
-					fmt.Println("reply", reply.Message)
 				}
 
 			}
