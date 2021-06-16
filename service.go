@@ -13,13 +13,14 @@ type Service interface {
 	Close() bool
 }
 
-type server interface {
+type rpc interface {
 	unregister(*service) bool
 }
+
 // service 服务
 type service struct {
 	name        string               // 名字
-	server      server               // server
+	rpc         rpc                  // rpc
 	val         reflect.Value        // 值
 	subscribers []*nats.Subscription // nats订阅
 	methods     map[string]*method   // 方法集合
@@ -34,7 +35,7 @@ func (s *service) Name() string {
 // Close 关闭
 // 会取消所有订阅
 func (s *service) Close() bool {
-	return s.server.unregister(s)
+	return s.rpc.unregister(s)
 }
 
 // newService 创建服务
@@ -60,14 +61,14 @@ func newService(i interface{}, option Options) (*service, error) {
 		val:     val,
 		options: option,
 		methods: map[string]*method{},
-		name:    combineSubject(option.namespace, typeName),
+		name:    CombineSubject(option.namespace, typeName),
 	}
 
 	for _, v := range ms {
 		if _, ok := s.methods[v.name]; ok {
 			return nil, fmt.Errorf("service [%s] duplicate method [%s]", typeName, v.name)
 		}
-		sub := combineSubject(s.name, v.name, s.options.id)
+		sub := CombineSubject(s.name, v.name, s.options.id)
 		s.methods[sub] = v
 	}
 	return s, nil

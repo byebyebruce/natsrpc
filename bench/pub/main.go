@@ -11,7 +11,7 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	helloworld "github.com/byebyebruce/natsrpc/testdata"
+	"github.com/byebyebruce/natsrpc/testdata/pb"
 
 	"github.com/byebyebruce/natsrpc"
 )
@@ -28,7 +28,7 @@ var n int32
 type BenchNotifyService struct {
 }
 
-func (a *BenchNotifyService) Func(ctx context.Context, req *helloworld.HelloRequest) {
+func (a *BenchNotifyService) Func(ctx context.Context, req *pb.HelloRequest) {
 	atomic.AddInt32(&n, 1)
 }
 
@@ -48,7 +48,7 @@ func main() {
 	op := []natsrpc.Option{natsrpc.WithNamespace("bench_pub")}
 
 	for i := 0; i < *sn; i++ {
-		server, err := natsrpc.NewServerWithConfig(cfg, nats.Name(fmt.Sprintf("bench_pub_server_%d", i)))
+		server, err := natsrpc.NewNatsRPCWithConfig(cfg, nats.Name(fmt.Sprintf("bench_pub_server_%d", i)))
 		if nil != err {
 			panic(err)
 		}
@@ -64,7 +64,7 @@ func main() {
 
 	fmt.Println("start...")
 	wg := sync.WaitGroup{}
-	req := &helloworld.HelloRequest{}
+	req := &pb.HelloRequest{}
 	for i := 0; i <= *cn; i++ {
 		wg.Add(1)
 		go func(idx int) {

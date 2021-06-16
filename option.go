@@ -19,22 +19,31 @@ func (o Options) isSingleThreadMode() bool {
 	return nil != o.singleThreadCbChan
 }
 
+// Namespace 空间
+func (o Options) Namespace() string {
+	return o.namespace
+}
+
+// ID id
+func (o Options) ID() string {
+	return o.id
+}
+
 // Option Option
 type Option func(options *Options)
 
 // MakeOptions 构造options
-func MakeOptions(opts ...Option) Options{
+func MakeOptions(opts ...Option) Options {
 	ret := Options{
 		namespace: "default",
 		id:        "",
 		timeout:   time.Duration(3) * time.Second,
 	}
-	for _,v := range opts {
+	for _, v := range opts {
 		v(&ret)
 	}
 	return ret
 }
-
 
 // WithGroup 订阅组
 func WithGroup(group string) Option {

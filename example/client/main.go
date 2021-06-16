@@ -3,18 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/byebyebruce/natsrpc/example/api/impl"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/nats-io/nats.go"
-
-	"github.com/golang/protobuf/proto"
-
 	"github.com/byebyebruce/natsrpc"
-	helloworld "github.com/byebyebruce/natsrpc/testdata"
+	"github.com/byebyebruce/natsrpc/example/api"
+	"github.com/byebyebruce/natsrpc/testdata/pb"
+	"github.com/golang/protobuf/proto"
+	"github.com/nats-io/nats.go"
 )
 
 var (
@@ -53,7 +51,7 @@ func main() {
 			}
 		}()
 	}
-	client, err := natsrpc.NewClient(conn, &impl.ExampleService{}, opt...)
+	client, err := natsrpc.NewClient(conn, &api.ExampleService{}, opt...)
 	if nil != err {
 		panic(err)
 	}
@@ -73,11 +71,11 @@ func main() {
 					break
 				}
 
-				req := &helloworld.HelloRequest{
+				req := &pb.HelloRequest{
 					Name: fmt.Sprintf("hello %d", next),
 				}
 
-				reply := &helloworld.HelloReply{}
+				reply := &pb.HelloReply{}
 				if *singleThread {
 					wg.Add(1)
 					client.ID(*id).AsyncRequest(req, reply, func(message proto.Message, err error) {

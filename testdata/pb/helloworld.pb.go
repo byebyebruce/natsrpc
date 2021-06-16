@@ -18,7 +18,7 @@
 // 	protoc        v3.14.0
 // source: examples/helloworld/helloworld/helloworld.proto
 
-package helloworld
+package pb
 
 import (
 	reflect "reflect"

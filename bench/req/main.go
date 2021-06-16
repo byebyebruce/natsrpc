@@ -4,14 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/byebyebruce/natsrpc/testdata/pb"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/nats-io/nats.go"
-
-	helloworld "github.com/byebyebruce/natsrpc/testdata"
 
 	"github.com/byebyebruce/natsrpc"
 )
@@ -26,7 +25,7 @@ var (
 type BenchReqService struct {
 }
 
-func (a *BenchReqService) Func2(ctx context.Context, req *helloworld.HelloRequest, repl *helloworld.HelloReply) {
+func (a *BenchReqService) Func2(ctx context.Context, req *pb.HelloRequest, repl *pb.HelloReply) {
 	repl.Message = req.Name
 }
 
@@ -47,7 +46,7 @@ func main() {
 		natsrpc.WithGroup("mygroup")}
 
 	for i := 0; i < *sn; i++ {
-		server, err := natsrpc.NewServerWithConfig(cfg, nats.Name(fmt.Sprintf("bench_req_server_%d", i)))
+		server, err := natsrpc.NewNatsRPCWithConfig(cfg, nats.Name(fmt.Sprintf("bench_req_server_%d", i)))
 		if nil != err {
 			panic(err)
 		}
@@ -64,7 +63,7 @@ func main() {
 
 	fmt.Println("start...")
 	wg := sync.WaitGroup{}
-	req := &helloworld.HelloRequest{}
+	req := &pb.HelloRequest{}
 	for i := 0; i <= *cn; i++ {
 		wg.Add(1)
 		go func(idx int) {
@@ -82,7 +81,7 @@ func main() {
 				default:
 				}
 				atomic.AddUint32(&totalReq, 1)
-				if err := client.Request(req, &helloworld.HelloReply{}); nil != err {
+				if err := client.Request(req, &pb.HelloReply{}); nil != err {
 					atomic.AddUint32(&totalFailed, 1)
 					continue
 				}

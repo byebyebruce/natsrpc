@@ -85,8 +85,8 @@ func typeName(p reflect.Type) string {
 	return strings.Trim(p.String(), "*")
 }
 
-// combineSubject 组合字符串成subject
-func combineSubject(prefix string, s ...string) string {
+// CombineSubject 组合字符串成subject
+func CombineSubject(prefix string, s ...string) string {
 	ret := prefix
 	for _, v := range s {
 		if "" == v {

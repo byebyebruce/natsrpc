@@ -3,17 +3,18 @@ package natsrpc
 import (
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/golang/protobuf/proto"
 
 	"github.com/nats-io/nats.go"
 )
 
 // NatsRPC server
 type NatsRPC struct {
-	enc     *nats.EncodedConn   // NATS Encode Conn
+	enc      *nats.EncodedConn   // NATS Encode Conn
 	mu       sync.Mutex          // lock
 	services map[string]*service // 服务 name->service
 }
@@ -24,7 +25,7 @@ func NewNatsRPC(enc *nats.EncodedConn) (*NatsRPC, error) {
 		return nil, fmt.Errorf("enc is not connected")
 	}
 	d := &NatsRPC{
-		enc:     enc,
+		enc:      enc,
 		services: make(map[string]*service),
 	}
 	return d, nil
@@ -75,9 +76,6 @@ func (rpc *NatsRPC) unregister(service *service) bool {
 
 // Register 注册服务
 func (rpc *NatsRPC) Register(serv interface{}, opts ...Option) (Service, error) {
-	rpc.mu.Lock()
-	defer rpc.mu.Unlock()
-
 	opt := MakeOptions(opts...)
 
 	// new 一个服务
@@ -85,12 +83,15 @@ func (rpc *NatsRPC) Register(serv interface{}, opts ...Option) (Service, error) 
 	if nil != err {
 		return nil, err
 	}
+	rpc.mu.Lock()
+	defer rpc.mu.Unlock()
 
 	// 检查是否重复
-	service.server = rpc
 	if _, ok := rpc.services[service.name]; ok {
 		return nil, fmt.Errorf("service [%s] duplicate", service.name)
 	}
+	service.rpc = rpc
+
 	// TODO 如果报错了是否要unsub？
 	if err := rpc.subscribeMethod(service); nil != err {
 		return nil, err
@@ -158,7 +159,7 @@ func (rpc *NatsRPC) subscribeMethod(service *service) error {
 }
 
 // Publish 发布
-func (rpc *NatsRPC) Publish(sub string,message proto.Message,opt Options) error {
+func (rpc *NatsRPC) Publish(sub string, message proto.Message, opt Options) error {
 	if opt.isSingleThreadMode() { // 单线程模型不阻塞
 		go rpc.enc.Publish(sub, message)
 	} else {
@@ -168,7 +169,7 @@ func (rpc *NatsRPC) Publish(sub string,message proto.Message,opt Options) error 
 }
 
 // Request 请求
-func (rpc *NatsRPC) Request(ctx context.Context, sub string,req proto.Message, rep proto.Message,opt Options) error {
+func (rpc *NatsRPC) Request(ctx context.Context, sub string, req proto.Message, rep proto.Message, opt Options) error {
 	if opt.isSingleThreadMode() { // 单线程模式不能同步请求
 		panic("should call AsyncRequest in single thread mode")
 	}
@@ -176,7 +177,7 @@ func (rpc *NatsRPC) Request(ctx context.Context, sub string,req proto.Message, r
 }
 
 // AsyncRequest 异步请求
-func (rpc *NatsRPC) AsyncRequest(ctx context.Context, sub string,req proto.Message, rep proto.Message,opt Options, cb func(proto.Message, error)) {
+func (rpc *NatsRPC) AsyncRequest(ctx context.Context, sub string, req proto.Message, rep proto.Message, opt Options, cb func(proto.Message, error)) {
 	if !opt.isSingleThreadMode() { // 非单线程模式不能异步请求
 		panic("call AsyncRequest only in single thread mode")
 	}
