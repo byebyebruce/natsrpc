@@ -52,14 +52,14 @@ func (c *{{.Name}}Client) ID(id interface{}) *{{.Name}}Client {
 			{{- $req :=index .Param 1 -}}
 			{{ $req.Name }} *{{ $req.Type -}}
 		) error {
-			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$.Package}}_{{$clientName}}_{{.Name}}", c.opt.ID())
+			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$clientName}}.{{.Name}}", c.opt.ID())
 			return c.rpc.Publish(sub, {{ $req.Name }}, c.opt)
 		{{- else if eq $paramLength 3 -}}
 			{{- $req :=index .Param 1 -}}
 			{{- $rep :=index .Param 2 -}}
 			ctx context.Context, {{ $req.Name }} *{{ $req.Type -}}
 		) (*{{ $rep.Type }}, error) {
-			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$.Package}}_{{$clientName}}_{{.Name}}", c.opt.ID())
+			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$clientName}}.{{.Name}}", c.opt.ID())
 			rep := &{{ $rep.Type }}{}
 			err := c.rpc.Request(ctx, sub, {{ $req.Name }}, rep, c.opt)
 			return rep, err

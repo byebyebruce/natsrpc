@@ -28,7 +28,7 @@ var n int32
 type BenchNotifyService struct {
 }
 
-func (a *BenchNotifyService) Func(ctx context.Context, req *pb.HelloRequest) {
+func (a *BenchNotifyService) Notify(ctx context.Context, req *pb.HelloRequest) {
 	atomic.AddInt32(&n, 1)
 }
 
@@ -82,7 +82,7 @@ func main() {
 				default:
 				}
 				atomic.AddUint32(&totalReq, 1)
-				if err := client.Publish(req); nil != err {
+				if err := client.Publish("Notify", req); nil != err {
 					continue
 				}
 				atomic.AddUint32(&totalSuccess, 1)

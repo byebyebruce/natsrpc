@@ -39,13 +39,13 @@ func (c *ExampleClient) ID(id interface{}) *ExampleClient {
 
 // Notify
 func (c *ExampleClient) Notify(req *pb.HelloReply) error {
-	sub := natsrpc.CombineSubject(c.opt.Namespace(), "helloworld_Example_Notify", c.opt.ID())
+	sub := natsrpc.CombineSubject(c.opt.Namespace(), "Example_Notify", c.opt.ID())
 	return c.rpc.Publish(sub, req, c.opt)
 }
 
 // Request
 func (c *ExampleClient) Request(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
-	sub := natsrpc.CombineSubject(c.opt.Namespace(), "helloworld_Example_Request", c.opt.ID())
+	sub := natsrpc.CombineSubject(c.opt.Namespace(), "Example_Request", c.opt.ID())
 	rep := &pb.HelloReply{}
 	err := c.rpc.Request(ctx, sub, req, rep, c.opt)
 	return rep, err
@@ -80,13 +80,13 @@ func (c *HelloClient) ID(id interface{}) *HelloClient {
 
 // Notify
 func (c *HelloClient) Notify(req *pb.HelloReply) error {
-	sub := natsrpc.CombineSubject(c.opt.Namespace(), "helloworld_Hello_Notify", c.opt.ID())
+	sub := natsrpc.CombineSubject(c.opt.Namespace(), "Hello_Notify", c.opt.ID())
 	return c.rpc.Publish(sub, req, c.opt)
 }
 
 // Request
 func (c *HelloClient) Request(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
-	sub := natsrpc.CombineSubject(c.opt.Namespace(), "helloworld_Hello_Request", c.opt.ID())
+	sub := natsrpc.CombineSubject(c.opt.Namespace(), "Hello_Request", c.opt.ID())
 	rep := &pb.HelloReply{}
 	err := c.rpc.Request(ctx, sub, req, rep, c.opt)
 	return rep, err

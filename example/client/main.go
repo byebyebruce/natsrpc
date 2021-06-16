@@ -8,8 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	service "github.com/byebyebruce/natsrpc/testdata/autogen"
+
 	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/example/api"
 	"github.com/byebyebruce/natsrpc/testdata/pb"
 	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/nats.go"
@@ -31,11 +32,11 @@ func main() {
 	cfg := natsrpc.Config{
 		Server: *server,
 	}
-	conn, err := natsrpc.NewNATSConn(cfg, nats.Name("example_client"+*id))
+	rpc, err := natsrpc.NewNatsRPCWithConfig(cfg, nats.Name("example_client"+*id))
 	if nil != err {
 		panic(err)
 	}
-	defer conn.Close()
+	defer rpc.Close()
 
 	opt := []natsrpc.Option{natsrpc.WithNamespace(*namespace),
 		natsrpc.WithGroup(*group),
@@ -51,7 +52,7 @@ func main() {
 			}
 		}()
 	}
-	client, err := natsrpc.NewClient(conn, &api.ExampleService{}, opt...)
+	client, err := service.NewExampleClient(rpc, opt...)
 	if nil != err {
 		panic(err)
 	}

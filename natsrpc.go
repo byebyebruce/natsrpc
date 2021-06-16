@@ -173,15 +173,22 @@ func (rpc *NatsRPC) Request(ctx context.Context, sub string, req proto.Message, 
 	if opt.isSingleThreadMode() { // 单线程模式不能同步请求
 		panic("should call AsyncRequest in single thread mode")
 	}
+	if ctx == nil {
+		ctx1, cancel := context.WithTimeout(context.Background(), opt.timeout)
+		defer cancel()
+		ctx = ctx1
+	}
 	return rpc.enc.RequestWithContext(ctx, sub, req, rep)
 }
 
 // AsyncRequest 异步请求
-func (rpc *NatsRPC) AsyncRequest(ctx context.Context, sub string, req proto.Message, rep proto.Message, opt Options, cb func(proto.Message, error)) {
+func (rpc *NatsRPC) AsyncRequest(sub string, req proto.Message, rep proto.Message, opt Options, cb func(proto.Message, error)) {
 	if !opt.isSingleThreadMode() { // 非单线程模式不能异步请求
 		panic("call AsyncRequest only in single thread mode")
 	}
 	go func() { // 不阻塞主线程
+		ctx, cancel := context.WithTimeout(context.Background(), opt.timeout)
+		defer cancel()
 		err := rpc.enc.RequestWithContext(ctx, sub, req, rep)
 		f := func() { // 回调
 			cb(rep, err)
@@ -192,5 +199,4 @@ func (rpc *NatsRPC) AsyncRequest(ctx context.Context, sub string, req proto.Mess
 			log.Println("AsyncRequest", sub, err)
 		}
 	}()
-
 }

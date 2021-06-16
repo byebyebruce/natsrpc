@@ -4,11 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/byebyebruce/natsrpc/testdata/pb"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/byebyebruce/natsrpc/testdata/pb"
 
 	"github.com/nats-io/nats.go"
 
@@ -19,13 +20,13 @@ var (
 	server    = flag.String("server", "nats://127.0.0.1:4222", "nats server")
 	sn        = flag.Int("s", 0, "server count,0:cpu num")
 	cn        = flag.Int("c", 0, "client count,0:cpu num")
-	totalTime = flag.Int("t", 30, "total time")
+	totalTime = flag.Int("t", 10, "total time")
 )
 
 type BenchReqService struct {
 }
 
-func (a *BenchReqService) Func2(ctx context.Context, req *pb.HelloRequest, repl *pb.HelloReply) {
+func (a *BenchReqService) Request(ctx context.Context, req *pb.HelloRequest, repl *pb.HelloReply) {
 	repl.Message = req.Name
 }
 
@@ -81,7 +82,7 @@ func main() {
 				default:
 				}
 				atomic.AddUint32(&totalReq, 1)
-				if err := client.Request(req, &pb.HelloReply{}); nil != err {
+				if err := client.Request(nil, "Request", req, &pb.HelloReply{}); nil != err {
 					atomic.AddUint32(&totalFailed, 1)
 					continue
 				}
