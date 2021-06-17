@@ -2,7 +2,7 @@ package natsrpc
 
 import (
 	"context"
-	"fmt"
+	"log"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/nats.go"
@@ -10,16 +10,16 @@ import (
 
 // Client client
 type Client struct {
-	rpc  *NatsRPC
-	opt  Options // 选项
-	name string  // 名字
+	enc  *nats.EncodedConn // NATS Encode Conn
+	opt  Options           // 选项
+	name string            // 名字 package.service
 }
 
 // NewClient 构造器
-func NewClient(rpc *NatsRPC, name string, opts ...Option) (*Client, error) {
+func NewClient(enc *nats.EncodedConn, name string, opts ...Option) (*Client, error) {
 	opt := MakeOptions(opts...)
 	c := &Client{
-		rpc: rpc,
+		enc: enc,
 		opt: opt,
 	}
 
@@ -29,11 +29,11 @@ func NewClient(rpc *NatsRPC, name string, opts ...Option) (*Client, error) {
 
 // NewClientWithConfig
 func NewClientWithConfig(cfg Config, name string, opts ...Option) (*Client, error) {
-	rpc, err := NewNatsRPCWithConfig(cfg, nats.Name(name))
+	enc, err := NewNATSConn(cfg, nats.Name(name))
 	if nil != err {
 		return nil, err
 	}
-	return NewClient(rpc, name, opts...)
+	return NewClient(enc, name, opts...)
 }
 
 // ID 根据ID获得client
@@ -44,29 +44,70 @@ func (c *Client) ID(id interface{}) *Client {
 		return nil
 	}
 	ret := *c
-	ret.opt.id = fmt.Sprintf("%v", id)
+	WithID(id)(&ret.opt)
 	return &ret
-}
-
-// singleThreadMode 单线程回调模式
-func (c *Client) singleThreadMode() bool {
-	return nil != c.opt.singleThreadCbChan
 }
 
 // Publish 发布
 func (c *Client) Publish(method string, req proto.Message) error {
-	sub := CombineSubject(c.opt.namespace, c.name, method, c.opt.id)
-	return c.rpc.Publish(sub, req, c.opt)
+	// subject = namespace.package.service.method.id
+	subject := CombineSubject(c.opt.namespace, c.name, method, c.opt.id)
+	if c.opt.isSingleThreadMode() { // 单线程模式不能同步请求
+		go c.publish(subject, req)
+		return nil
+	}
+	return c.publish(subject, req)
 }
 
 // Request 请求
 func (c *Client) Request(ctx context.Context, method string, req proto.Message, rep proto.Message) error {
-	sub := CombineSubject(c.opt.namespace, c.name, method, c.opt.id)
-	return c.rpc.Request(ctx, sub, req, rep, c.opt)
+	if c.opt.isSingleThreadMode() { // 单线程模式不能同步请求
+		panic("should call AsyncRequest in single thread mode")
+	}
+	subject := CombineSubject(c.opt.namespace, c.name, method, c.opt.id)
+	if ctx == nil {
+		ctx1, cancel := context.WithTimeout(context.Background(), c.opt.timeout)
+		defer cancel()
+		ctx = ctx1
+	}
+	return c.request(ctx, subject, req, rep)
 }
 
 // AsyncRequest 异步请求
 func (c *Client) AsyncRequest(method string, req proto.Message, rep proto.Message, cb func(proto.Message, error)) {
-	sub := CombineSubject(c.opt.namespace, c.name, method, c.opt.id)
-	c.rpc.AsyncRequest(sub, req, rep, c.opt, cb)
+	if !c.opt.isSingleThreadMode() { // 非单线程模式不能异步请求
+		panic("call AsyncRequest only in single thread mode")
+	}
+	subject := CombineSubject(c.opt.namespace, c.name, method, c.opt.id)
+	c.asyncRequest(subject, req, rep, c.opt, cb)
+}
+
+// Publish 发布
+func (c *Client) publish(sub string, message proto.Message) error {
+	return c.enc.Publish(sub, message)
+}
+
+// Request 请求
+func (c *Client) request(ctx context.Context, sub string, req proto.Message, rep proto.Message) error {
+	return c.enc.RequestWithContext(ctx, sub, req, rep)
+}
+
+// AsyncRequest 异步请求
+func (c *Client) asyncRequest(sub string, req proto.Message, rep proto.Message, opt Options, cb func(proto.Message, error)) {
+	if !opt.isSingleThreadMode() { // 非单线程模式不能异步请求
+		panic("call AsyncRequest only in single thread mode")
+	}
+	go func() { // 不阻塞主线程
+		ctx, cancel := context.WithTimeout(context.Background(), opt.timeout)
+		defer cancel()
+		err := c.enc.RequestWithContext(ctx, sub, req, rep)
+		f := func() { // 回调
+			cb(rep, err)
+		}
+		select {
+		case opt.singleThreadCbChan <- f:
+		case <-ctx.Done():
+			log.Println("AsyncRequest", sub, err)
+		}
+	}()
 }

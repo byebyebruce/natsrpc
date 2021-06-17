@@ -8,55 +8,55 @@ import (
 
 	"github.com/byebyebruce/natsrpc"
 	"github.com/golang/protobuf/proto"
+	"github.com/nats-io/nats.go"
 )
 
 // RegisterGreeter
-func RegisterGreeter(rpc *natsrpc.NatsRPC, s Greeter, opts ...natsrpc.Option) (natsrpc.Service, error) {
-	return rpc.Register("testdata.Greeter", s, opts...)
-}
-
-// NewGreeterClient
-func NewGreeterClient(rpc *natsrpc.NatsRPC, opts ...natsrpc.Option) (*GreeterClient, error) {
-	c := &GreeterClient{
-		rpc: rpc,
-		opt: natsrpc.MakeOptions(opts...),
-	}
-	return c, nil
+func RegisterGreeter(server *natsrpc.Server, s Greeter, opts ...natsrpc.Option) (natsrpc.Service, error) {
+	return server.Register("testdata.Greeter", s, opts...)
 }
 
 // GreeterClient
 type GreeterClient struct {
-	rpc *natsrpc.NatsRPC
-	opt natsrpc.Options
+	c *natsrpc.Client
+}
+
+// NewGreeterClient
+func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.Option) (*GreeterClient, error) {
+	c, err := natsrpc.NewClient(enc, "testdata.Greeter", opts...)
+	if err != nil {
+		return nil, err
+	}
+	ret := &GreeterClient{
+		c: c,
+	}
+	return ret, nil
 }
 
 // ID 根据ID获得client
 func (c *GreeterClient) ID(id interface{}) *GreeterClient {
-	ret := *c
-	natsrpc.WithID(id)(&ret.opt)
-	return &ret
+	return &GreeterClient{
+		c: c.c.ID(id),
+	}
 }
 
 // PublishHiAll
 func (c *GreeterClient) PublishHiAll(req *pb.HelloRequest) error {
-	sub := natsrpc.CombineSubject(c.opt.Namespace(), "testdata.Greeter.HiAll", c.opt.ID())
-	return c.rpc.Publish(sub, req, c.opt)
+	return c.c.Publish("HiAll", req)
 }
 
 // RequestAreYouOK
 func (c *GreeterClient) RequestAreYouOK(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
-	sub := natsrpc.CombineSubject(c.opt.Namespace(), "testdata.Greeter.AreYouOK", c.opt.ID())
 	rep := &pb.HelloReply{}
-	err := c.rpc.Request(ctx, sub, req, rep, c.opt)
+	err := c.c.Request(ctx, "AreYouOK", req, rep)
 	return rep, err
 }
 
 // AsyncRequestAreYouOK
 func (c *GreeterClient) AsyncRequestAreYouOK(req *pb.HelloRequest, cb func(*pb.HelloReply, error)) {
-	sub := natsrpc.CombineSubject(c.opt.Namespace(), "testdata.Greeter.AreYouOK", c.opt.ID())
 	rep := &pb.HelloReply{}
 	f := func(_ proto.Message, err error) {
 		cb(rep, err)
 	}
-	c.rpc.AsyncRequest(sub, req, rep, c.opt, f)
+	c.c.AsyncRequest("AreYouOK", req, rep, f)
 }

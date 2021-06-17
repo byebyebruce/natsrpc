@@ -48,7 +48,7 @@ func main() {
 	op := []natsrpc.Option{natsrpc.WithNamespace("bench_pub")}
 
 	for i := 0; i < *sn; i++ {
-		server, err := natsrpc.NewNatsRPCWithConfig(cfg, nats.Name(fmt.Sprintf("bench_pub_server_%d", i)))
+		server, err := natsrpc.NewServerWithConfig(cfg, nats.Name(fmt.Sprintf("bench_pub_server_%d", i)))
 		if nil != err {
 			panic(err)
 		}

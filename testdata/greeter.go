@@ -1,4 +1,4 @@
-//go:generate natsrpc_codegen -s=greeter.go
+//go:generate go run ../cmd/natsrpc_codegen -s=greeter.go
 package testdata
 
 import (

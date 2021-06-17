@@ -30,11 +30,11 @@ func main() {
 	cfg := natsrpc.Config{
 		Server: *server,
 	}
-	rpc, err := natsrpc.NewNatsRPCWithConfig(cfg, nats.Name("example_client"+*id))
+	enc, err := natsrpc.NewNATSConn(cfg, nats.Name("example_client"+*id))
 	if nil != err {
 		panic(err)
 	}
-	defer rpc.Close()
+	defer enc.Close()
 
 	opt := []natsrpc.Option{natsrpc.WithNamespace(*namespace),
 		natsrpc.WithGroup(*group),
@@ -50,7 +50,7 @@ func main() {
 			}
 		}()
 	}
-	client, err := testdata.NewGreeterClient(rpc, opt...)
+	client, err := testdata.NewGreeterClient(enc, opt...)
 	if nil != err {
 		panic(err)
 	}

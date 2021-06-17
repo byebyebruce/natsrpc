@@ -49,7 +49,7 @@ func main() {
 	var serviceName = fmt.Sprintf("%d", time.Now().UnixNano())
 
 	for i := 0; i < *sn; i++ {
-		server, err := natsrpc.NewNatsRPCWithConfig(cfg, nats.Name(fmt.Sprintf("bench_req_server_%d", i)))
+		server, err := natsrpc.NewServerWithConfig(cfg, nats.Name(fmt.Sprintf("bench_req_server_%d", i)))
 		if nil != err {
 			panic(err)
 		}
