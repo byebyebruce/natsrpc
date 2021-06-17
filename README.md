@@ -11,30 +11,20 @@ NATSRPC 是一个基于nats的简单rpc
 
 ## 使用
 1. 引用包 `go get github.com/byebyebruce/natsrpc`
-2. 编译代码生成器 go get github.com/byebyebruce/natsrpc/cmd
-3. 编写service
-```go
-package helloworld
+2. 编译代码生成器 `go get github.com/byebyebruce/natsrpc/cmd/natsrpc_codegen`
+3. 定义服务接口[示例](testdata/greeter.go)
 
-import (
-	"context"
-
-	"github.com/byebyebruce/natsrpc/testdata/pb"
-)
-
-// Greeter hello
-type Greeter interface {
-	HiAll(ctx context.Context, req *pb.HelloRequest)
-	AreYouOK(ctx context.Context, req *pb.HelloRequest, repl *pb.HelloReply)
-}
-```
 4. 生成代码
 ```shell
-natsrpc_codegen -s="testdata/greeter.go"
+natsrpc_codegen -s="greeter.go"
 ```
-
+5. 写服务实现[示例](example/example_greeter.go)
 ## 示例
 * [Client](example/client/main.go)
 * [Server](example/server/main.go)
-* [API](example/api/greeter.go)
 > 运行示例需要部署gnatsd，如果没有可以临时启动`go run cmd/simple_natsserver/main.go`
+
+## 压测工具
+1. 广播 `go run bench/pub/main.go -server=nats://127.0.0.1:4222`
+
+2. 请求 `go run bench/req/main.go -server=nats://127.0.0.1:4222`
