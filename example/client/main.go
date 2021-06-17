@@ -8,11 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-
 	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/example"
-	helloworld "github.com/byebyebruce/natsrpc/testdata"
+	"github.com/byebyebruce/natsrpc/testdata"
+	"github.com/byebyebruce/natsrpc/testdata/pb"
+	"github.com/nats-io/nats.go"
 )
 
 var (
@@ -31,11 +30,11 @@ func main() {
 	cfg := natsrpc.Config{
 		Server: *server,
 	}
-	conn, err := natsrpc.NewNATSConn(cfg, "example_client"+*id)
+	rpc, err := natsrpc.NewNatsRPCWithConfig(cfg, nats.Name("example_client"+*id))
 	if nil != err {
 		panic(err)
 	}
-	defer conn.Close()
+	defer rpc.Close()
 
 	opt := []natsrpc.Option{natsrpc.WithNamespace(*namespace),
 		natsrpc.WithGroup(*group),
@@ -51,7 +50,7 @@ func main() {
 			}
 		}()
 	}
-	client, err := natsrpc.NewClient(conn, &example.ExampleService{}, opt...)
+	client, err := testdata.NewGreeterClient(rpc, opt...)
 	if nil != err {
 		panic(err)
 	}
@@ -71,33 +70,27 @@ func main() {
 					break
 				}
 
-				req := &helloworld.HelloRequest{
+				req := &pb.HelloRequest{
 					Name: fmt.Sprintf("hello %d", next),
 				}
 
-				reply := &helloworld.HelloReply{}
 				if *singleThread {
 					wg.Add(1)
-					client.ID(*id).AsyncRequest(req, reply, func(message proto.Message, err error) {
+					client.ID(*id).AsyncRequestAreYouOK(req, func(reply *pb.HelloReply, err error) {
 						defer wg.Done()
 						fmt.Println("begin AsyncRequest", reply.Message)
 						if nil != err {
 							panic(err)
 						}
-						if reply.Message != req.Name {
-							panic("reply.Message")
-						}
 						fmt.Println("end AsyncRequest", reply.Message)
 					})
 
 				} else {
-					if err := client.ID(*id).Request(req, reply); nil != err {
+					if reply, err := client.ID(*id).RequestAreYouOK(nil, req); nil != err {
 						panic(err)
+					} else {
+						fmt.Println("reply", reply.Message)
 					}
-					if reply.Message != req.Name {
-						panic("reply.Message")
-					}
-					fmt.Println("reply", reply.Message)
 				}
 
 			}

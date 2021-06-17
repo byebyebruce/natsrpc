@@ -107,5 +107,5 @@ func genMethod(val reflect.Value, m reflect.Method) (*method, error) {
 			return respVal.Interface(), nil
 		}
 	}
-	return &method{handle: h, name: typeName(reqType)}, nil
+	return &method{handle: h, name: m.Name}, nil
 }
