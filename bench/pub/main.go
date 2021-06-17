@@ -9,18 +9,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/nats-io/nats.go"
-
-	"github.com/byebyebruce/natsrpc/testdata/pb"
-
 	"github.com/byebyebruce/natsrpc"
+	"github.com/byebyebruce/natsrpc/testdata/pb"
+	"github.com/nats-io/nats.go"
 )
 
 var (
 	server    = flag.String("server", "nats://127.0.0.1:4222", "nats server")
 	sn        = flag.Int("s", 0, "server count,0:cpu num")
 	cn        = flag.Int("c", 0, "client count,0:cpu num")
-	totalTime = flag.Int("t", 20, "total time")
+	totalTime = flag.Int("t", 10, "total time")
 )
 
 var n int32
@@ -45,6 +43,8 @@ func main() {
 		Server: *server,
 	}
 
+	var serviceName = fmt.Sprintf("å%d", time.Now().UnixNano())
+
 	op := []natsrpc.Option{natsrpc.WithNamespace("bench_pub")}
 
 	for i := 0; i < *sn; i++ {
@@ -53,7 +53,7 @@ func main() {
 			panic(err)
 		}
 		defer server.Close()
-		_, err = server.Register(&BenchNotifyService{}, op...)
+		_, err = server.Register(serviceName, &BenchNotifyService{}, op...)
 		if nil != err {
 			panic(err)
 		}
@@ -69,7 +69,7 @@ func main() {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			client, err := natsrpc.NewClientWithConfig(cfg, fmt.Sprintf("bench_pub_client_%d", idx), &BenchNotifyService{}, op...)
+			client, err := natsrpc.NewClientWithConfig(cfg, serviceName, op...)
 			if nil != err {
 				panic(err)
 			}

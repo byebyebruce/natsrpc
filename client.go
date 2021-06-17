@@ -16,29 +16,24 @@ type Client struct {
 }
 
 // NewClient 构造器
-// TODO 这里的service只提供了一个服务名字
-func NewClient(rpc *NatsRPC, service interface{}, opts ...Option) (*Client, error) {
+func NewClient(rpc *NatsRPC, name string, opts ...Option) (*Client, error) {
 	opt := MakeOptions(opts...)
 	c := &Client{
 		rpc: rpc,
 		opt: opt,
 	}
 
-	ser, err := newService(service, c.opt)
-	if nil != err {
-		return nil, err
-	}
-	c.name = ser.name
+	c.name = name
 	return c, nil
 }
 
 // NewClientWithConfig
-func NewClientWithConfig(cfg Config, name string, s interface{}, opts ...Option) (*Client, error) {
+func NewClientWithConfig(cfg Config, name string, opts ...Option) (*Client, error) {
 	rpc, err := NewNatsRPCWithConfig(cfg, nats.Name(name))
 	if nil != err {
 		return nil, err
 	}
-	return NewClient(rpc, s, opts...)
+	return NewClient(rpc, name, opts...)
 }
 
 // ID 根据ID获得client
@@ -60,18 +55,18 @@ func (c *Client) singleThreadMode() bool {
 
 // Publish 发布
 func (c *Client) Publish(method string, req proto.Message) error {
-	sub := CombineSubject(c.name, method, c.opt.id)
+	sub := CombineSubject(c.opt.namespace, c.name, method, c.opt.id)
 	return c.rpc.Publish(sub, req, c.opt)
 }
 
 // Request 请求
 func (c *Client) Request(ctx context.Context, method string, req proto.Message, rep proto.Message) error {
-	sub := CombineSubject(c.name, method, c.opt.id)
+	sub := CombineSubject(c.opt.namespace, c.name, method, c.opt.id)
 	return c.rpc.Request(ctx, sub, req, rep, c.opt)
 }
 
 // AsyncRequest 异步请求
 func (c *Client) AsyncRequest(method string, req proto.Message, rep proto.Message, cb func(proto.Message, error)) {
-	sub := CombineSubject(c.name, method, c.opt.id)
+	sub := CombineSubject(c.opt.namespace, c.name, method, c.opt.id)
 	c.rpc.AsyncRequest(sub, req, rep, c.opt, cb)
 }

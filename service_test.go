@@ -3,8 +3,9 @@ package natsrpc
 import (
 	"context"
 	"fmt"
-	"github.com/byebyebruce/natsrpc/testdata/pb"
 	"testing"
+
+	"github.com/byebyebruce/natsrpc/testdata/pb"
 )
 
 type A struct {
@@ -20,9 +21,16 @@ func (a *A) Func2(ctx context.Context, req *pb.HelloReply, repl *pb.HelloReply) 
 }
 
 func Test_newService(t *testing.T) {
-	s, err := newService(&A{}, MakeOptions())
+	namespace := "test"
+	serviceName := "natsrpc.A"
+	opt := MakeOptions()
+	WithNamespace(namespace)(&opt)
+	s, err := newService(serviceName, &A{}, opt)
+
 	if nil != err {
 		t.Error(err)
 	}
-	fmt.Println(s)
+	if s.name != fmt.Sprintf("%s.%s", namespace, serviceName) {
+		t.Error("name error")
+	}
 }

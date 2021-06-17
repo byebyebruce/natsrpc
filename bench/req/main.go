@@ -46,13 +46,15 @@ func main() {
 	op := []natsrpc.Option{natsrpc.WithNamespace("bench_req"),
 		natsrpc.WithGroup("mygroup")}
 
+	var serviceName = fmt.Sprintf("%d", time.Now().UnixNano())
+
 	for i := 0; i < *sn; i++ {
 		server, err := natsrpc.NewNatsRPCWithConfig(cfg, nats.Name(fmt.Sprintf("bench_req_server_%d", i)))
 		if nil != err {
 			panic(err)
 		}
 		defer server.Close()
-		_, err = server.Register(&BenchReqService{}, op...)
+		_, err = server.Register(serviceName, &BenchReqService{}, op...)
 		if nil != err {
 			panic(err)
 		}
@@ -69,7 +71,7 @@ func main() {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			client, err := natsrpc.NewClientWithConfig(cfg, fmt.Sprintf("bench_req_client_%d", idx), &BenchReqService{}, op...)
+			client, err := natsrpc.NewClientWithConfig(cfg, serviceName, op...)
 			if nil != err {
 				panic(err)
 			}

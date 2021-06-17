@@ -83,9 +83,6 @@ func main() {
 						if nil != err {
 							panic(err)
 						}
-						if reply.Message != req.Name {
-							panic("reply.Message")
-						}
 						fmt.Println("end AsyncRequest", reply.Message)
 					})
 

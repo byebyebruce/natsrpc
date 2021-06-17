@@ -75,11 +75,11 @@ func (rpc *NatsRPC) unregister(service *service) bool {
 }
 
 // Register 注册服务
-func (rpc *NatsRPC) Register(serv interface{}, opts ...Option) (Service, error) {
+func (rpc *NatsRPC) Register(name string, serv interface{}, opts ...Option) (Service, error) {
 	opt := MakeOptions(opts...)
 
 	// new 一个服务
-	service, err := newService(serv, opt)
+	service, err := newService(name, serv, opt)
 	if nil != err {
 		return nil, err
 	}

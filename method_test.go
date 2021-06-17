@@ -23,9 +23,15 @@ func (a *MethodErrorTest) Func1(repl *pb.HelloReply) {
 }
 
 func Test_Parse(t *testing.T) {
-	_, err := parseMethod(&MethodTest{})
+	m, err := parseMethod(&MethodTest{})
 	if nil != err {
 		t.Error(err)
+	}
+	if 1 != len(m) {
+		t.Error("method number error")
+	}
+	if m[0].name != "Func1" {
+		t.Error("name error")
 	}
 	_, err = parseMethod(&MethodErrorTest{})
 	if nil == err {

@@ -18,7 +18,7 @@ import (
 
 // Register{{.Name}} {{.Comment}}
 func Register{{.Name}}(rpc *natsrpc.NatsRPC, s {{$.Package}}.{{.Name}}, opts ...natsrpc.Option) (natsrpc.Service, error) {
-	return rpc.Register(s, opts...)
+	return rpc.Register("{{$.Package}}.{{.Name}}", s, opts...)
 }
 
 // New{{.Name}}Client {{.Comment}}
@@ -52,7 +52,7 @@ func (c *{{.Name}}Client) ID(id interface{}) *{{.Name}}Client {
 	{{- if eq $paramLength 2 -}}
 		// Publish{{.Name}} {{.Comment}}
 		func (c *{{$clientName}}Client) Publish{{.Name}}({{ $req.Name }} *{{ $req.Type -}}) error {
-			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$clientName}}.{{.Name}}", c.opt.ID())
+			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$.Package}}.{{$clientName}}.{{.Name}}", c.opt.ID())
 			return c.rpc.Publish(sub, {{ $req.Name }}, c.opt)
 		}
 	{{- end}}
@@ -62,7 +62,7 @@ func (c *{{.Name}}Client) ID(id interface{}) *{{.Name}}Client {
 
 		// Request{{.Name}} {{.Comment}}
 		func (c *{{$clientName}}Client) Request{{.Name}}(ctx context.Context, {{ $req.Name }} *{{ $req.Type }}) (*{{ $rep.Type }}, error) {
-			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$clientName}}.{{.Name}}", c.opt.ID())
+			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$.Package}}.{{$clientName}}.{{.Name}}", c.opt.ID())
 			rep := &{{ $rep.Type }}{}
 			err := c.rpc.Request(ctx, sub, {{ $req.Name }}, rep, c.opt)
 			return rep, err
@@ -70,7 +70,7 @@ func (c *{{.Name}}Client) ID(id interface{}) *{{.Name}}Client {
 
 		// AsyncRequest{{.Name}} {{.Comment}}
 		func (c *{{$clientName}}Client) AsyncRequest{{.Name}}({{ $req.Name }} *{{ $req.Type }}, cb func(*{{ $rep.Type }}, error)){
-			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$clientName}}.{{.Name}}", c.opt.ID())
+			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$.Package}}.{{$clientName}}.{{.Name}}", c.opt.ID())
 			rep := &{{ $rep.Type }}{}
 			f := func(_ proto.Message, err error) {
 				cb(rep, err)

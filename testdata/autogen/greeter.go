@@ -13,7 +13,7 @@ import (
 
 // RegisterGreeter
 func RegisterGreeter(rpc *natsrpc.NatsRPC, s helloworld.Greeter, opts ...natsrpc.Option) (natsrpc.Service, error) {
-	return rpc.Register(s, opts...)
+	return rpc.Register("helloworld.Greeter", s, opts...)
 }
 
 // NewGreeterClient
@@ -40,13 +40,13 @@ func (c *GreeterClient) ID(id interface{}) *GreeterClient {
 
 // PublishHiAll
 func (c *GreeterClient) PublishHiAll(req *pb.HelloRequest) error {
-	sub := natsrpc.CombineSubject(c.opt.Namespace(), "Greeter.HiAll", c.opt.ID())
+	sub := natsrpc.CombineSubject(c.opt.Namespace(), "helloworld.Greeter.HiAll", c.opt.ID())
 	return c.rpc.Publish(sub, req, c.opt)
 }
 
 // RequestAreYouOK
 func (c *GreeterClient) RequestAreYouOK(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
-	sub := natsrpc.CombineSubject(c.opt.Namespace(), "Greeter.AreYouOK", c.opt.ID())
+	sub := natsrpc.CombineSubject(c.opt.Namespace(), "helloworld.Greeter.AreYouOK", c.opt.ID())
 	rep := &pb.HelloReply{}
 	err := c.rpc.Request(ctx, sub, req, rep, c.opt)
 	return rep, err
@@ -54,7 +54,7 @@ func (c *GreeterClient) RequestAreYouOK(ctx context.Context, req *pb.HelloReques
 
 // AsyncRequestAreYouOK
 func (c *GreeterClient) AsyncRequestAreYouOK(req *pb.HelloRequest, cb func(*pb.HelloReply, error)) {
-	sub := natsrpc.CombineSubject(c.opt.Namespace(), "Greeter.AreYouOK", c.opt.ID())
+	sub := natsrpc.CombineSubject(c.opt.Namespace(), "helloworld.Greeter.AreYouOK", c.opt.ID())
 	rep := &pb.HelloReply{}
 	f := func(_ proto.Message, err error) {
 		cb(rep, err)

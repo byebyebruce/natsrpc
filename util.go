@@ -4,7 +4,6 @@ import (
 	"go/ast"
 	"log"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -78,11 +77,6 @@ func NewNATSConn(cfg Config, option ...nats.Option) (*nats.EncodedConn, error) {
 		return nil, err1
 	}
 	return enc, nil
-}
-
-// typeName 类型名字
-func typeName(p reflect.Type) string {
-	return strings.Trim(p.String(), "*")
 }
 
 // CombineSubject 组合字符串成subject
