@@ -23,14 +23,16 @@ func (a *A) Func2(ctx context.Context, req *pb.HelloReply, repl *pb.HelloReply) 
 func Test_newService(t *testing.T) {
 	namespace := "test"
 	serviceName := "natsrpc.A"
-	opt := MakeOptions()
-	WithNamespace(namespace)(&opt)
-	s, err := newService(serviceName, &A{}, opt)
+	id := "1"
+	s, err := newService(serviceName, &A{}, WithNamespace(namespace), WithID(id))
 
 	if nil != err {
 		t.Error(err)
 	}
-	if s.name != fmt.Sprintf("%s.%s", namespace, serviceName) {
-		t.Error("name error")
+
+	for k, v := range s.methods {
+		if CombineSubject(namespace, serviceName, v.name, id) != k {
+			t.Error("subject not match")
+		}
 	}
 }
