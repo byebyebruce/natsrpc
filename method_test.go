@@ -4,28 +4,34 @@ import (
 	"context"
 	"testing"
 
-	helloworld "github.com/byebyebruce/natsrpc/testdata"
+	"github.com/byebyebruce/natsrpc/testdata/pb"
 	"github.com/golang/protobuf/proto"
 )
 
 type MethodTest struct {
 }
 
-func (a *MethodTest) Func1(ctx context.Context, req *helloworld.HelloRequest, repl *helloworld.HelloReply) {
+func (a *MethodTest) Func1(ctx context.Context, req *pb.HelloRequest, repl *pb.HelloReply) {
 	repl.Message = req.Name
 }
 
 type MethodErrorTest struct {
 }
 
-func (a *MethodErrorTest) Func1(repl *helloworld.HelloReply) {
+func (a *MethodErrorTest) Func1(repl *pb.HelloReply) {
 
 }
 
 func Test_Parse(t *testing.T) {
-	_, err := parseMethod(&MethodTest{})
+	m, err := parseMethod(&MethodTest{})
 	if nil != err {
 		t.Error(err)
+	}
+	if 1 != len(m) {
+		t.Error("method number error")
+	}
+	if m[0].name != "Func1" {
+		t.Error("name error")
 	}
 	_, err = parseMethod(&MethodErrorTest{})
 	if nil == err {
@@ -39,7 +45,7 @@ func TestMethod_Handle(t *testing.T) {
 		t.Error(err)
 	}
 	param := "hello"
-	a := &helloworld.HelloRequest{Name: param}
+	a := &pb.HelloRequest{Name: param}
 	b, _ := proto.Marshal(a)
 	for _, v := range ret {
 		reply, err := v.handle(context.Background(), b)
@@ -47,7 +53,7 @@ func TestMethod_Handle(t *testing.T) {
 			t.Error(err)
 		}
 
-		if reply.(*helloworld.HelloReply).Message != param {
+		if reply.(*pb.HelloReply).Message != param {
 			t.Error("reply.Message!=param")
 		}
 	}
@@ -59,7 +65,7 @@ func BenchmarkMethod_Handle(b *testing.B) {
 		b.Error(err)
 	}
 	param := "hello"
-	a := &helloworld.HelloRequest{Name: param}
+	a := &pb.HelloRequest{Name: param}
 	bs, _ := proto.Marshal(a)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

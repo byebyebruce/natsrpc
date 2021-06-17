@@ -9,9 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/nats-io/nats.go"
+	"github.com/byebyebruce/natsrpc/testdata/pb"
 
-	helloworld "github.com/byebyebruce/natsrpc/testdata"
+	"github.com/nats-io/nats.go"
 
 	"github.com/byebyebruce/natsrpc"
 )
@@ -20,13 +20,13 @@ var (
 	server    = flag.String("server", "nats://127.0.0.1:4222", "nats server")
 	sn        = flag.Int("s", 0, "server count,0:cpu num")
 	cn        = flag.Int("c", 0, "client count,0:cpu num")
-	totalTime = flag.Int("t", 30, "total time")
+	totalTime = flag.Int("t", 10, "total time")
 )
 
 type BenchReqService struct {
 }
 
-func (a *BenchReqService) Func2(ctx context.Context, req *helloworld.HelloRequest, repl *helloworld.HelloReply) {
+func (a *BenchReqService) Request(ctx context.Context, req *pb.HelloRequest, repl *pb.HelloReply) {
 	repl.Message = req.Name
 }
 
@@ -46,13 +46,15 @@ func main() {
 	op := []natsrpc.Option{natsrpc.WithNamespace("bench_req"),
 		natsrpc.WithGroup("mygroup")}
 
+	var serviceName = fmt.Sprintf("%d", time.Now().UnixNano())
+
 	for i := 0; i < *sn; i++ {
-		server, err := natsrpc.NewServerWithConfig(cfg, nats.Name(fmt.Sprintf("bench_req_server_%d", i)))
+		server, err := natsrpc.NewNatsRPCWithConfig(cfg, nats.Name(fmt.Sprintf("bench_req_server_%d", i)))
 		if nil != err {
 			panic(err)
 		}
 		defer server.Close()
-		_, err = server.Register(&BenchReqService{}, op...)
+		_, err = server.Register(serviceName, &BenchReqService{}, op...)
 		if nil != err {
 			panic(err)
 		}
@@ -64,12 +66,12 @@ func main() {
 
 	fmt.Println("start...")
 	wg := sync.WaitGroup{}
-	req := &helloworld.HelloRequest{}
+	req := &pb.HelloRequest{}
 	for i := 0; i <= *cn; i++ {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			client, err := natsrpc.NewClientWithConfig(cfg, fmt.Sprintf("bench_req_client_%d", idx), &BenchReqService{}, op...)
+			client, err := natsrpc.NewClientWithConfig(cfg, serviceName, op...)
 			if nil != err {
 				panic(err)
 			}
@@ -82,7 +84,7 @@ func main() {
 				default:
 				}
 				atomic.AddUint32(&totalReq, 1)
-				if err := client.Request(req, &helloworld.HelloReply{}); nil != err {
+				if err := client.Request(nil, "Request", req, &pb.HelloReply{}); nil != err {
 					atomic.AddUint32(&totalFailed, 1)
 					continue
 				}

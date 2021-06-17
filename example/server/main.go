@@ -8,11 +8,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/nats-io/nats.go"
-
-	"github.com/byebyebruce/natsrpc/example/service"
+	"github.com/byebyebruce/natsrpc/testdata"
 
 	"github.com/byebyebruce/natsrpc"
+	"github.com/byebyebruce/natsrpc/example"
+	"github.com/nats-io/nats.go"
 )
 
 var (
@@ -30,7 +30,7 @@ func main() {
 		Server: *server,
 	}
 
-	server, err := natsrpc.NewServerWithConfig(cfg, nats.Name("example_server"+*id))
+	server, err := natsrpc.NewNatsRPCWithConfig(cfg, nats.Name("example_server"+*id))
 	if nil != err {
 		panic(err)
 	}
@@ -52,7 +52,7 @@ func main() {
 		opts = append(opts, natsrpc.WithSingleThreadCallback(fnChan))
 	}
 
-	s, err := server.Register(&example.ExampleService{}, opts...)
+	s, err := testdata.RegisterGreeter(server, &example.ExampleGreeter{}, opts...)
 	if nil != err {
 		panic(err)
 	}

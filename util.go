@@ -1,25 +1,16 @@
 package natsrpc
 
 import (
+	"fmt"
 	"go/ast"
 	"log"
 	"reflect"
-	"strings"
 	"time"
 
+	"github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/encoders/protobuf"
 )
-
-// Config 配置
-type Config struct {
-	Server         string `xml:"server" yaml:"server"`                   // nats://127.0.0.1:4222,nats://127.0.0.1:4223
-	User           string `xml:"user" yaml:"user"`                       // 用户名
-	Pwd            string `xml:"pwd" yaml:"pwd"`                         // 密码
-	RequestTimeout int32  `xml:"request_timeout" yaml:"request_timeout"` // 请求超时（秒）
-	ReconnectWait  int64  `xml:"reconnect_wait" yaml:"reconnect_wait"`   // 重连间隔
-	MaxReconnects  int32  `xml:"max_reconnects" yaml:"max_reconnects"`   // 重连次数
-}
 
 // isExportedOrBuiltinType 是导出或内置类型
 func isExportedOrBuiltinType(t reflect.Type) bool {
@@ -80,13 +71,8 @@ func NewNATSConn(cfg Config, option ...nats.Option) (*nats.EncodedConn, error) {
 	return enc, nil
 }
 
-// typeName 类型名字
-func typeName(p reflect.Type) string {
-	return strings.Trim(p.String(), "*")
-}
-
-// combineSubject 组合字符串成subject
-func combineSubject(prefix string, s ...string) string {
+// CombineSubject 组合字符串成subject
+func CombineSubject(prefix string, s ...string) string {
 	ret := prefix
 	for _, v := range s {
 		if "" == v {
@@ -95,4 +81,37 @@ func combineSubject(prefix string, s ...string) string {
 		ret += "." + v
 	}
 	return ret
+}
+
+// RunSimpleNatsServer run a simple nats server
+func RunSimpleNatsServer(opts *server.Options) *server.Server {
+	var defaultTestOptions = server.Options{
+		Host:                  "127.0.0.1",
+		Port:                  4222,
+		NoLog:                 false,
+		NoSigs:                true,
+		MaxControlLine:        4096,
+		DisableShortFirstPing: true,
+	}
+
+	if opts == nil {
+		opts = &defaultTestOptions
+	}
+	// Optionally override for individual debugging of tests
+	//opts.Trace = true
+	s, err := server.NewServer(opts)
+	if err != nil || s == nil {
+		panic(fmt.Sprintf("No NATS Server object returned: %v", err))
+	}
+
+	s.ConfigureLogger()
+
+	// Run server in Go routine.
+	go s.Start()
+
+	// Wait for accept loop(s) to be started
+	if !s.ReadyForConnections(10 * time.Second) {
+		panic("Unable to start NATS Server in Go Routine")
+	}
+	return s
 }
