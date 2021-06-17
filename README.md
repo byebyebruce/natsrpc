@@ -1,22 +1,40 @@
 # NATSRPC
 NATSRPC 是一个基于nats的简单rpc
 
-## FEATURE
-* 使用非常简单，不需要服务发现
-* 使用protobuf定义消息类型
+## Feature
+* 使用简单，不需要服务发现
+* 代码生成器生成client和server代码
 * 支持空间隔离
-* 支持定向发送也支持负载均衡(nats内置的同组内随机)
-* 不用手动定义sub(使用的req的类型名，同时问题是同service只能一个方法用这个类型。后面考虑用代码生产)
+* 支持定向发送也支持负载均衡(nats的同组内随机)
+* 不用手动定义subject
 * 支持单协程回调(适用于逻辑单协程模型)
 
 ## 使用
-`go get github.com/byebyebruce/natsrpc`
+1. 引用包 `go get github.com/byebyebruce/natsrpc`
+2. 编译代码生成器 go get github.com/byebyebruce/natsrpc/cmd
+3. 编写service
+```go
+package helloworld
+
+import (
+	"context"
+
+	"github.com/byebyebruce/natsrpc/testdata/pb"
+)
+
+// Greeter hello
+type Greeter interface {
+	HiAll(ctx context.Context, req *pb.HelloRequest)
+	AreYouOK(ctx context.Context, req *pb.HelloRequest, repl *pb.HelloReply)
+}
+```
+4. 生成代码
+```shell
+natsrpc_codegen -s="testdata/greeter.go"
+```
 
 ## 示例
 * [Client](example/client/main.go)
 * [Server](example/server/main.go)
-* [Service](example/example_service.go)
-> 运行示例需要部署gnatsd，如果没有可以临时启动`go run example/nats_server/main/main.go`
-
-## TODO
-[ ] 自动生成client代码
+* [API](example/api/greeter.go)
+> 运行示例需要部署gnatsd，如果没有可以临时启动`go run cmd/simple_natsserver/main.go`

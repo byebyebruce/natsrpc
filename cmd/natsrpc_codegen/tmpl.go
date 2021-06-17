@@ -17,7 +17,7 @@ import (
 {{- range .Service}}
 
 // Register{{.Name}} {{.Comment}}
-func Register{{.Name}}(rpc *natsrpc.NatsRPC, s {{$.Package}}.{{.Name}}, opts ...natsrpc.Option) (natsrpc.Service, error) {
+func Register{{.Name}}(rpc *natsrpc.NatsRPC, s {{.Name}}, opts ...natsrpc.Option) (natsrpc.Service, error) {
 	return rpc.Register("{{$.Package}}.{{.Name}}", s, opts...)
 }
 

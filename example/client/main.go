@@ -8,9 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	service "github.com/byebyebruce/natsrpc/testdata/autogen"
-
 	"github.com/byebyebruce/natsrpc"
+	"github.com/byebyebruce/natsrpc/testdata"
 	"github.com/byebyebruce/natsrpc/testdata/pb"
 	"github.com/nats-io/nats.go"
 )
@@ -51,7 +50,7 @@ func main() {
 			}
 		}()
 	}
-	client, err := service.NewGreeterClient(rpc, opt...)
+	client, err := testdata.NewGreeterClient(rpc, opt...)
 	if nil != err {
 		panic(err)
 	}

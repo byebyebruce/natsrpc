@@ -8,12 +8,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/byebyebruce/natsrpc/example/api"
-	service "github.com/byebyebruce/natsrpc/testdata/autogen"
-
-	"github.com/nats-io/nats.go"
+	"github.com/byebyebruce/natsrpc/testdata"
 
 	"github.com/byebyebruce/natsrpc"
+	"github.com/byebyebruce/natsrpc/example"
+	"github.com/nats-io/nats.go"
 )
 
 var (
@@ -53,7 +52,7 @@ func main() {
 		opts = append(opts, natsrpc.WithSingleThreadCallback(fnChan))
 	}
 
-	s, err := service.RegisterGreeter(server, &api.Greeter{}, opts...)
+	s, err := testdata.RegisterGreeter(server, &example.ExampleGreeter{}, opts...)
 	if nil != err {
 		panic(err)
 	}

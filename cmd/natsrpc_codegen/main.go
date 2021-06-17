@@ -15,10 +15,9 @@ import (
 )
 
 var (
-	inPackage  = flag.String("ip", "", "go.mod package name")
-	src        = flag.String("s", "", "src file(the path must be relative to go.mod)")
-	dest       = flag.String("d", "", "dest file")
-	outPackage = flag.String("op", "", "out package name")
+	src = flag.String("s", "", "src file(the path must be relative to go.mod)")
+	//dest       = flag.String("d", "", "dest file")
+	//outPackage = flag.String("op", "", "out package name")
 )
 
 type TmplParam struct {
@@ -65,7 +64,7 @@ func GenFile(tmpText string, data interface{}, file string) error {
 		return err
 	}
 
-	if b, err := format.Source([]byte(src)); nil != err {
+	if b, err := format.Source(src); nil != err {
 		fmt.Println(err)
 		return ioutil.WriteFile(file, src, os.ModePerm)
 	} else {
@@ -76,7 +75,7 @@ func GenFile(tmpText string, data interface{}, file string) error {
 func main() {
 	flag.Parse()
 
-	fset := token.NewFileSet() // positions are relative to fset
+	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, *src, nil, 0)
 	if err != nil {
 		panic(err)
@@ -86,11 +85,11 @@ func main() {
 	//ast.Print(fset, f)
 
 	tmpl := Tmpl{
-		OutPackage: *outPackage,
+		OutPackage: f.Name.Name,
 		Package:    f.Name.Name,
 	}
 
-	tmpl.Imports = append(tmpl.Imports, fmt.Sprintf("\"%s/%s\"", *inPackage, (*src)[:strings.LastIndex(*src, "/")]))
+	//tmpl.Imports = append(tmpl.Imports, fmt.Sprintf("\"%s/%s\"", *inPackage, (*src)[:strings.LastIndex(*src, "/")]))
 	for _, v := range f.Imports {
 		tmpl.Imports = append(tmpl.Imports, v.Path.Value)
 	}
@@ -137,7 +136,8 @@ func main() {
 		tmpl.Service = append(tmpl.Service, ts)
 	}
 
-	if err := GenFile(tFile, tmpl, *dest); nil != err {
+	dest := strings.Replace(*src, ".go", "", -1) + ".natsrpc.go"
+	if err := GenFile(tFile, tmpl, dest); nil != err {
 		panic(err)
 	}
 
