@@ -1,5 +1,16 @@
 # NATSRPC
-NATSRPC 是一个基于nats的简单rpc
+[![Go doc](https://img.shields.io/badge/go.dev-reference-brightgreen?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/byebyebruce/natsrpc)
+[![Go Report](https://goreportcard.com/badge/github.com/byebyebruce/natsrpc)](https://goreportcard.com/report/github.com/byebyebruce/natsrpc)
+
+```
+  _   _       _______ _____   _____  _____   _____ 
+ | \ | |   /\|__   __/ ____| |  __ \|  __ \ / ____|
+ |  \| |  /  \  | | | (___   | |__) | |__) | |     
+ | . ` | / /\ \ | |  \___ \  |  _  /|  ___/| |     
+ | |\  |/ ____ \| |  ____) | | | \ \| |    | |____ 
+ |_| \_/_/    \_\_| |_____/  |_|  \_\_|     \_____|
+```
+> NATSRPC 是一个基于nats的简单rpc
 
 ## Feature
 * 使用简单，不需要服务发现
