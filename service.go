@@ -13,14 +13,10 @@ type Service interface {
 	Close() bool
 }
 
-type rpc interface {
-	unregister(*service) bool
-}
-
 // service 服务
 type service struct {
-	name        string               // 名字 namespace.package.struct
-	rpc         rpc                  // rpc
+	name        string               // 名字 package.struct
+	server      *Server              // rpc
 	val         reflect.Value        // 值
 	subscribers []*nats.Subscription // nats订阅
 	methods     map[string]*method   // 方法集合
@@ -35,11 +31,13 @@ func (s *service) Name() string {
 // Close 关闭
 // 会取消所有订阅
 func (s *service) Close() bool {
-	return s.rpc.unregister(s)
+	return s.server.unregister(s)
 }
 
 // newService 创建服务
-func newService(name string, i interface{}, option Options) (*service, error) {
+func newService(name string, i interface{}, opts ...Option) (*service, error) {
+	opt := MakeOptions(opts...)
+
 	val := reflect.ValueOf(i)
 	if val.Kind() != reflect.Ptr {
 		return nil, fmt.Errorf("service must be a pointer")
@@ -59,17 +57,18 @@ func newService(name string, i interface{}, option Options) (*service, error) {
 
 	s := &service{
 		val:     val,
-		options: option,
+		options: opt,
 		methods: map[string]*method{},
-		name:    CombineSubject(option.namespace, name),
+		name:    name,
 	}
 
 	for _, v := range ms {
 		if _, ok := s.methods[v.name]; ok {
 			return nil, fmt.Errorf("service [%s] duplicate method [%s]", name, v.name)
 		}
-		sub := CombineSubject(s.name, v.name, s.options.id)
-		s.methods[sub] = v
+		// subject = namespace.package.service.method.id
+		subject := CombineSubject(s.options.namespace, s.name, v.name, s.options.id)
+		s.methods[subject] = v
 	}
 	return s, nil
 }

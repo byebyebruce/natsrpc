@@ -13,36 +13,39 @@ import (
 
 	"github.com/byebyebruce/natsrpc"
 	"github.com/golang/protobuf/proto"
+	"github.com/nats-io/nats.go"
 )
 {{- range .Service}}
 
 // Register{{.Name}} {{.Comment}}
-func Register{{.Name}}(rpc *natsrpc.NatsRPC, s {{.Name}}, opts ...natsrpc.Option) (natsrpc.Service, error) {
-	return rpc.Register("{{$.Package}}.{{.Name}}", s, opts...)
-}
-
-// New{{.Name}}Client {{.Comment}}
-func New{{.Name}}Client(rpc *natsrpc.NatsRPC, opts ...natsrpc.Option) (*{{.Name}}Client, error) {
-	c := &{{.Name}}Client{
-		rpc:rpc,
-		opt:natsrpc.MakeOptions(opts...),
-	}
-	return c, nil
+func Register{{.Name}}(server *natsrpc.Server, s {{.Name}}, opts ...natsrpc.Option) (natsrpc.Service, error) {
+	return server.Register("{{$.Package}}.{{.Name}}", s, opts...)
 }
 
 {{- $clientName := .Name}}
 
 // {{.Name}}Client
 type {{.Name}}Client struct {
-	rpc 	*natsrpc.NatsRPC
-	opt  	natsrpc.Options
+	c 		*natsrpc.Client
+}
+
+// New{{.Name}}Client
+func New{{.Name}}Client(enc *nats.EncodedConn, opts ...natsrpc.Option) (*{{.Name}}Client, error) {
+	c, err := natsrpc.NewClient(enc, "{{$.Package}}.{{.Name}}", opts...)
+	if err != nil {
+		return nil, err
+	}
+	ret := &{{.Name}}Client{
+		c:c,
+	}
+	return ret, nil
 }
 
 // ID 根据ID获得client
 func (c *{{.Name}}Client) ID(id interface{}) *{{.Name}}Client {
-	ret := *c
-	natsrpc.WithID(id)(&ret.opt)
-	return &ret
+	return &{{.Name}}Client{
+		c : c.c.ID(id),
+	}
 }
 
 {{ range .Method}}
@@ -52,8 +55,7 @@ func (c *{{.Name}}Client) ID(id interface{}) *{{.Name}}Client {
 	{{- if eq $paramLength 2 -}}
 		// Publish{{.Name}} {{.Comment}}
 		func (c *{{$clientName}}Client) Publish{{.Name}}({{ $req.Name }} *{{ $req.Type -}}) error {
-			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$.Package}}.{{$clientName}}.{{.Name}}", c.opt.ID())
-			return c.rpc.Publish(sub, {{ $req.Name }}, c.opt)
+			return c.c.Publish("{{.Name}}", {{ $req.Name }})
 		}
 	{{- end}}
 
@@ -62,20 +64,18 @@ func (c *{{.Name}}Client) ID(id interface{}) *{{.Name}}Client {
 
 		// Request{{.Name}} {{.Comment}}
 		func (c *{{$clientName}}Client) Request{{.Name}}(ctx context.Context, {{ $req.Name }} *{{ $req.Type }}) (*{{ $rep.Type }}, error) {
-			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$.Package}}.{{$clientName}}.{{.Name}}", c.opt.ID())
 			rep := &{{ $rep.Type }}{}
-			err := c.rpc.Request(ctx, sub, {{ $req.Name }}, rep, c.opt)
+			err := c.c.Request(ctx, "{{.Name}}", {{ $req.Name }}, rep)
 			return rep, err
 		}
 
 		// AsyncRequest{{.Name}} {{.Comment}}
 		func (c *{{$clientName}}Client) AsyncRequest{{.Name}}({{ $req.Name }} *{{ $req.Type }}, cb func(*{{ $rep.Type }}, error)){
-			sub := natsrpc.CombineSubject(c.opt.Namespace(),"{{$.Package}}.{{$clientName}}.{{.Name}}", c.opt.ID())
 			rep := &{{ $rep.Type }}{}
 			f := func(_ proto.Message, err error) {
 				cb(rep, err)
 			}
-			c.rpc.AsyncRequest(sub, {{ $req.Name }}, rep, c.opt, f)
+			c.c.AsyncRequest("{{.Name}}", {{ $req.Name }}, rep, f)
 		}
 	{{- end}}
 	
