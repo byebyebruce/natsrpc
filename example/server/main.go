@@ -40,7 +40,10 @@ func main() {
 		natsrpc.WithNamespace(*namespace),
 		natsrpc.WithGroup(*group),
 		natsrpc.WithID(*id),
-		natsrpc.WithTimeout(time.Second)}
+		natsrpc.WithTimeout(time.Second),
+		natsrpc.WithRecoveryHandler(func(e interface{}) {
+			fmt.Println(e)
+		})}
 
 	if *singleThreadService {
 		fnChan := make(chan func())

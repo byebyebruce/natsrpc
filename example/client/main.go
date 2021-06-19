@@ -39,7 +39,10 @@ func main() {
 	opt := []natsrpc.Option{natsrpc.WithNamespace(*namespace),
 		natsrpc.WithGroup(*group),
 		//natsrpc.WithID(*id),
-		natsrpc.WithTimeout(time.Second)}
+		natsrpc.WithTimeout(time.Second),
+		natsrpc.WithRecoveryHandler(func(e interface{}) {
+			fmt.Println(e)
+		})}
 
 	if *singleThread {
 		singleThreadChan := make(chan func())

@@ -104,6 +104,11 @@ func (s *Server) subscribeMethod(service *service) error {
 		m := v
 		cb := func(msg *nats.Msg) {
 			go func() {
+				if service.options.recoverHnadler != nil {
+					if e := recover(); e != nil {
+						service.options.recoverHnadler(e)
+					}
+				}
 				ctx, cancel := context.WithTimeout(context.Background(), service.options.timeout)
 				defer cancel()
 
