@@ -11,8 +11,15 @@ import (
 type MethodTest struct {
 }
 
-func (a *MethodTest) Func1(ctx context.Context, req *pb.HelloRequest, repl *pb.HelloReply) {
-	repl.Message = req.Name
+func (a *MethodTest) Publish(ctx context.Context, req *pb.HelloRequest) {
+	_ = req.Name
+}
+
+func (a *MethodTest) Request(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+	repl := &pb.HelloReply{
+		Message: req.Name,
+	}
+	return repl, nil
 }
 
 type MethodErrorTest struct {
@@ -27,10 +34,8 @@ func Test_Parse(t *testing.T) {
 	if nil != err {
 		t.Error(err)
 	}
-	if 1 != len(m) {
-		t.Error("method number error")
-	}
-	if m[0].name != "Func1" {
+
+	if _, ok := m["Publish"]; !ok {
 		t.Error("name error")
 	}
 	_, err = parseMethod(&MethodErrorTest{})
@@ -47,15 +52,24 @@ func TestMethod_Handle(t *testing.T) {
 	param := "hello"
 	a := &pb.HelloRequest{Name: param}
 	b, _ := proto.Marshal(a)
-	for _, v := range ret {
-		reply, err := v.handle(context.Background(), b)
-		if nil != err {
-			t.Error(err)
-		}
 
-		if reply.(*pb.HelloReply).Message != param {
-			t.Error("reply.Message!=param")
+	var m *method
+	for _, v := range ret {
+		if v.name == "Request" {
+			m = v
+			break
 		}
+	}
+	if m == nil {
+		t.Error("m is nil")
+	}
+	reply, err := m.handle(context.Background(), b)
+	if nil != err {
+		t.Error(err)
+	}
+
+	if reply.(*pb.HelloReply).Message != param {
+		t.Error("reply.Message!=param")
 	}
 }
 
@@ -68,10 +82,8 @@ func BenchmarkMethod_Handle(b *testing.B) {
 	a := &pb.HelloRequest{Name: param}
 	bs, _ := proto.Marshal(a)
 	b.ResetTimer()
+	h := ret["Request"]
 	for i := 0; i < b.N; i++ {
-		_, err := ret[0].handle(context.Background(), bs)
-		if nil != err {
-			b.Error(err)
-		}
+		_, _ = h.handle(context.Background(), bs)
 	}
 }
