@@ -98,6 +98,11 @@ func (c *Client) asyncRequest(sub string, req proto.Message, rep proto.Message, 
 		panic("call AsyncRequest only in single thread mode")
 	}
 	go func() { // 不阻塞主线程
+		if opt.recoverHnadler != nil {
+			if e := recover(); e != nil {
+				opt.recoverHnadler(e)
+			}
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), opt.timeout)
 		defer cancel()
 		err := c.enc.RequestWithContext(ctx, sub, req, rep)
