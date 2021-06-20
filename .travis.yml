@@ -1,0 +1,10 @@
+language: go
+go:
+  - "1.13.x"
+os:
+  - linux
+  - osx
+  - windows
+script:
+  - go test ./...
+  - go build ./cmd/natsrpc_codegen
