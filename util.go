@@ -1,10 +1,12 @@
 package natsrpc
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"log"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/nats-io/nats-server/v2/server"
@@ -71,16 +73,30 @@ func NewNATSConn(cfg Config, option ...nats.Option) (*nats.EncodedConn, error) {
 	return enc, nil
 }
 
+var bufPool = sync.Pool{
+	New: func() interface{} {
+		return bytes.NewBuffer([]byte{})
+	},
+}
+
 // CombineSubject 组合字符串成subject
 func CombineSubject(prefix string, s ...string) string {
-	ret := prefix
+	if len(s) == 0 {
+		return prefix
+	}
+	bf := bufPool.Get().(*bytes.Buffer)
+	bf.WriteString(prefix)
 	for _, v := range s {
-		if "" == v {
+		if v == "" {
 			continue
 		}
-		ret += "." + v
+		bf.WriteString(".")
+		bf.WriteString(v)
 	}
-	return ret
+	subject := bf.String()
+	bf.Reset()
+	bufPool.Put(bf)
+	return subject
 }
 
 // RunSimpleNatsServer run a simple nats server
