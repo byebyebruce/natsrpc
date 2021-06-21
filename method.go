@@ -11,22 +11,59 @@ import (
 var (
 	errorFuncType = errors.New(`method must be a function likes:
 func (s *MyService)Notify(ctx context.Context,req *proto.Request)
-func (s *MyService)Request(ctx context.Context,req *proto.Request, resp *proto.Reply)`)
+func (s *MyService)Request(ctx context.Context,req *proto.Request, resp *proto.Reply, done func())`)
 )
 
-type fn func(ctx context.Context, data []byte) (interface{}, error)
+type request struct {
+	reqVal reflect.Value
+	over   chan struct{}
+	reply  interface{}
+	err    error
+}
+
+func (s *request) done() {
+	close(s.over)
+}
+
+type fn func(context.Context, reflect.Value, *request)
+
+type methodType int
+
+const (
+	methodType_None         methodType = iota // none
+	methodType_Publish                        // publish
+	methodType_Request                        // request
+	methodType_AsyncRequest                   // async request
+)
 
 // method 方法
 type method struct {
-	handle fn     // handler
-	name   string // func name
+	mt      methodType   // 方法类型
+	handle  fn           // handler
+	name    string       // func name
+	reqType reflect.Type // request type
+}
+
+// 构造一个 request
+func (m *method) newRequest(b []byte) (*request, error) {
+	reqVal := reflect.New(m.reqType.Elem())
+	if len(b) > 0 {
+		pb := reqVal.Interface().(proto.Message)
+		if err := proto.Unmarshal(b, pb); nil != err {
+			return nil, err
+		}
+	}
+	req := &request{
+		over:   make(chan struct{}),
+		reqVal: reqVal,
+	}
+	return req, nil
 }
 
 // parseMethod 解析方法
-func parseMethod(i interface{}) ([]*method, error) {
+func parseMethod(typ reflect.Type) ([]*method, error) {
 	var ret []*method
-	typ := reflect.TypeOf(i)
-	val := reflect.ValueOf(i)
+
 	for i := 0; i < typ.NumMethod(); i++ {
 		m := typ.Method(i)
 
@@ -34,7 +71,7 @@ func parseMethod(i interface{}) ([]*method, error) {
 			continue
 		}
 
-		if pM, err := genMethod(val, m); nil != err {
+		if pM, err := genMethod(m); nil != err {
 			return ret, err
 		} else {
 			ret = append(ret, pM)
@@ -44,8 +81,8 @@ func parseMethod(i interface{}) ([]*method, error) {
 }
 
 // genMethod 生成方法
-func genMethod(val reflect.Value, m reflect.Method) (*method, error) {
-	const paraNum = 3
+func genMethod(m reflect.Method) (*method, error) {
+	const paraNum = 3 // ptr, ctx, req
 	var (
 		ctxType  reflect.Type
 		reqType  reflect.Type
@@ -53,22 +90,6 @@ func genMethod(val reflect.Value, m reflect.Method) (*method, error) {
 	)
 	mType := m.Type
 	numArgs := mType.NumIn()
-
-	// 检查参数
-	switch numArgs {
-	case paraNum: // notify
-	case paraNum + 1: // request
-		// 如果有第3个参数说明是请求
-		respType = mType.In(3)
-		if respType.Kind() != reflect.Ptr {
-			return nil, errorFuncType
-		}
-		if _, ok := reflect.New(respType.Elem()).Interface().(proto.Message); !ok {
-			return nil, errorFuncType
-		}
-	default:
-		return nil, errorFuncType
-	}
 
 	// 第1个参数必须是context
 	ctxType = mType.In(1)
@@ -88,24 +109,52 @@ func genMethod(val reflect.Value, m reflect.Method) (*method, error) {
 		return nil, errorFuncType
 	}
 
+	mt := methodType_None
+	// 检查参数
+	switch {
+	case numArgs == paraNum: // notify
+		mt = methodType_None
+	case mType.NumOut() == 2: // request
+		mt = methodType_Request
+	case numArgs == paraNum+1: // async reply
+		// 如果有第3个参数说明是请求
+		respType = mType.In(3)
+		if respType.Kind() != reflect.Ptr {
+			return nil, errorFuncType
+		}
+		if _, ok := reflect.New(respType.Elem()).Interface().(proto.Message); !ok {
+			return nil, errorFuncType
+		}
+		mt = methodType_AsyncRequest
+	default:
+		return nil, errorFuncType
+	}
+
 	f := m.Func
 
-	h := func(ctx context.Context, data []byte) (interface{}, error) {
+	h := func(ctx context.Context, val reflect.Value, req *request) {
 		ctxVal := reflect.ValueOf(ctx)
-		reqVal := reflect.New(reqType.Elem())
-		reqPB := reqVal.Interface().(proto.Message)
-		if err := proto.Unmarshal(data, reqPB); nil != err {
-			return nil, err
-		}
 
-		if nil == respType {
-			f.Call([]reflect.Value{val, ctxVal, reqVal})
-			return nil, nil
-		} else {
+		switch mt {
+		case methodType_Publish:
+			f.Call([]reflect.Value{val, ctxVal, req.reqVal})
+			req.done()
+		case methodType_Request:
 			respVal := reflect.New(respType.Elem())
-			f.Call([]reflect.Value{val, ctxVal, reqVal, respVal})
-			return respVal.Interface(), nil
+			f.Call([]reflect.Value{val, ctxVal, req.reqVal, respVal})
+			req.done()
+		case methodType_AsyncRequest:
+			respVal := reflect.New(respType.Elem())
+			cbVal := reflect.ValueOf(func() {
+				req.done()
+			})
+			f.Call([]reflect.Value{val, ctxVal, req.reqVal, respVal, cbVal})
 		}
 	}
-	return &method{handle: h, name: m.Name}, nil
+	ret := &method{
+		name:    m.Name,
+		reqType: reqType,
+		handle:  h,
+	}
+	return ret, nil
 }

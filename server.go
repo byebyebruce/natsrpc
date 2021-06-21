@@ -102,56 +102,29 @@ func (s *Server) subscribeMethod(service *service) error {
 	// 订阅
 	for subject, v := range service.methods {
 		m := v
+
 		cb := func(msg *nats.Msg) {
 			go func() {
-				if service.options.recoverHnadler != nil {
-					if e := recover(); e != nil {
-						service.options.recoverHnadler(e)
-					}
-				}
-				ctx, cancel := context.WithTimeout(context.Background(), service.options.timeout)
+				ctx, cancel := context.WithTimeout(context.Background(), service.opt.timeout)
 				defer cancel()
 
-				var (
-					reply interface{}
-					err   error
-				)
-
-				if nil != service.options.singleThreadCbChan { // 单线程处理
-					over := make(chan struct{})
-					fn := func() {
-						defer close(over)
-						reply, err = m.handle(ctx, msg.Data)
-					}
-					select {
-					case <-ctx.Done():
-						err = ctx.Err()
-					case service.options.singleThreadCbChan <- fn:
-						select {
-						case <-ctx.Done():
-							err = ctx.Err()
-						case <-over:
-						}
-					}
-				} else { // 多线程处理
-					reply, err = m.handle(ctx, msg.Data)
-				}
-				// handle
+				reply, err := service.call(ctx, m, msg.Data)
 				if nil != err {
-					log.Printf("m.handle error[%v]", err)
+					log.Printf("m.execute error[%v]", err)
 					return
 				}
 
-				// reply
-				if "" != msg.Reply && nil != reply {
-					if !s.enc.Conn.IsClosed() {
-						s.enc.Publish(msg.Reply, reply)
-					}
+				if "" == msg.Reply {
+					return
+				}
+
+				if !s.enc.Conn.IsClosed() {
+					s.enc.Publish(msg.Reply, reply)
 				}
 			}()
 		}
 
-		sub, subErr := s.enc.QueueSubscribe(subject, service.options.group, cb)
+		sub, subErr := s.enc.QueueSubscribe(subject, service.opt.group, cb)
 		if nil != subErr {
 			return subErr
 		}
