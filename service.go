@@ -1,6 +1,7 @@
 package natsrpc
 
 import (
+	"context"
 	"fmt"
 	"go/ast"
 	"reflect"
@@ -20,7 +21,7 @@ type service struct {
 	val         reflect.Value        // 值
 	subscribers []*nats.Subscription // nats订阅
 	methods     map[string]*method   // 方法集合
-	options     Options              // 设置
+	opt         Options              // 设置
 }
 
 // 名字
@@ -47,7 +48,7 @@ func newService(name string, i interface{}, opts ...Option) (*service, error) {
 		return nil, fmt.Errorf("service [%s] must be exported", name)
 	}
 
-	ms, err := parseMethod(i)
+	ms, err := parseMethod(reflect.TypeOf(i))
 	if nil != err {
 		return nil, err
 	}
@@ -57,7 +58,7 @@ func newService(name string, i interface{}, opts ...Option) (*service, error) {
 
 	s := &service{
 		val:     val,
-		options: opt,
+		opt:     opt,
 		methods: map[string]*method{},
 		name:    name,
 	}
@@ -67,8 +68,40 @@ func newService(name string, i interface{}, opts ...Option) (*service, error) {
 			return nil, fmt.Errorf("service [%s] duplicate method [%s]", name, v.name)
 		}
 		// subject = namespace.package.service.method.id
-		subject := CombineSubject(s.options.namespace, s.name, v.name, s.options.id)
+		subject := CombineSubject(s.opt.namespace, s.name, v.name, s.opt.id)
 		s.methods[subject] = v
 	}
 	return s, nil
+}
+
+func (s *service) call(ctx context.Context, m *method, b []byte) (interface{}, error) {
+	req, err := m.newRequest(b)
+	if nil != err {
+		return nil, err
+	}
+
+	fn := func() {
+		if s.opt.recoverHnadler != nil {
+			if e := recover(); e != nil {
+				s.opt.recoverHnadler(e)
+			}
+		}
+		m.handle(ctx, s.val, req)
+	}
+
+	if s.opt.isSingleThreadMode() { // 单线程处理
+		select {
+		case <-ctx.Done():
+		case s.opt.singleThreadCbChan <- fn:
+		}
+	} else { // 多线程处理
+		go fn()
+	}
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-req.over:
+		return req.reply, req.err
+	}
 }
