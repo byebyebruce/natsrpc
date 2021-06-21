@@ -51,7 +51,7 @@ func newService(name string, i interface{}, opts ...Option) (*service, error) {
 	if nil != err {
 		return nil, err
 	}
-	if 0 == len(ms) {
+	if len(ms) == 0 {
 		return nil, fmt.Errorf("service [%s] has no exported method", name)
 	}
 
