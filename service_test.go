@@ -15,9 +15,10 @@ func (a *A) Func1(ctx context.Context, req *pb.HelloRequest) {
 	fmt.Println(req.Name)
 }
 
-func (a *A) Func2(ctx context.Context, req *pb.HelloReply, repl *pb.HelloReply) {
-	repl.Message = req.Message
-	fmt.Println(repl.Message)
+func (a *A) Func2(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+	return &pb.HelloReply{
+		Message: req.Name,
+	}, nil
 }
 
 func Test_newService(t *testing.T) {

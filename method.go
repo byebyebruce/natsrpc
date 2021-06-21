@@ -11,7 +11,7 @@ import (
 var (
 	errorFuncType = errors.New(`method must be a function likes:
 func (s *MyService)Notify(ctx context.Context,req *proto.Request)
-func (s *MyService)Request(ctx context.Context,req *proto.Request, resp *proto.Reply)`)
+func (s *MyService)Request(ctx context.Context,req *proto.Request)(*proto.Reply, error)`)
 )
 
 type fn func(ctx context.Context, data []byte) (interface{}, error)
@@ -23,8 +23,8 @@ type method struct {
 }
 
 // parseMethod 解析方法
-func parseMethod(i interface{}) ([]*method, error) {
-	var ret []*method
+func parseMethod(i interface{}) (map[string]*method, error) {
+	ret := make(map[string]*method)
 	typ := reflect.TypeOf(i)
 	val := reflect.ValueOf(i)
 	for i := 0; i < typ.NumMethod(); i++ {
@@ -37,7 +37,7 @@ func parseMethod(i interface{}) ([]*method, error) {
 		if pM, err := genMethod(val, m); nil != err {
 			return ret, err
 		} else {
-			ret = append(ret, pM)
+			ret[pM.name] = pM
 		}
 	}
 	return ret, nil
@@ -45,28 +45,20 @@ func parseMethod(i interface{}) ([]*method, error) {
 
 // genMethod 生成方法
 func genMethod(val reflect.Value, m reflect.Method) (*method, error) {
-	const paraNum = 3
+	const (
+		paraNum = 3
+		retNum  = 2
+	)
 	var (
 		ctxType  reflect.Type
 		reqType  reflect.Type
 		respType reflect.Type
 	)
 	mType := m.Type
-	numArgs := mType.NumIn()
 
 	// 检查参数
-	switch numArgs {
-	case paraNum: // notify
-	case paraNum + 1: // request
-		// 如果有第3个参数说明是请求
-		respType = mType.In(3)
-		if respType.Kind() != reflect.Ptr {
-			return nil, errorFuncType
-		}
-		if _, ok := reflect.New(respType.Elem()).Interface().(proto.Message); !ok {
-			return nil, errorFuncType
-		}
-	default:
+	numArgs := mType.NumIn()
+	if numArgs != paraNum {
 		return nil, errorFuncType
 	}
 
@@ -88,6 +80,26 @@ func genMethod(val reflect.Value, m reflect.Method) (*method, error) {
 		return nil, errorFuncType
 	}
 
+	// 檢查返回值
+	if mType.NumOut() > 0 {
+		if mType.NumOut() != retNum {
+			return nil, errorFuncType
+		}
+
+		// 第一个返回值必须是pb类型
+		respType = mType.Out(0)
+		if respType.Kind() != reflect.Ptr {
+			return nil, errorFuncType
+		}
+		if _, ok := reflect.New(respType.Elem()).Interface().(proto.Message); !ok {
+			return nil, errorFuncType
+		}
+
+		if mType.Out(1) != reflect.TypeOf((*error)(nil)).Elem() {
+			return nil, errorFuncType
+		}
+	}
+
 	f := m.Func
 
 	h := func(ctx context.Context, data []byte) (interface{}, error) {
@@ -98,13 +110,15 @@ func genMethod(val reflect.Value, m reflect.Method) (*method, error) {
 			return nil, err
 		}
 
+		repVal := f.Call([]reflect.Value{val, ctxVal, reqVal})
 		if nil == respType {
-			f.Call([]reflect.Value{val, ctxVal, reqVal})
 			return nil, nil
 		} else {
-			respVal := reflect.New(respType.Elem())
-			f.Call([]reflect.Value{val, ctxVal, reqVal, respVal})
-			return respVal.Interface(), nil
+			var err error
+			if errInter := repVal[1].Interface(); errInter != nil {
+				err = errInter.(error)
+			}
+			return repVal[0].Interface(), err
 		}
 	}
 	return &method{handle: h, name: m.Name}, nil

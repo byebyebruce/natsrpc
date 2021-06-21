@@ -114,7 +114,8 @@ func main() {
 				Name:    m.Names[0].Name,
 				Comment: m.Comment.Text(),
 			}
-			for i, p := range m.Type.(*ast.FuncType).Params.List {
+			f := m.Type.(*ast.FuncType)
+			for i, p := range f.Params.List {
 				tp := TmplParam{}
 				if se, ok := p.Type.(*ast.SelectorExpr); ok {
 					tp.Name = p.Names[0].Name
@@ -131,6 +132,22 @@ func main() {
 				}
 				tm.Param = append(tm.Param, tp)
 			}
+			if f.Results != nil {
+				for _, p := range f.Results.List {
+					tp := TmplParam{}
+					if se, ok := p.Type.(*ast.SelectorExpr); ok {
+						tp.Name = "rep"
+						tp.Type = se.X.(*ast.Ident).Name + "." + se.Sel.Name
+					} else if se, ok := p.Type.(*ast.StarExpr); ok {
+						tp.Name = "rep"
+						x := se.X.(*ast.SelectorExpr)
+						tp.Type = x.X.(*ast.Ident).Name + "." + x.Sel.Name
+					}
+					tm.Param = append(tm.Param, tp)
+					break
+				}
+			}
+
 			ts.Method = append(ts.Method, tm)
 		}
 		tmpl.Service = append(tmpl.Service, ts)

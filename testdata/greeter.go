@@ -13,5 +13,5 @@ type Greeter interface {
 	HiAll(ctx context.Context, req *pb.HelloRequest)
 
 	// AreYouOK request
-	AreYouOK(ctx context.Context, req *pb.HelloRequest, repl *pb.HelloReply)
+	AreYouOK(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error)
 }
