@@ -10,7 +10,7 @@
  | |\  |/ ____ \| |  ____) | | | \ \| |    | |____ 
  |_| \_/_/    \_\_| |_____/  |_|  \_\_|     \_____|
 ```
-> NATSRPC 是一个基于nats的简单rpc
+> NATSRPC 是一个基于nats作为消息通信，以interface为接口定义文件生成client和server代码的rpc
 
 ## Feature
 * 使用简单，不需要服务发现
@@ -19,6 +19,7 @@
 * 支持定向发送也支持负载均衡(nats的同组内随机)
 * 不用手动定义subject
 * 支持单协程回调(适用于逻辑单协程模型)
+* server可以异步回消息(适用于handler内有异步方法)
 
 ## 使用
 1. 引用包 `go get github.com/byebyebruce/natsrpc`
