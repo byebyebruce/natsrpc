@@ -20,7 +20,7 @@ var (
 	namespace           = flag.String("ns", "testsapce", "namespace")
 	group               = flag.String("g", "", "subscribe group")
 	id                  = flag.String("id", "", "service id")
-	singleThreadService = flag.Bool("sts", false, "service single thread handle")
+	singleThreadService = flag.Bool("st", false, "service single thread handle")
 )
 
 func main() {

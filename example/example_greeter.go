@@ -25,3 +25,13 @@ func (a *ExampleGreeter) AreYouOK(ctx context.Context, req *pb.HelloRequest) (*p
 	fmt.Println("end AreYouOK Request->", req.Name)
 	return rep, nil
 }
+
+// DelayAreYouOK async request
+func (a *ExampleGreeter) DelayAreYouOK(ctx context.Context, req *pb.HelloRequest, f func(*pb.HelloReply, error)) {
+	fmt.Println("begin DelayAreYouOK Request", req.Name)
+	rep := &pb.HelloReply{
+		Message: "DelayAreYouOK " + req.Name,
+	}
+	fmt.Println("end DelayAreYouOK Request->", req.Name)
+	f(rep, nil)
+}
