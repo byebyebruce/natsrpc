@@ -60,3 +60,19 @@ func (c *GreeterClient) AsyncRequestAreYouOK(req *pb.HelloRequest, cb func(*pb.H
 	}
 	c.c.AsyncRequest("AreYouOK", req, rep, f)
 }
+
+// RequestDelayAreYouOK
+func (c *GreeterClient) RequestDelayAreYouOK(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+	rep := &pb.HelloReply{}
+	err := c.c.Request(ctx, "DelayAreYouOK", req, rep)
+	return rep, err
+}
+
+// AsyncRequestDelayAreYouOK
+func (c *GreeterClient) AsyncRequestDelayAreYouOK(req *pb.HelloRequest, cb func(*pb.HelloReply, error)) {
+	rep := &pb.HelloReply{}
+	f := func(_ proto.Message, err error) {
+		cb(rep, err)
+	}
+	c.c.AsyncRequest("DelayAreYouOK", req, rep, f)
+}

@@ -26,11 +26,11 @@ var (
 type BenchReqService struct {
 }
 
-func (a *BenchReqService) Request(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+func (a *BenchReqService) Request(ctx context.Context, req *pb.HelloRequest, f func(*pb.HelloReply, error)) {
 	repl := &pb.HelloReply{
 		Message: req.Name,
 	}
-	return repl, nil
+	f(repl, nil)
 }
 
 func main() {
