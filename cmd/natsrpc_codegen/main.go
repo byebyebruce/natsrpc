@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"flag"
-	"fmt"
 	"go/ast"
 	"go/format"
 	"go/parser"
@@ -15,36 +14,42 @@ import (
 )
 
 var (
-	src = flag.String("s", "", "src file(the path must be relative to go.mod)")
+	src        = flag.String("s", "", "src file(the path must be relative to go.mod)")
+	clientMode = flag.Int("cm", 0, "client mode(0:sync, 1:async, 2:both)")
 	//dest       = flag.String("d", "", "dest file")
 	//outPackage = flag.String("op", "", "out package name")
 )
 
+// TmplParam 参数模板
 type TmplParam struct {
 	Name string
 	Type string
 }
 
+// TmplMethod 方法模板
 type TmplMethod struct {
 	Name    string
 	Comment string
 	Param   []TmplParam
 }
 
+// TmplService 服务模板
 type TmplService struct {
 	Name    string
 	Comment string
 	Method  []TmplMethod
 }
 
+// Tmpl 模板
 type Tmpl struct {
 	OutPackage string
 	Package    string
 	Imports    []string
 	Service    []TmplService
+	ClientMode int
 }
 
-// ExecTemplate 模板执行
+// GenText 模板执行
 func GenText(tmpText string, data interface{}) ([]byte, error) {
 	classTpl, err := template.New("temp").Parse(tmpText)
 	if nil != err {
@@ -65,8 +70,10 @@ func GenFile(tmpText string, data interface{}, file string) error {
 	}
 
 	if b, err := format.Source(src); nil != err {
-		fmt.Println(err)
-		return ioutil.WriteFile(file, src, os.ModePerm)
+		if errFile := ioutil.WriteFile(file, src, os.ModePerm); errFile != nil {
+			return errFile
+		}
+		return err
 	} else {
 		return ioutil.WriteFile(file, b, os.ModePerm)
 	}
@@ -81,12 +88,10 @@ func main() {
 		panic(err)
 	}
 
-	// Print the AST.
-	//ast.Print(fset, f)
-
 	tmpl := Tmpl{
 		OutPackage: f.Name.Name,
 		Package:    f.Name.Name,
+		ClientMode: *clientMode,
 	}
 
 	//tmpl.Imports = append(tmpl.Imports, fmt.Sprintf("\"%s/%s\"", *inPackage, (*src)[:strings.LastIndex(*src, "/")]))
@@ -123,6 +128,10 @@ func main() {
 				} else if se, ok := p.Type.(*ast.StarExpr); ok {
 					tp.Name = p.Names[0].Name
 					x := se.X.(*ast.SelectorExpr)
+					tp.Type = x.X.(*ast.Ident).Name + "." + x.Sel.Name
+				} else if se, ok := p.Type.(*ast.FuncType); ok {
+					tp.Name = "reply"
+					x := se.Params.List[0].Type.(*ast.StarExpr).X.(*ast.SelectorExpr)
 					tp.Type = x.X.(*ast.Ident).Name + "." + x.Sel.Name
 				}
 				if i == 0 {

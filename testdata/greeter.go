@@ -1,4 +1,4 @@
-//go:generate go run ../cmd/natsrpc_codegen -s=greeter.go
+//go:generate go run ../cmd/natsrpc_codegen -s=greeter.go -cm=2
 package testdata
 
 import (
@@ -14,4 +14,7 @@ type Greeter interface {
 
 	// AreYouOK request
 	AreYouOK(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error)
+
+	// DelayAreYouOK request
+	DelayAreYouOK(ctx context.Context, req *pb.HelloRequest, reply func(*pb.HelloReply, error))
 }

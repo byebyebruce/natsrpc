@@ -22,6 +22,12 @@ func (a *MethodTest) Request(ctx context.Context, req *pb.HelloRequest) (*pb.Hel
 	}
 	return repl, nil
 }
+func (a *MethodTest) AsyncRequest(ctx context.Context, req *pb.HelloRequest, f func(*pb.HelloReply, error)) {
+	repl := &pb.HelloReply{
+		Message: req.Name,
+	}
+	f(repl, nil)
+}
 
 type MethodErrorTest struct {
 }

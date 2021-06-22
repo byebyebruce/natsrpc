@@ -13,7 +13,7 @@ var (
 	errorFuncType = errors.New(`method must be a function likes:
 func (s *MyService)Notify(ctx context.Context,req *proto.Request)
 func (s *MyService)Request(ctx context.Context,req *proto.Request)(*proto.Reply, error))
-func (s *MyService)Request(ctx context.Context,req *proto.Request, resp *proto.Reply, done func())`)
+func (s *MyService)Request(ctx context.Context,req *proto.Request, retFunc func(*proto.Reply, error))`)
 )
 
 type request struct {
@@ -90,9 +90,7 @@ func parseMethod(typ reflect.Type) (map[string]*method, error) {
 func genMethod(m reflect.Method) (*method, error) {
 	const paraNum = 3 // ptr, ctx, req
 	var (
-		ctxType  reflect.Type
-		reqType  reflect.Type
-		respType reflect.Type
+		reqType reflect.Type
 	)
 	mType := m.Type
 
@@ -101,25 +99,19 @@ func genMethod(m reflect.Method) (*method, error) {
 	numRets := mType.NumOut()
 
 	// 第1个参数必须是context
-	ctxType = mType.In(1)
-	if ctxType.Kind() != reflect.Interface {
-		return nil, errorFuncType
-	}
-	if ctxType.Name() != "Context" {
+	if !IsContextType(mType.In(1)) {
 		return nil, errorFuncType
 	}
 
 	// 第2个参数是pb类型
 	reqType = mType.In(2)
-	if reqType.Kind() != reflect.Ptr {
-		return nil, errorFuncType
-	}
-	if _, ok := reflect.New(reqType.Elem()).Interface().(proto.Message); !ok {
+	if !IsProtoPtrType(reqType) {
 		return nil, errorFuncType
 	}
 
 	// 第一个返回值必须是pb类型
 	mt := methodType_None
+	var typeF reflect.Type
 	// 检查参数
 	switch {
 	case numArgs == paraNum: // notify
@@ -129,15 +121,10 @@ func genMethod(m reflect.Method) (*method, error) {
 			if numArgs > paraNum {
 				return nil, errorFuncType
 			}
-			respType = mType.Out(0)
-			if respType.Kind() != reflect.Ptr {
+			if !IsProtoPtrType(mType.Out(0)) {
 				return nil, errorFuncType
 			}
-			if _, ok := reflect.New(respType.Elem()).Interface().(proto.Message); !ok {
-				return nil, errorFuncType
-			}
-
-			if mType.Out(1) != reflect.TypeOf((*error)(nil)).Elem() {
+			if !IsErrorType(mType.Out(1)) {
 				return nil, errorFuncType
 			}
 			mt = methodType_Request
@@ -146,6 +133,16 @@ func genMethod(m reflect.Method) (*method, error) {
 		}
 	case numArgs == paraNum+1: // async reply
 		if numRets > 0 {
+			return nil, errorFuncType
+		}
+		typeF = mType.In(3)
+		if typeF.Kind() != reflect.Func {
+			return nil, errorFuncType
+		}
+		if !IsProtoPtrType(typeF.In(0)) {
+			return nil, errorFuncType
+		}
+		if !IsErrorType(typeF.In(1)) {
 			return nil, errorFuncType
 		}
 		mt = methodType_AsyncRequest
@@ -171,10 +168,19 @@ func genMethod(m reflect.Method) (*method, error) {
 				req.done(repVal[0].Interface(), err)
 			}
 		case methodType_AsyncRequest:
-			cbVal := func(reply interface{}, err error) {
-				req.done(reply, err)
+			swap := func(in []reflect.Value) []reflect.Value {
+				var err error
+				if in[1].Interface() != nil {
+					err = in[1].Interface().(error)
+				}
+				req.done(in[0].Interface(), err)
+				return nil
 			}
-			f.Call([]reflect.Value{val, ctxVal, req.reqVal, reflect.ValueOf(cbVal)})
+			cbVal := reflect.MakeFunc(typeF, swap)
+			/*cbVal := func(reply interface{}, err error) {
+				req.done(reply, err)
+			}*/
+			f.Call([]reflect.Value{val, ctxVal, req.reqVal, cbVal})
 		}
 	}
 	ret := &method{

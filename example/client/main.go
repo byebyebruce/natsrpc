@@ -88,6 +88,15 @@ func main() {
 						fmt.Println("end AsyncRequest", reply.Message)
 					})
 
+					wg.Add(1)
+					client.ID(*id).AsyncRequestDelayAreYouOK(req, func(reply *pb.HelloReply, err error) {
+						defer wg.Done()
+						fmt.Println("begin AsyncRequestDelayAreYouOK", reply.Message)
+						if nil != err {
+							panic(err)
+						}
+						fmt.Println("end AsyncRequestDelayAreYouOK", reply.Message)
+					})
 				} else {
 					if reply, err := client.ID(*id).RequestAreYouOK(nil, req); nil != err {
 						panic(err)

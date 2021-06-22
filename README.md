@@ -25,9 +25,11 @@
 2. 编译代码生成器 `go get github.com/byebyebruce/natsrpc/cmd/natsrpc_codegen`
 3. 定义服务接口[示例](testdata/greeter.go)
 
-4. 生成代码
+4. 生成客户端和服务端代码
 ```shell
-natsrpc_codegen -s="greeter.go"
+natsrpc_codegen -s="greeter.go" # 客户端代码只生成同步接口
+natsrpc_codegen -s="greeter.go -cm=1" # 客户端代码只生成同步接口
+natsrpc_codegen -s="greeter.go -cm=2" # 客户端代码生成同步异步接口
 ```
 5. 写服务实现[示例](example/example_greeter.go)
 ## 示例

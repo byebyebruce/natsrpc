@@ -81,10 +81,12 @@ func (s *service) call(ctx context.Context, m *method, b []byte) (interface{}, e
 	}
 
 	fn := func() {
-		if s.opt.recoverHnadler != nil {
-			if e := recover(); e != nil {
-				s.opt.recoverHnadler(e)
-			}
+		if s.opt.recoverHandler != nil {
+			defer func() {
+				if e := recover(); e != nil {
+					s.opt.recoverHandler(e)
+				}
+			}()
 		}
 		m.handle(ctx, s.val, req)
 	}
