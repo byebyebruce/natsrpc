@@ -13,13 +13,9 @@
 // limitations under the License.
 
 syntax = "proto3";
-
-option go_package = "github.com/byebyebruce/natsrpc/testdata/pb";
-option java_multiple_files = true;
-option java_package = "io.grpc.examples.helloworld";
-option java_outer_classname = "HelloWorldProto";
-
-package helloworld;
+option go_package = "pb";
+package pb;
+import "natsrpc.proto";
 
 
 // The request message containing the user's name.
@@ -30,4 +26,10 @@ message HelloRequest {
 // The response message containing the greetings
 message HelloReply {
   string message = 1;
+}
+
+service Greeter {
+  rpc AreYouOK (HelloRequest) returns (HelloReply) {
+    option (natsrpc.methodType) = Sync;
+  }
 }

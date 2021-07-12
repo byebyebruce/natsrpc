@@ -1,0 +1,1 @@
+//[{"ServiceName":"Greeter","MethodList":[{"MethodName":"AreYouOK","InputTypeName":"HelloRequest","OutputTypeName":"HelloReply","MethodType":1}]}]

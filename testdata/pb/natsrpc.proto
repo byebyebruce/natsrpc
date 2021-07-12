@@ -1,0 +1,14 @@
+syntax = "proto3";
+package natsrpc;
+option go_package = "pb";
+import "google/protobuf/descriptor.proto";
+
+enum MethodType {
+  Async = 0;
+  Sync = 1;
+  Notify = 2;
+}
+
+extend google.protobuf.MethodOptions {
+  MethodType methodType = 2360;
+}
