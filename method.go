@@ -168,7 +168,7 @@ func genMethod(m reflect.Method) (*method, error) {
 				req.done(repVal[0].Interface(), err)
 			}
 		case methodType_AsyncRequest:
-			swap := func(in []reflect.Value) []reflect.Value {
+			valFunc := func(in []reflect.Value) []reflect.Value {
 				var err error
 				if in[1].Interface() != nil {
 					err = in[1].Interface().(error)
@@ -176,7 +176,7 @@ func genMethod(m reflect.Method) (*method, error) {
 				req.done(in[0].Interface(), err)
 				return nil
 			}
-			cbVal := reflect.MakeFunc(typeF, swap)
+			cbVal := reflect.MakeFunc(typeF, valFunc)
 			/*cbVal := func(reply interface{}, err error) {
 				req.done(reply, err)
 			}*/

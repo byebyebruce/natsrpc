@@ -42,3 +42,8 @@ natsrpc_codegen -s="greeter.go -cm=2" # 客户端代码生成同步异步接口
 1. 广播 `go run bench/pub/main.go -server=nats://127.0.0.1:4222`
 
 2. 请求 `go run bench/req/main.go -server=nats://127.0.0.1:4222`
+
+## TODO
+[ ] 不用NatsEncoder 
+[ ] service 定义文件改成gRPC标准
+[ ] 考虑收发包顺序
