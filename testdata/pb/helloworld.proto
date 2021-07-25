@@ -13,9 +13,9 @@
 // limitations under the License.
 
 syntax = "proto3";
-option go_package = "pb";
+option go_package = "pb/";
 package pb;
-import "natsrpc.proto";
+import "annotations.proto";
 
 
 // The request message containing the user's name.
@@ -30,6 +30,6 @@ message HelloReply {
 
 service Greeter {
   rpc AreYouOK (HelloRequest) returns (HelloReply) {
-    option (natsrpc.methodType) = Sync;
+    option (annotation.methodType) = Async;
   }
 }

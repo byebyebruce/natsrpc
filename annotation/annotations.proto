@@ -1,6 +1,6 @@
 syntax = "proto3";
-package natsrpc;
-option go_package = "pb";
+package annotation;
+option go_package = "annotation/";
 import "google/protobuf/descriptor.proto";
 
 enum MethodType {

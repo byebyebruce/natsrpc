@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/byebyebruce/natsrpc/testdata/pb"
+	"github.com/byebyebruce/natsrpc/annotation"
 	"github.com/golang/protobuf/proto"
 	pgs "github.com/lyft/protoc-gen-star"
 )
@@ -59,7 +59,7 @@ func (m *NatsRpcModule) ExtraService(service pgs.Service) ServiceSpec {
 		for _, desc := range descs {
 			if desc.Field == 2360 {
 				ext, _ := proto.GetExtension(opts, desc)
-				if value, ok := ext.(*pb.MethodType); ok {
+				if value, ok := ext.(*annotation.MethodType); ok {
 					methodSpec.MethodType = *value
 					break
 				}
@@ -79,7 +79,7 @@ type ServiceMethodSpec struct {
 	MethodName     string
 	InputTypeName  string
 	OutputTypeName string
-	MethodType     pb.MethodType
+	MethodType     annotation.MethodType
 }
 
 const tempService = `
