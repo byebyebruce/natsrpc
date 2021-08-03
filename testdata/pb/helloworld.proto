@@ -28,8 +28,32 @@ message HelloReply {
   string message = 1;
 }
 
+// The request message containing the user's name.
+message TTRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message TTReply {
+  string message = 1;
+}
+
 service Greeter {
+  // 同步
   rpc AreYouOK (HelloRequest) returns (HelloReply) {
-    option (annotation.methodType) = Notify;
+    option (annotation.methodType) = S;
+  }
+
+  // 异步（默认）
+  rpc TTA (TTRequest) returns (TTReply) {}
+
+  // 异步
+  rpc TTA2 (TTRequest) returns (TTReply) {
+    option (annotation.methodType) = A;
+  }
+
+  // 广播
+  rpc TTP (TTRequest) returns (TTReply) {
+    option (annotation.methodType) = P;
   }
 }

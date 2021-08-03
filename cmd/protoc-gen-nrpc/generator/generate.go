@@ -126,7 +126,7 @@ type {{ .ServiceName }} interface {
 {{- range .MethodList -}}
 	{{- if eq .MethodType 0 }}
 	// {{ .MethodName }}Async
-	{{ .MethodName }}Async(ctx context.Context, req *{{ .InputTypeName }}, reply func(*{{ .OutputTypeName }}, error))	
+	{{ .MethodName }}Async(ctx context.Context, req *{{ .InputTypeName }}, cb func(*{{ .OutputTypeName }}, error))	
 	{{- end }}
 
 	{{- if eq .MethodType 1 }}
@@ -136,7 +136,7 @@ type {{ .ServiceName }} interface {
 
 	{{- if eq .MethodType 2 }}
 	// Publish{{ .MethodName }}
-	Publish{{ .MethodName }}(ctx context.Context, notify *{{ .InputTypeName }})
+	Publish{{ .MethodName }}(ctx context.Context, notify *{{ .InputTypeName }}) error
 	{{- end}}
 {{- end }}
 }
@@ -177,7 +177,7 @@ func (c *{{ $clientName }}Client) ID(id interface{}) *{{ $clientName }}Client {
 {{ range .MethodList}}
 	{{- if eq .MethodType 0 -}}
 // {{ .MethodName }}Async
-func (c *{{ $clientName }}Client) {{ .MethodName }}Async(req *{{ .InputTypeName }}, cb func(*{{ .OutputTypeName }}, error)){
+func (c *{{ $clientName }}Client) {{ .MethodName }}Async(ctx context.Context, req *{{ .InputTypeName }}, cb func(*{{ .OutputTypeName }}, error)){
 	rep := &{{ .OutputTypeName }}{}
 	f := func(_ proto.Message, err error) {
 		cb(rep, err)
@@ -197,7 +197,7 @@ func (c *{{ $clientName }}Client) {{ .MethodName }}(ctx context.Context, req *{{
 
 	{{- if eq .MethodType 2 -}}
 // Publish{{ .MethodName }}
-func (c *{{ $clientName }}Client) Publish{{ .MethodName }}(notify *{{ .InputTypeName }}) error {
+func (c *{{ $clientName }}Client) Publish{{ .MethodName }}(ctx context.Context, notify *{{ .InputTypeName }}) error {
 	return c.c.Publish("{{ .MethodName }}", notify)
 }
 	{{- end}}

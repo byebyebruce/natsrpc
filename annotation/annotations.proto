@@ -1,12 +1,12 @@
 syntax = "proto3";
 package annotation;
-option go_package = "github.com/byebyebruce/natsrpc";
+option go_package = "github.com/byebyebruce/natsrpc/annotation";
 import "google/protobuf/descriptor.proto";
 
 enum MethodType {
-  Async = 0;
-  Sync = 1;
-  Notify = 2;
+  A = 0; // async 异步
+  S = 1; // sync 同步
+  P = 2; // publish 广播
 }
 
 extend google.protobuf.MethodOptions {
