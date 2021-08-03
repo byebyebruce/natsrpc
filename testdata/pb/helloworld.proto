@@ -13,7 +13,7 @@
 // limitations under the License.
 
 syntax = "proto3";
-option go_package = "pb/";
+option go_package = "github.com/byebyebruce/natsrpc/testdata/pb";
 package pb;
 import "annotations.proto";
 
@@ -30,6 +30,6 @@ message HelloReply {
 
 service Greeter {
   rpc AreYouOK (HelloRequest) returns (HelloReply) {
-    option (annotation.methodType) = Async;
+    option (annotation.methodType) = Notify;
   }
 }
