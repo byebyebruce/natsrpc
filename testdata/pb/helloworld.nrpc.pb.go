@@ -13,14 +13,14 @@ var _ proto.Message
 
 // Greeter
 type Greeter interface {
-	// AreYouOK
-	AreYouOK(ctx context.Context, req *HelloRequest) (*HelloReply, error)
-	// TTAAsync
-	TTAAsync(ctx context.Context, req *TTRequest, cb func(*TTReply, error))
-	// TTA2Async
-	TTA2Async(ctx context.Context, req *TTRequest, cb func(*TTReply, error))
-	// PublishTTP
-	PublishTTP(ctx context.Context, notify *TTRequest) error
+	// AreYouOK1
+	AreYouOK1(ctx context.Context, req *HelloRequest) (*HelloReply, error)
+	// AreYouOK2Async
+	AreYouOK2Async(ctx context.Context, req *HelloRequest, cb func(*HelloReply, error))
+	// AreYouOK3Async
+	AreYouOK3Async(ctx context.Context, req *HelloRequest, cb func(*HelloReply, error))
+	// PublishAreYouOK4
+	PublishAreYouOK4(ctx context.Context, notify *HelloRequest) error
 }
 
 // RegisterGreeter
@@ -52,32 +52,32 @@ func (c *GreeterClient) ID(id interface{}) *GreeterClient {
 	}
 }
 
-// AreYouOK
-func (c *GreeterClient) AreYouOK(ctx context.Context, req *HelloRequest) (*HelloReply, error) {
+// AreYouOK1
+func (c *GreeterClient) AreYouOK1(ctx context.Context, req *HelloRequest) (*HelloReply, error) {
 	rep := &HelloReply{}
-	err := c.c.Request(ctx, "AreYouOK", req, rep)
+	err := c.c.Request(ctx, "AreYouOK1", req, rep)
 	return rep, err
 }
 
-// TTAAsync
-func (c *GreeterClient) TTAAsync(ctx context.Context, req *TTRequest, cb func(*TTReply, error)) {
-	rep := &TTReply{}
+// AreYouOK2Async
+func (c *GreeterClient) AreYouOK2Async(ctx context.Context, req *HelloRequest, cb func(*HelloReply, error)) {
+	rep := &HelloReply{}
 	f := func(_ proto.Message, err error) {
 		cb(rep, err)
 	}
-	c.c.AsyncRequest("TTA", req, rep, f)
+	c.c.AsyncRequest("AreYouOK2", req, rep, f)
 }
 
-// TTA2Async
-func (c *GreeterClient) TTA2Async(ctx context.Context, req *TTRequest, cb func(*TTReply, error)) {
-	rep := &TTReply{}
+// AreYouOK3Async
+func (c *GreeterClient) AreYouOK3Async(ctx context.Context, req *HelloRequest, cb func(*HelloReply, error)) {
+	rep := &HelloReply{}
 	f := func(_ proto.Message, err error) {
 		cb(rep, err)
 	}
-	c.c.AsyncRequest("TTA2", req, rep, f)
+	c.c.AsyncRequest("AreYouOK3", req, rep, f)
 }
 
-// PublishTTP
-func (c *GreeterClient) PublishTTP(ctx context.Context, notify *TTRequest) error {
-	return c.c.Publish("TTP", notify)
+// PublishAreYouOK4
+func (c *GreeterClient) PublishAreYouOK4(ctx context.Context, notify *HelloRequest) error {
+	return c.c.Publish("AreYouOK4", notify)
 }
