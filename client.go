@@ -9,21 +9,14 @@ import (
 // Client client
 type Client struct {
 	enc *nats.EncodedConn // NATS Encode Conn
-}
-
-// NewPBClient 构造器
-func NewPBClient(url string, option ...nats.Option) (*Client, error) {
-	enc, err := NewPBEnc(url, option...)
-	if err != nil {
-		return nil, err
-	}
-	return NewClient(enc)
+	opt Options
 }
 
 // NewClient 构造器
-func NewClient(enc *nats.EncodedConn) (*Client, error) {
+func NewClient(enc *nats.EncodedConn, opts ...Option) (*Client, error) {
 	c := &Client{
 		enc: enc,
+		opt: MakeOptions(opts...),
 	}
 
 	return c, nil
@@ -31,10 +24,12 @@ func NewClient(enc *nats.EncodedConn) (*Client, error) {
 
 // Publish 发布
 func (c *Client) Publish(subject string, req interface{}) error {
+	subject = CombineSubject(c.opt.namespace, subject, c.opt.id)
 	return c.enc.Publish(subject, req)
 }
 
 // Request 请求
 func (c *Client) Request(ctx context.Context, subject string, req interface{}, rep interface{}) error {
+	subject = CombineSubject(c.opt.namespace, subject, c.opt.id)
 	return c.enc.RequestWithContext(ctx, subject, req, rep)
 }

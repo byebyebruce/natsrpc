@@ -12,30 +12,20 @@ import (
 
 // Server server
 type Server struct {
-	sync.WaitGroup
+	*sync.WaitGroup
 	enc      *nats.EncodedConn                 // NATS Encode Conn
 	mu       sync.Mutex                        // lock
 	services map[*service][]*nats.Subscription // 服务 name->service
-	encoder  nats.Encoder
 }
 
-// NewPBServer 构造器
-func NewPBServer(url string, option ...nats.Option) (*Server, error) {
-	enc, err := NewPBEnc(url, option...)
-	if err != nil {
-		return nil, err
-	}
-	return NewServer(enc)
-}
-
-// NewServerWithEnc 构造器
+// NewServer 构造器
 func NewServer(enc *nats.EncodedConn) (*Server, error) {
 	if !enc.Conn.IsConnected() {
 		return nil, fmt.Errorf("enc is not connected")
 	}
 	d := &Server{
 		enc:      enc,
-		encoder:  enc.Enc,
+		WaitGroup:  &sync.WaitGroup{},
 		services: make(map[*service][]*nats.Subscription),
 	}
 	return d, nil
@@ -60,7 +50,6 @@ func (s *Server) Close(duration time.Duration) (err error) {
 	if err1 := s.enc.FlushTimeout(duration); err == nil && err1 != nil {
 		err = err1
 	}
-	s.enc.Close()
 	return
 }
 
@@ -129,7 +118,10 @@ func (s *Server) subscribeMethod(service *service) error {
 			s.Add(1)
 			go func() {
 				defer s.Done()
-				s.call(context.Background(), service, m, msg)
+				err := s.call(context.Background(), service, m, msg.Data, msg.Reply)
+				if err!=nil {
+					log.Println(err.Error())
+				}
 			}()
 		}
 
@@ -142,22 +134,26 @@ func (s *Server) subscribeMethod(service *service) error {
 	return nil
 }
 
-func (s *Server) call(ctx context.Context, service *service, m *method, msg *nats.Msg) error {
-	reply, err := service.call(ctx, m, msg.Data)
+func (s *Server) call(ctx context.Context, service *service, m *method, b []byte,r string) error {
+	reply, err := service.call(ctx, m, b)
 	if nil != err {
 		log.Printf("m.execute error[%v]", err)
 	}
 
-	if "" == msg.Reply {
+	if "" == r {
 		return nil
 	}
 	if s.enc.Conn.IsClosed() {
 		return fmt.Errorf("conn colsed")
 	}
-	msg.Header = nil
-	msg.Data = reply
-	if nil != err {
-		msg.Header.Add(headerError, err.Error())
+	respMsg := &nats.Msg{
+		Subject:r,
+		Data: reply,
 	}
-	return s.enc.Conn.PublishMsg(msg)
+	if nil != err {
+		respMsg.Header = nats.Header{}
+		respMsg.Header.Add(headerError, err.Error())
+	}
+	//return s.enc.Conn.Publish(msg.Reply,msg.Data)
+	return s.enc.Conn.PublishMsg(respMsg)
 }

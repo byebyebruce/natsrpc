@@ -72,14 +72,22 @@ func IsContextType(t reflect.Type) bool {
 }
 
 // NewPBEnc 创建enc
-func NewPBEnc(url string, option ...nats.Option) (*nats.EncodedConn, error) {
+func NewEnc(url string, encType string, option ...nats.Option) (*nats.EncodedConn, error) {
 	nc, err := nats.Connect(url, option...)
 	if err != nil {
 		return nil, err
 	}
-	enc, err1 := nats.NewEncodedConn(nc, protobuf.PROTOBUF_ENCODER)
+	enc, err1 := nats.NewEncodedConn(nc, encType)
 	if nil != err1 {
 		return nil, err1
 	}
 	return enc, nil
+}
+// NewPBEnc 创建enc
+func NewPBEnc(url string, option ...nats.Option) (*nats.EncodedConn, error) {
+	return NewEnc(url, protobuf.PROTOBUF_ENCODER, option...)
+}
+// NewPBEnc 创建enc
+func NewJSONEnc(url string, option ...nats.Option) (*nats.EncodedConn, error) {
+	return NewEnc(url, nats.JSON_ENCODER, option...)
 }
