@@ -5,8 +5,6 @@ import (
 	"errors"
 	"reflect"
 	"sync"
-
-	"github.com/golang/protobuf/proto"
 )
 
 var (
@@ -32,7 +30,7 @@ func (s *request) done(reply interface{}, err error) {
 	})
 }
 
-type fn func(context.Context, reflect.Value, *request)
+type fn func(context.Context, *request)
 
 type methodType int
 
@@ -45,18 +43,18 @@ const (
 
 // method 方法
 type method struct {
-	mt      methodType   // 方法类型
-	handle  fn           // handler
-	name    string       // func name
-	reqType reflect.Type // request type
+	handle     fn           // handler
+	name       string       // func name
+	reqType    reflect.Type // request type
+	marshaller marshaller
 }
 
 // 构造一个 request
 func (m *method) newRequest(b []byte) (*request, error) {
 	reqVal := reflect.New(m.reqType.Elem())
 	if len(b) > 0 {
-		pb := reqVal.Interface().(proto.Message)
-		if err := proto.Unmarshal(b, pb); nil != err {
+		pb := reqVal.Interface()
+		if err := m.marshaller.Unmarshal(b, pb); nil != err {
 			return nil, err
 		}
 	}
@@ -68,7 +66,9 @@ func (m *method) newRequest(b []byte) (*request, error) {
 }
 
 // parseMethod 解析方法
-func parseMethod(typ reflect.Type) (map[string]*method, error) {
+func parseMethod(svc interface{}, marshaller marshaller) (map[string]*method, error) {
+	val := reflect.ValueOf(svc)
+	typ := reflect.TypeOf(svc)
 	ret := make(map[string]*method)
 	for i := 0; i < typ.NumMethod(); i++ {
 		m := typ.Method(i)
@@ -77,9 +77,10 @@ func parseMethod(typ reflect.Type) (map[string]*method, error) {
 			continue
 		}
 
-		if pM, err := genMethod(m); nil != err {
+		if pM, err := genMethod(val, m); nil != err {
 			return ret, err
 		} else {
+			pM.marshaller = marshaller
 			ret[pM.name] = pM
 		}
 	}
@@ -87,7 +88,7 @@ func parseMethod(typ reflect.Type) (map[string]*method, error) {
 }
 
 // genMethod 生成方法
-func genMethod(m reflect.Method) (*method, error) {
+func genMethod(val reflect.Value, m reflect.Method) (*method, error) {
 	const paraNum = 3 // ptr, ctx, req
 	var (
 		reqType reflect.Type
@@ -152,12 +153,12 @@ func genMethod(m reflect.Method) (*method, error) {
 
 	f := m.Func
 
-	h := func(ctx context.Context, val reflect.Value, req *request) {
-		ctxVal := reflect.ValueOf(ctx)
+	var h fn
 
-		switch mt {
-		case methodType_Publish, methodType_Request:
-			repVal := f.Call([]reflect.Value{val, ctxVal, req.reqVal})
+	switch mt {
+	case methodType_Publish, methodType_Request:
+		h = func(ctx context.Context, req *request) {
+			repVal := f.Call([]reflect.Value{val, reflect.ValueOf(ctx), req.reqVal})
 			if methodType_Publish == mt {
 				req.done(nil, nil)
 			} else {
@@ -167,7 +168,9 @@ func genMethod(m reflect.Method) (*method, error) {
 				}
 				req.done(repVal[0].Interface(), err)
 			}
-		case methodType_AsyncRequest:
+		}
+	case methodType_AsyncRequest:
+		h = func(ctx context.Context, req *request) {
 			valFunc := func(in []reflect.Value) []reflect.Value {
 				var err error
 				if in[1].Interface() != nil {
@@ -177,12 +180,10 @@ func genMethod(m reflect.Method) (*method, error) {
 				return nil
 			}
 			cbVal := reflect.MakeFunc(typeF, valFunc)
-			/*cbVal := func(reply interface{}, err error) {
-				req.done(reply, err)
-			}*/
-			f.Call([]reflect.Value{val, ctxVal, req.reqVal, cbVal})
+			f.Call([]reflect.Value{val, reflect.ValueOf(ctx), req.reqVal, cbVal})
 		}
 	}
+
 	ret := &method{
 		name:    m.Name,
 		reqType: reqType,

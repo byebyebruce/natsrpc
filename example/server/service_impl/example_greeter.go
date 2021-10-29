@@ -1,10 +1,10 @@
-package example
+package service_impl
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/byebyebruce/natsrpc/testdata/pb"
+	"github.com/byebyebruce/natsrpc/example/pb"
 )
 
 type ExampleGreeter struct {

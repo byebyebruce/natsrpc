@@ -18,15 +18,16 @@
 // 	protoc        v3.17.3
 // source: testdata/pb/helloworld.proto
 
-package pb
+package greet
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/byebyebruce/natsrpc/annotation"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

@@ -1,6 +1,6 @@
 syntax = "proto3";
 package annotation;
-option go_package = "github.com/byebyebruce/natsrpc/annotation";
+option go_package = "natsrpc";
 import "google/protobuf/descriptor.proto";
 
 enum MethodType {
@@ -12,3 +12,5 @@ enum MethodType {
 extend google.protobuf.MethodOptions {
   MethodType methodType = 2360;
 }
+
+message Empty {}

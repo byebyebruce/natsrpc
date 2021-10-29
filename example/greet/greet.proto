@@ -44,7 +44,7 @@ service Greeter {
   }
 
   // 广播
-  rpc AreYouOK4 (HelloRequest) returns (google.protobuf.Empty) {
+  rpc AreYouOK4 (HelloRequest) returns (natsrpc.Empty) {
     option (annotation.methodType) = P;
   }
 }

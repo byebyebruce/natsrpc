@@ -26,10 +26,12 @@ var (
 func main() {
 	flag.Parse()
 
+	nats.NewC
 	cfg := natsrpc.Config{
 		Server: *server,
 	}
 
+	natsrpc.NewServer()
 	server, err := natsrpc.NewServerWithConfig(cfg, nats.Name("example_server"+*id))
 	if nil != err {
 		panic(err)

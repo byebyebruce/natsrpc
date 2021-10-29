@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/testdata"
-	"github.com/byebyebruce/natsrpc/testdata/pb"
+	"github.com/byebyebruce/natsrpc/example/pb"
 	"github.com/nats-io/nats.go"
 )
 
@@ -30,7 +29,7 @@ func main() {
 	cfg := natsrpc.Config{
 		Server: *server,
 	}
-	enc, err := natsrpc.NewNATSConn(cfg, nats.Name("example_client"+*id))
+	enc, err := natsrpc.NewPBEnc(cfg, nats.Name("example_client"+*id))
 	if nil != err {
 		panic(err)
 	}

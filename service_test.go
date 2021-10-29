@@ -2,26 +2,20 @@ package natsrpc
 
 import (
 	"context"
-	"fmt"
 	"testing"
-
-	"github.com/byebyebruce/natsrpc/testdata/pb"
 )
 
 type A struct {
 }
 
-func (a *A) Func1(ctx context.Context, req *pb.HelloRequest) {
-	fmt.Println(req.Name)
+func (a *A) Func1(ctx context.Context, req *Empty) {
 }
 
-func (a *A) Func2(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
-	return &pb.HelloReply{
-		Message: req.Name,
-	}, nil
+func (a *A) Func2(ctx context.Context, req *Empty) (*Empty, error) {
+	return &Empty{}, nil
 }
 
-func Test_newService(t *testing.T) {
+func Test_Service(t *testing.T) {
 	namespace := "test"
 	serviceName := "natsrpc.A"
 	id := "1"

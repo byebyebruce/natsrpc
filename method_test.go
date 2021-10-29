@@ -2,42 +2,48 @@ package natsrpc
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
-	"github.com/byebyebruce/natsrpc/testdata/pb"
 	"github.com/golang/protobuf/proto"
 )
+
+type testMarshaller struct {
+}
+
+func (s testMarshaller) Unmarshal(b []byte, i interface{}) error {
+	return proto.Unmarshal(b, i.(proto.Message))
+}
+func (s testMarshaller) Marshal(i interface{}) ([]byte, error) {
+	return proto.Marshal(i.(proto.Message))
+}
+
+var pbMarshaller = testMarshaller{}
 
 type MethodTest struct {
 }
 
-func (a *MethodTest) Publish(ctx context.Context, req *pb.HelloRequest) {
-	_ = req.Name
+func (a *MethodTest) Publish(ctx context.Context, req *Empty) {
+	_ = req
 }
 
-func (a *MethodTest) Request(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
-	repl := &pb.HelloReply{
-		Message: req.Name,
-	}
+func (a *MethodTest) Request(ctx context.Context, req *Empty) (*Empty, error) {
+	repl := &Empty{}
 	return repl, nil
 }
-func (a *MethodTest) AsyncRequest(ctx context.Context, req *pb.HelloRequest, f func(*pb.HelloReply, error)) {
-	repl := &pb.HelloReply{
-		Message: req.Name,
-	}
+func (a *MethodTest) AsyncRequest(ctx context.Context, req *Empty, f func(*Empty, error)) {
+	repl := &Empty{}
 	f(repl, nil)
 }
 
 type MethodErrorTest struct {
 }
 
-func (a *MethodErrorTest) Func1(repl *pb.HelloReply) {
+func (a *MethodErrorTest) Func1(repl *Empty) {
 
 }
 
 func Test_Parse(t *testing.T) {
-	m, err := parseMethod(reflect.TypeOf(&MethodTest{}))
+	m, err := parseMethod(&MethodTest{}, pbMarshaller)
 	if nil != err {
 		t.Error(err)
 	}
@@ -45,21 +51,19 @@ func Test_Parse(t *testing.T) {
 	if _, ok := m["Publish"]; !ok {
 		t.Error("name error")
 	}
-	_, err = parseMethod(reflect.TypeOf(&MethodErrorTest{}))
+	_, err = parseMethod(&MethodErrorTest{}, pbMarshaller)
 	if nil == err {
 		t.Error(err)
 	}
 }
 
 func TestMethod_Handle(t *testing.T) {
-	s := &MethodTest{}
-	ret, err := parseMethod(reflect.TypeOf(s))
+	ret, err := parseMethod(&MethodTest{}, pbMarshaller)
 	if nil != err {
 		t.Error(err)
 	}
-	param := "hello"
-	a := &pb.HelloRequest{Name: param}
-	b, _ := proto.Marshal(a)
+	a := &Empty{}
+	b, _ := pbMarshaller.Marshal(a)
 
 	var m *method
 	for _, v := range ret {
@@ -70,36 +74,32 @@ func TestMethod_Handle(t *testing.T) {
 	}
 	if m == nil {
 		t.Error("m is nil")
+		return
 	}
 	req, err := m.newRequest(b)
 	if err != nil {
 		t.Error(err)
 	}
-	m.handle(context.Background(), reflect.ValueOf(s), req)
+	m.handle(context.Background(), req)
 	if nil != err {
 		t.Error(err)
 	}
 
-	if req.reply.(*pb.HelloReply).Message != param {
-		t.Error("reply.Message!=param")
-	}
 }
 
 func BenchmarkMethod_Handle(b *testing.B) {
 	s := &MethodTest{}
-	ret, err := parseMethod(reflect.TypeOf(s))
+	ret, err := parseMethod(s, pbMarshaller)
 	if nil != err {
 		b.Error(err)
 	}
-	param := "hello"
-	a := &pb.HelloRequest{Name: param}
+	a := &Empty{}
 	bs, _ := proto.Marshal(a)
 
 	h := ret["Request"]
-	val := reflect.ValueOf(s)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		req, _ := h.newRequest(bs)
-		h.handle(context.Background(), val, req)
+		h.handle(context.Background(), req)
 	}
 }

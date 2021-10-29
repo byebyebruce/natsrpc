@@ -1,17 +1,20 @@
 package natsrpc
 
 import (
-	"bytes"
 	"go/ast"
 	"reflect"
+	"strings"
 	"sync"
+
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/encoders/protobuf"
 
 	"github.com/golang/protobuf/proto"
 )
 
 var bufPool = sync.Pool{
 	New: func() interface{} {
-		return bytes.NewBuffer([]byte{})
+		return &strings.Builder{}
 	},
 }
 
@@ -20,7 +23,11 @@ func CombineSubject(prefix string, s ...string) string {
 	if len(s) == 0 {
 		return prefix
 	}
-	bf := bufPool.Get().(*bytes.Buffer)
+	bf := bufPool.Get().(*strings.Builder)
+	defer func() {
+		bf.Reset()
+		bufPool.Put(bf)
+	}()
 	bf.WriteString(prefix)
 	for _, v := range s {
 		if v == "" {
@@ -30,8 +37,7 @@ func CombineSubject(prefix string, s ...string) string {
 		bf.WriteString(v)
 	}
 	subject := bf.String()
-	bf.Reset()
-	bufPool.Put(bf)
+
 	return subject
 }
 
@@ -63,4 +69,17 @@ func IsContextType(t reflect.Type) bool {
 		return false
 	}
 	return true
+}
+
+// NewPBEnc 创建enc
+func NewPBEnc(url string, option ...nats.Option) (*nats.EncodedConn, error) {
+	nc, err := nats.Connect(url, option...)
+	if err != nil {
+		return nil, err
+	}
+	enc, err1 := nats.NewEncodedConn(nc, protobuf.PROTOBUF_ENCODER)
+	if nil != err1 {
+		return nil, err1
+	}
+	return enc, nil
 }
