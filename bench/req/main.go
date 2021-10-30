@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -14,27 +13,21 @@ import (
 
 var (
 	natsURL   = flag.String("url", "nats://127.0.0.1:4222", "nats server")
-	sn        = flag.Int("s", 0, "server count,0:cpu num")
-	cn        = flag.Int("c", 0, "client count,0:cpu num")
+	sn        = flag.Int("s", 128, "server number")
+	cn        = flag.Int("c", 128, "client number")
 	totalTime = flag.Int("t", 10, "total time")
 )
 
 type BenchReqService struct {
 }
 
-func (a *BenchReqService) Request(ctx context.Context, req *natsrpc.Empty)(*natsrpc.Empty, error) {
+func (a *BenchReqService) Request(ctx context.Context, req *natsrpc.Empty) (*natsrpc.Empty, error) {
 	repl := &natsrpc.Empty{}
 	return repl, nil
 }
 
 func main() {
 	flag.Parse()
-	if 0 == *sn {
-		*sn = runtime.NumCPU()
-	}
-	if 0 == *cn {
-		*cn = runtime.NumCPU()
-	}
 
 	spaceOpt := natsrpc.WithNamespace("myspace")
 	groupOpt := natsrpc.WithGroup("mygroup")
@@ -84,7 +77,7 @@ func main() {
 					return
 				default:
 				}
-				 resp := &natsrpc.Empty{}
+				resp := &natsrpc.Empty{}
 				if err := client.Request(ctx, subject, req, resp); nil != err {
 					atomic.AddUint32(&totalFailed, 1)
 					continue

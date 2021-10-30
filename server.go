@@ -18,22 +18,24 @@ type Server struct {
 	services map[*service][]*nats.Subscription // 服务 name->service
 }
 
+var _ IServer = (*Server)(nil)
+
 // NewServer 构造器
 func NewServer(enc *nats.EncodedConn) (*Server, error) {
 	if !enc.Conn.IsConnected() {
 		return nil, fmt.Errorf("enc is not connected")
 	}
 	d := &Server{
-		enc:      enc,
-		WaitGroup:  &sync.WaitGroup{},
-		services: make(map[*service][]*nats.Subscription),
+		enc:       enc,
+		WaitGroup: &sync.WaitGroup{},
+		services:  make(map[*service][]*nats.Subscription),
 	}
 	return d, nil
 }
 
 // Close 关闭
 func (s *Server) Close(duration time.Duration) (err error) {
-	s.ClearSubscription()
+	s.ClearAllSubscription()
 
 	ctx, cancel := context.WithTimeout(context.Background(), duration)
 	defer cancel()
@@ -53,8 +55,8 @@ func (s *Server) Close(duration time.Duration) (err error) {
 	return
 }
 
-// ClearSubscription 取消所有订阅
-func (s *Server) ClearSubscription() {
+// ClearAllSubscription 取消所有订阅
+func (s *Server) ClearAllSubscription() {
 	s.mu.Lock()
 	ss := make([]*service, 0, len(s.services))
 	for s := range s.services {
@@ -82,7 +84,7 @@ func (s *Server) remove(service *service) bool {
 }
 
 // Register 注册服务
-func (s *Server) Register(name string, svc interface{}, opts ...Option) (Service, error) {
+func (s *Server) Register(name string, svc interface{}, opts ...Option) (IService, error) {
 	// new 一个服务
 	service, err := newService(name, svc, opts...)
 	if nil != err {
@@ -105,7 +107,7 @@ func (s *Server) Register(name string, svc interface{}, opts ...Option) (Service
 	if err := s.subscribeMethod(service); nil != err {
 		return nil, err
 	}
-	s.services[service] = nil
+	s.services[service] = make([]*nats.Subscription, 0, len(service.methods))
 	return service, nil
 }
 
@@ -118,8 +120,8 @@ func (s *Server) subscribeMethod(service *service) error {
 			s.Add(1)
 			go func() {
 				defer s.Done()
-				err := s.call(context.Background(), service, m, msg.Data, msg.Reply)
-				if err!=nil {
+				err := s.handle(context.Background(), service, m, msg.Data, msg.Reply)
+				if err != nil {
 					log.Println(err.Error())
 				}
 			}()
@@ -134,8 +136,8 @@ func (s *Server) subscribeMethod(service *service) error {
 	return nil
 }
 
-func (s *Server) call(ctx context.Context, service *service, m *method, b []byte,r string) error {
-	reply, err := service.call(ctx, m, b)
+func (s *Server) handle(ctx context.Context, service *service, m *method, b []byte, r string) error {
+	reply, err := service.handle(ctx, m, b)
 	if nil != err {
 		log.Printf("m.execute error[%v]", err)
 	}
@@ -147,13 +149,20 @@ func (s *Server) call(ctx context.Context, service *service, m *method, b []byte
 		return fmt.Errorf("conn colsed")
 	}
 	respMsg := &nats.Msg{
-		Subject:r,
-		Data: reply,
+		Subject: r,
+		Data:    reply,
 	}
 	if nil != err {
-		respMsg.Header = nats.Header{}
-		respMsg.Header.Add(headerError, err.Error())
+		//respMsg.Header = nats.Header{}
+		//respMsg.Header.Add(headerError, err.Error())
 	}
-	//return s.enc.Conn.Publish(msg.Reply,msg.Data)
 	return s.enc.Conn.PublishMsg(respMsg)
+}
+
+func (s *Server) Unmarshal(b []byte, i interface{}) error {
+	return s.enc.Enc.Decode("", b, i)
+}
+
+func (s *Server) Marshal(i interface{}) ([]byte, error) {
+	return s.enc.Enc.Encode("", i)
 }

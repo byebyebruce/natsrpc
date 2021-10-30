@@ -30,10 +30,6 @@ func (a *MethodTest) Request(ctx context.Context, req *Empty) (*Empty, error) {
 	repl := &Empty{}
 	return repl, nil
 }
-func (a *MethodTest) AsyncRequest(ctx context.Context, req *Empty, f func(*Empty, error)) {
-	repl := &Empty{}
-	f(repl, nil)
-}
 
 type MethodErrorTest struct {
 }
@@ -43,7 +39,7 @@ func (a *MethodErrorTest) Func1(repl *Empty) {
 }
 
 func Test_Parse(t *testing.T) {
-	m, err := parseMethod(&MethodTest{}, pbMarshaller)
+	m, err := parseMethod(&MethodTest{})
 	if nil != err {
 		t.Error(err)
 	}
@@ -51,14 +47,15 @@ func Test_Parse(t *testing.T) {
 	if _, ok := m["Publish"]; !ok {
 		t.Error("name error")
 	}
-	_, err = parseMethod(&MethodErrorTest{}, pbMarshaller)
+	_, err = parseMethod(&MethodErrorTest{})
 	if nil == err {
 		t.Error(err)
 	}
 }
 
 func TestMethod_Handle(t *testing.T) {
-	ret, err := parseMethod(&MethodTest{}, pbMarshaller)
+	s := &MethodTest{}
+	ret, err := parseMethod(s)
 	if nil != err {
 		t.Error(err)
 	}
@@ -76,11 +73,9 @@ func TestMethod_Handle(t *testing.T) {
 		t.Error("m is nil")
 		return
 	}
-	req, err := m.newRequest(b)
-	if err != nil {
-		t.Error(err)
-	}
-	m.handle(context.Background(), req)
+	req := m.newRequest()
+	pbMarshaller.Unmarshal(b,req)
+	_, err = m.handle(s,context.Background(), req)
 	if nil != err {
 		t.Error(err)
 	}
@@ -89,17 +84,15 @@ func TestMethod_Handle(t *testing.T) {
 
 func BenchmarkMethod_Handle(b *testing.B) {
 	s := &MethodTest{}
-	ret, err := parseMethod(s, pbMarshaller)
+	ret, err := parseMethod(s)
 	if nil != err {
 		b.Error(err)
 	}
-	a := &Empty{}
-	bs, _ := proto.Marshal(a)
 
 	h := ret["Request"]
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		req, _ := h.newRequest(bs)
-		h.handle(context.Background(), req)
+		req := h.newRequest()
+		h.handle(s,context.Background(), req)
 	}
 }

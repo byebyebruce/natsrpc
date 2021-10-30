@@ -27,8 +27,8 @@ func RunSimpleNatsServer(opts *server.Options) *server.Server {
 		NoSigs:                true,
 		MaxControlLine:        4096,
 		DisableShortFirstPing: true,
-		Trace : true,
-		Debug: true,
+		//Trace : true,
+		//Debug: true,
 	}
 
 	if opts == nil {

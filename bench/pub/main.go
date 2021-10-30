@@ -10,13 +10,12 @@ import (
 	"time"
 
 	"github.com/byebyebruce/natsrpc"
-	"github.com/nats-io/nats.go"
 )
 
 var (
-	natsURL   = flag.String("url", "nats://127.0.0.1:4222", "nats url")
+	url       = flag.String("url", "nats://127.0.0.1:4222", "nats url")
 	sn        = flag.Int("s", 0, "natsURL count,0:cpu num")
-	cn        = flag.Int("c", 0, "client count,0:cpu num")
+	cn        = flag.Int("c", 1, "client count,0:cpu num")
 	totalTime = flag.Int("t", 10, "total time")
 )
 
@@ -43,31 +42,39 @@ func main() {
 	op := []natsrpc.Option{natsrpc.WithNamespace("bench_pub")}
 
 	for i := 0; i < *sn; i++ {
-		server, err := natsrpc.NewPBServer(*natsURL, nats.Name(fmt.Sprintf("bench_pub_server_%d", i)))
-		if nil != err {
-			panic(err)
-		}
+		enc, err := natsrpc.NewPBEnc(*url)
+		natsrpc.IfNotNilPanic(err)
+		defer enc.Close()
+
+		server, err := natsrpc.NewServer(enc)
+		natsrpc.IfNotNilPanic(err)
 		defer server.Close(time.Second)
+
 		_, err = server.Register(serviceName, &BenchNotifyService{}, op...)
 		if nil != err {
 			panic(err)
 		}
 	}
 
-	var totalReq uint32
+	var totalFailed uint32
 	var totalSuccess uint32
 
 	fmt.Println("start...")
 	wg := sync.WaitGroup{}
 	req := &natsrpc.Empty{}
+
+	sub := natsrpc.CombineSubject(serviceName, "Notify")
 	for i := 0; i <= *cn; i++ {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			client, err := natsrpc.NewPBClient(*natsURL)
-			if nil != err {
-				panic(err)
-			}
+
+			enc, err := natsrpc.NewPBEnc(*url)
+			natsrpc.IfNotNilPanic(err)
+			defer enc.Close()
+
+			client, err := natsrpc.NewClient(enc, op...)
+			natsrpc.IfNotNilPanic(err)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*totalTime)*time.Second)
 			defer cancel()
 			for {
@@ -76,8 +83,8 @@ func main() {
 					return
 				default:
 				}
-				atomic.AddUint32(&totalReq, 1)
-				if err := client.Publish("Notify", req); nil != err {
+				if err := client.Publish(sub, req); nil != err {
+					atomic.AddUint32(&totalFailed, 1)
 					continue
 				}
 				atomic.AddUint32(&totalSuccess, 1)
@@ -87,5 +94,5 @@ func main() {
 	}
 
 	wg.Wait()
-	fmt.Println("elapse:", *totalTime, "suber", *sn, "pub", totalReq, "success", totalSuccess, "process", n)
+	fmt.Println("elapse:", *totalTime, "suber", *sn, "pub", totalSuccess, "pub failed", totalFailed, "receive", n, "/", uint32(*sn)*totalSuccess)
 }

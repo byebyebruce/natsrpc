@@ -7,15 +7,12 @@ import (
 	"reflect"
 )
 
-// Service 服务
-type Service interface {
-	Name() string
-	Close() bool
-}
+var _ IService = (*service)(nil)
 
 // service 服务
 type service struct {
 	name    string             // 名字 package.struct
+	val     interface{}        // 值
 	server  *Server            // rpc
 	methods map[string]*method // 方法集合
 	opt     Options            // 设置
@@ -49,9 +46,10 @@ func newService(name string, i interface{}, opts ...Option) (*service, error) {
 		opt:     opt,
 		methods: map[string]*method{},
 		name:    name,
+		val:     i,
 	}
 
-	ms, err := parseMethod(i, s)
+	ms, err := parseMethod(i)
 	if nil != err {
 		return nil, err
 	}
@@ -70,7 +68,7 @@ func newService(name string, i interface{}, opts ...Option) (*service, error) {
 	return s, nil
 }
 
-func (s *service) call(ctx context.Context, m *method, b []byte) ([]byte, error) {
+func (s *service) handle(ctx context.Context, m *method, b []byte) ([]byte, error) {
 	if s.opt.recoverHandler != nil {
 		defer func() {
 			if e := recover(); e != nil {
@@ -82,28 +80,20 @@ func (s *service) call(ctx context.Context, m *method, b []byte) ([]byte, error)
 	ctx, cancel := context.WithTimeout(ctx, s.opt.timeout)
 	defer cancel()
 
-	req, err := m.newRequest(b)
-	if nil != err {
-		return nil, err
-	}
-
-	m.handle(ctx, req)
-
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case <-req.over:
-		if err != nil {
+	req := m.newRequest()
+	if len(b) > 0 {
+		if err := s.server.Unmarshal(b, req); nil != err {
 			return nil, err
 		}
-		return s.Marshal(req.reply)
 	}
-}
 
-func (s *service) Unmarshal(b []byte, i interface{}) error {
-	return s.server.enc.Enc.Decode("", b, i)
-}
-
-func (s *service) Marshal(i interface{}) ([]byte, error) {
-	return s.server.enc.Enc.Encode("", i)
+	var (
+		resp interface{}
+		err  error
+	)
+	resp, err = m.handle(s.val, ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return s.server.Marshal(resp)
 }
