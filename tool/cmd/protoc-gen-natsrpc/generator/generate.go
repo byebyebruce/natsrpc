@@ -22,7 +22,7 @@ type NatsRpcModule struct {
 }
 
 func (m *NatsRpcModule) Name() string {
-	return "nrpc"
+	return "natsrpc"
 }
 
 func (m *NatsRpcModule) Execute(targets map[string]pgs.File, packages map[string]pgs.Package) []pgs.Artifact {
@@ -34,7 +34,7 @@ func (m *NatsRpcModule) Execute(targets map[string]pgs.File, packages map[string
 		// 解析出file语法树
 		fileSpec := m.ExtraFile(f)
 		base := strings.Split(f.Name().String(), ".")[0]
-		m.OverwriteCustomTemplateFile(path.Join(m.OutputPath(), fmt.Sprintf("%s.nrpc.pb.go", base)), tmp, fileSpec, 0644)
+		m.OverwriteCustomTemplateFile(path.Join(m.OutputPath(), fmt.Sprintf("%s.natsrpc.pb.go", base)), tmp, fileSpec, 0644)
 
 		m.Pop()
 	}

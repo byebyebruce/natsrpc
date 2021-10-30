@@ -4,7 +4,7 @@ package pb;
 option go_package = ".;pb";
 import "natsrpc.proto";
 import "google/protobuf/descriptor.proto";
-import "github.com/byebyebruce/natsrpc";
+//import "github.com/byebyebruce/natsrpc";
 
 // The request message containing the user's name.
 message HelloRequest {

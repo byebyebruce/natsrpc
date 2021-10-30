@@ -7,5 +7,3 @@ os:
     - windows
 script:
     - go test ./...
-    - go test ./cmd/natsrpc_codegen
-

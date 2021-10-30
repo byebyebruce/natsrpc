@@ -33,7 +33,7 @@ func main() {
 	groupOpt := natsrpc.WithGroup("mygroup")
 
 	var serviceName = "bench"
-	enc, err := natsrpc.NewJSONEnc(*natsURL)
+	enc, err := natsrpc.NewPBEnc(*natsURL)
 	if err != nil {
 		panic(err)
 	}
@@ -61,7 +61,7 @@ func main() {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			enc, err := natsrpc.NewJSONEnc(*natsURL)
+			enc, err := natsrpc.NewPBEnc(*natsURL)
 			if err != nil {
 				panic(err)
 			}

@@ -62,20 +62,14 @@ func TestMethod_Handle(t *testing.T) {
 	a := &Empty{}
 	b, _ := pbMarshaller.Marshal(a)
 
-	var m *method
-	for _, v := range ret {
-		if v.name == "Request" {
-			m = v
-			break
-		}
-	}
-	if m == nil {
+	m, ok := ret["Request"]
+	if !ok {
 		t.Error("m is nil")
 		return
 	}
 	req := m.newRequest()
-	pbMarshaller.Unmarshal(b,req)
-	_, err = m.handle(s,context.Background(), req)
+	pbMarshaller.Unmarshal(b, req)
+	_, err = m.handle(s, context.Background(), req)
 	if nil != err {
 		t.Error(err)
 	}
@@ -93,6 +87,6 @@ func BenchmarkMethod_Handle(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		req := h.newRequest()
-		h.handle(s,context.Background(), req)
+		h.handle(s, context.Background(), req)
 	}
 }
