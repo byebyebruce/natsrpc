@@ -61,6 +61,28 @@ func (m *NatsRpcModule) ExtraService(service pgs.Service) codegen.ServiceSpec {
 	serviceData := codegen.ServiceSpec{
 		ServiceName: service.Name().String(),
 	}
+	sa, ca := false, false
+	svcOpts := service.Descriptor().GetOptions()
+	svcDescs, _ := proto.ExtensionDescs(svcOpts)
+	for _, desc := range svcDescs {
+		// 找到对应field
+		if desc.Field == natsrpc.E_ServceAsync.Field {
+			ext, _ := proto.GetExtension(svcOpts, desc)
+			// 解析出methodType
+			if value, ok := ext.(*bool); ok {
+				sa = *value
+			}
+		} else if desc.Field == natsrpc.E_ClientAsync.Field {
+			ext, _ := proto.GetExtension(svcOpts, desc)
+			// 解析出methodType
+			if value, ok := ext.(*bool); ok {
+				ca = *value
+			}
+		}
+	}
+	serviceData.ServiceAsync = sa
+	serviceData.ClientAsync = ca
+
 	for _, method := range service.Methods() {
 		methodSpec := codegen.ServiceMethodSpec{
 			MethodName:     method.Name().String(),

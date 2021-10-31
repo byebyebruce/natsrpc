@@ -37,3 +37,12 @@ service Greeter {
     option (natsrpc.methodType) = P;
   }
 }
+
+service AsyncGreeter {
+  option (natsrpc.servceAsync) = true;
+  option (natsrpc.clientAsync) = true;
+
+  rpc AreYouOK1 (HelloRequest) returns (HelloReply) {}
+  rpc AreYouOK2 (HelloRequest) returns (HelloReply) {}
+  rpc AreYouOK3 (HelloRequest) returns (HelloReply) {}
+}

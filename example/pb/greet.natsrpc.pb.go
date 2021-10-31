@@ -81,3 +81,69 @@ func (c *GreeterClient) AreYouOK3Async(ctx context.Context, req *HelloRequest, c
 func (c *GreeterClient) PublishAreYouOK4(ctx context.Context, notify *HelloRequest) error {
 	return c.c.Publish("AreYouOK4", notify)
 }
+
+// AsyncGreeter
+type AsyncGreeter interface {
+	// AreYouOK1Async
+	AreYouOK1Async(ctx context.Context, req *HelloRequest, cb func(*HelloReply, error))
+	// AreYouOK2Async
+	AreYouOK2Async(ctx context.Context, req *HelloRequest, cb func(*HelloReply, error))
+	// AreYouOK3Async
+	AreYouOK3Async(ctx context.Context, req *HelloRequest, cb func(*HelloReply, error))
+}
+
+// RegisterAsyncGreeter
+func RegisterAsyncGreeter(server *natsrpc.Server, s AsyncGreeter, opts ...natsrpc.Option) (natsrpc.Service, error) {
+	return server.Register(".;pb.AsyncGreeter", s, opts...)
+}
+
+// AsyncGreeterClient
+type AsyncGreeterClient struct {
+	c *natsrpc.Client
+}
+
+// NewAsyncGreeterClient
+func NewAsyncGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.Option) (*AsyncGreeterClient, error) {
+	c, err := natsrpc.NewClient(enc, ".;pb.AsyncGreeter", opts...)
+	if err != nil {
+		return nil, err
+	}
+	ret := &AsyncGreeterClient{
+		c: c,
+	}
+	return ret, nil
+}
+
+// ID 根据ID获得client
+func (c *AsyncGreeterClient) ID(id interface{}) *AsyncGreeterClient {
+	return &AsyncGreeterClient{
+		c: c.c.ID(id),
+	}
+}
+
+// AreYouOK1Async
+func (c *AsyncGreeterClient) AreYouOK1Async(ctx context.Context, req *HelloRequest, cb func(*HelloReply, error)) {
+	rep := &HelloReply{}
+	f := func(_ proto.Message, err error) {
+		cb(rep, err)
+	}
+	c.c.AsyncRequest("AreYouOK1", req, rep, f)
+}
+
+// AreYouOK2Async
+func (c *AsyncGreeterClient) AreYouOK2Async(ctx context.Context, req *HelloRequest, cb func(*HelloReply, error)) {
+	rep := &HelloReply{}
+	f := func(_ proto.Message, err error) {
+		cb(rep, err)
+	}
+	c.c.AsyncRequest("AreYouOK2", req, rep, f)
+}
+
+// AreYouOK3Async
+func (c *AsyncGreeterClient) AreYouOK3Async(ctx context.Context, req *HelloRequest, cb func(*HelloReply, error)) {
+	rep := &HelloReply{}
+	f := func(_ proto.Message, err error) {
+		cb(rep, err)
+	}
+	c.c.AsyncRequest("AreYouOK3", req, rep, f)
+}

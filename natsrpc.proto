@@ -4,6 +4,11 @@ package natsrpc;
 option go_package = "natsrpc";
 import "google/protobuf/descriptor.proto";
 
+extend google.protobuf.ServiceOptions {
+	bool servceAsync = 43230; // service异步handler
+	bool clientAsync = 43231; // client异步请求
+}
+
 enum MethodType {
   A = 0; // async 异步
   S = 1; // sync 同步

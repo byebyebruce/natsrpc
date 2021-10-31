@@ -9,8 +9,10 @@ type FileSpec struct {
 }
 
 type ServiceSpec struct {
-	ServiceName string
-	MethodList  []ServiceMethodSpec
+	ServiceName  string
+	MethodList   []ServiceMethodSpec
+	ServiceAsync bool // service 异步handler
+	ClientAsync  bool // client 异步handler
 }
 
 type ServiceMethodSpec struct {
