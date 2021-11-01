@@ -7,6 +7,7 @@ import "natsrpc.proto";
 import "greet.proto";
 
 service Greeter {
+  option(natsrpc.serviceAsync) = true;
   rpc Hello (pb.HelloRequest) returns (pb.HelloReply) {}
   rpc ToAll (natsrpc.Empty) returns (natsrpc.Empty) {
     option (natsrpc.publish) = true;

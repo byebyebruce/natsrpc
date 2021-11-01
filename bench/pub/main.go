@@ -63,7 +63,6 @@ func main() {
 	wg := sync.WaitGroup{}
 	req := &natsrpc.Empty{}
 
-	sub := natsrpc.CombineSubject(serviceName, "Notify")
 	for i := 0; i <= *cn; i++ {
 		wg.Add(1)
 		go func(idx int) {
@@ -73,7 +72,7 @@ func main() {
 			natsrpc.IfNotNilPanic(err)
 			defer enc.Close()
 
-			client, err := natsrpc.NewClient(enc)
+			client, err := natsrpc.NewClient(enc, serviceName)
 			natsrpc.IfNotNilPanic(err)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*totalTime)*time.Second)
 			defer cancel()
@@ -83,7 +82,7 @@ func main() {
 					return
 				default:
 				}
-				if err := client.Publish(sub, req); nil != err {
+				if err := client.Publish("Notify", req); nil != err {
 					atomic.AddUint32(&totalFailed, 1)
 					continue
 				}
