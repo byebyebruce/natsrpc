@@ -11,11 +11,11 @@ var _ IService = (*service)(nil)
 
 // service 服务
 type service struct {
-	name    string             // 名字 package.struct
+	name    string             // 名字
 	val     interface{}        // 值
 	server  *Server            // rpc
 	methods map[string]*method // 方法集合
-	opt     Options            // 设置
+	opt     serviceOptions     // 设置
 }
 
 // 名字
@@ -30,8 +30,11 @@ func (s *service) Close() bool {
 }
 
 // newService 创建服务
-func newService(name string, i interface{}, opts ...Option) (*service, error) {
-	opt := MakeOptions(opts...)
+func newService(name string, i interface{}, opts ...ServiceOption) (*service, error) {
+	opt := defaultServiceOptions
+	for _, v := range opts {
+		v(&opt)
+	}
 
 	val := reflect.ValueOf(i)
 	if val.Kind() != reflect.Ptr {
@@ -69,14 +72,6 @@ func newService(name string, i interface{}, opts ...Option) (*service, error) {
 }
 
 func (s *service) handle(ctx context.Context, m *method, b []byte) ([]byte, error) {
-	if s.opt.recoverHandler != nil {
-		defer func() {
-			if e := recover(); e != nil {
-				s.opt.recoverHandler(e)
-			}
-		}()
-	}
-
 	ctx, cancel := context.WithTimeout(ctx, s.opt.timeout)
 	defer cancel()
 

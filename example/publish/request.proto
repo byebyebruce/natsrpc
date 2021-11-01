@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package main;
+option go_package = "github.com/byebyebruce/example/request";
+
+import "greet.proto";
+
+service Greeter {
+  rpc Hello (pb.HelloRequest) returns (pb.HelloReply) {}
+}

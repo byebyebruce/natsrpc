@@ -39,7 +39,7 @@ func main() {
 
 	var serviceName = fmt.Sprintf("å%d", time.Now().UnixNano())
 
-	op := []natsrpc.Option{natsrpc.WithNamespace("bench_pub")}
+	op := []natsrpc.ServiceOption{}
 
 	for i := 0; i < *sn; i++ {
 		enc, err := natsrpc.NewPBEnc(*url)
@@ -73,7 +73,7 @@ func main() {
 			natsrpc.IfNotNilPanic(err)
 			defer enc.Close()
 
-			client, err := natsrpc.NewClient(enc, op...)
+			client, err := natsrpc.NewClient(enc)
 			natsrpc.IfNotNilPanic(err)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*totalTime)*time.Second)
 			defer cancel()

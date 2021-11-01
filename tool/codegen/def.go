@@ -1,7 +1,5 @@
 package codegen
 
-import "github.com/byebyebruce/natsrpc"
-
 type FileSpec struct {
 	PackageName   string
 	GoPackageName string
@@ -19,5 +17,5 @@ type ServiceMethodSpec struct {
 	MethodName     string
 	InputTypeName  string
 	OutputTypeName string
-	MethodType     natsrpc.MethodType
+	Publish        bool // false表示request(需要返回值)，true表示广播(不需要返回值)
 }

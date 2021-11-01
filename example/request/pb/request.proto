@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package request;
+option go_package = "github.com/byebyebruce/example/request";
+
+import "natsrpc.proto";
+import "greet.proto";
+
+service Greeter {
+  rpc Hello (pb.HelloRequest) returns (pb.HelloReply) {}
+  rpc ToAll (pb.HelloRequest) returns (natsrpc.Empty) {
+    option (natsrpc.publish) = true;
+  }
+}

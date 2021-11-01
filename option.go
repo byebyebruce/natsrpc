@@ -2,78 +2,126 @@ package natsrpc
 
 import (
 	"fmt"
+	"log"
 	"time"
 )
 
-// Options 设置
-type Options struct {
-	namespace      string            // 空间(划分隔离)
-	group          string            // sub组(有分组的话，该组内只有1个sub能收到，否则全部收到
-	id             string            // id
-	timeout        time.Duration     // 请求/handle的超时
+type serverOptions struct {
+	logger         *log.Logger       // logger
 	recoverHandler func(interface{}) // recover handler
 }
 
-// Namespace 空间
-func (o Options) Namespace() string {
-	return o.namespace
-}
+// ServerOption
+type ServerOption func(options *serverOptions)
 
-// ID id
-func (o Options) ID() string {
-	return o.id
-}
-
-// Option Option
-type Option func(options *Options)
-
-// MakeOptions 构造options
-func MakeOptions(opts ...Option) Options {
-	ret := Options{
-		namespace: "default",
-		id:        "",
-		timeout:   time.Duration(3) * time.Second,
-		recoverHandler: func(e interface{}) {
-			fmt.Println(e)
-		},
-	}
-	for _, v := range opts {
-		v(&ret)
-	}
-	return ret
-}
-
-// WithGroup 订阅组
-func WithGroup(group string) Option {
-	return func(options *Options) {
-		options.group = group
+// WithLogger logger
+func WithServerLogger(logger *log.Logger) ServerOption {
+	return func(options *serverOptions) {
+		options.logger = logger
 	}
 }
 
-// WithNamespace 空间集群
-func WithNamespace(namespace string) Option {
-	return func(options *Options) {
-		options.namespace = namespace
-	}
-}
-
-// WithID id
-func WithID(id interface{}) Option {
-	return func(options *Options) {
-		options.id = fmt.Sprintf("%v", id)
-	}
-}
-
-// ID id
-func WithRecoveryHandler(h func(interface{})) Option {
-	return func(options *Options) {
+// WithServerRecovery recover handler
+func WithServerRecovery(h func(interface{})) ServerOption {
+	return func(options *serverOptions) {
 		options.recoverHandler = h
 	}
 }
 
-// WithTimeout 超时时间
-func WithTimeout(timeout time.Duration) Option {
-	return func(options *Options) {
+// serviceOptions 设置
+type serviceOptions struct {
+	namespace string        // 空间(划分隔离)
+	group     string        // sub组(有分组的话，该组内只有1个sub能收到，否则全部收到
+	id        string        // id
+	timeout   time.Duration // 请求/handle的超时
+}
+
+// ServiceOption ServiceOption
+type ServiceOption func(options *serviceOptions)
+
+// WithServiceGroup 订阅组
+func WithServiceGroup(group string) ServiceOption {
+	return func(options *serviceOptions) {
+		options.group = group
+	}
+}
+
+// WithServiceNamespace 空间集群
+func WithServiceNamespace(namespace string) ServiceOption {
+	return func(options *serviceOptions) {
+		options.namespace = namespace
+	}
+}
+
+// WithServiceID id
+func WithServiceID(id interface{}) ServiceOption {
+	return func(options *serviceOptions) {
+		options.id = fmt.Sprintf("%v", id)
+	}
+}
+
+// WithServiceTimeout 超时时间
+func WithServiceTimeout(timeout time.Duration) ServiceOption {
+	return func(options *serviceOptions) {
 		options.timeout = timeout
+	}
+}
+
+// clientOptions 设置
+type clientOptions struct {
+	namespace string        // 空间(划分隔离)
+	id        string        // id
+	timeout   time.Duration // 请求/handle的超时
+}
+
+type ClientOption func(options *clientOptions)
+
+// WithClientNamespace 空间集群
+func WithClientNamespace(namespace string) ClientOption {
+	return func(options *clientOptions) {
+		options.namespace = namespace
+	}
+}
+
+// WithClientID id
+func WithClientID(id interface{}) ClientOption {
+	return func(options *clientOptions) {
+		options.id = fmt.Sprintf("%v", id)
+	}
+}
+
+// WithClientTimeout 超时时间
+func WithClientTimeout(timeout time.Duration) ClientOption {
+	return func(options *clientOptions) {
+		options.timeout = timeout
+	}
+}
+
+type callOptions struct {
+	timeout *time.Duration
+	id      *string // id
+	cb      func(interface{}, error)
+}
+
+type CallOption func(options *callOptions)
+
+// WithCallTimeout
+func WithCallTimeout(timeout time.Duration) CallOption {
+	return func(options *callOptions) {
+		options.timeout = &timeout
+	}
+}
+
+// WithCallID id
+func WithCallID(id interface{}) CallOption {
+	return func(options *callOptions) {
+		id := fmt.Sprintf("%v", id)
+		options.id = &id
+	}
+}
+
+func WithCallback(cb func(interface{}, error)) CallOption {
+	return func(options *callOptions) {
+		options.cb = cb
 	}
 }

@@ -3,7 +3,7 @@
 set -ex
 
 CURDIR=$(cd $(dirname $0); pwd)
-PROTO_IMPORT=$CURDIR/../..
+PROTO_IMPORT=$CURDIR/../../..
 
 
 #--go_out=plugins=grpc:$CURDIR/ \
@@ -11,6 +11,8 @@ PROTO_IMPORT=$CURDIR/../..
 
 protoc \
 --proto_path=$PROTO_IMPORT \
+--proto_path=$CURDIR/../../pb \
 --proto_path=$CURDIR \
 --go_out=paths=source_relative:$CURDIR \
-$CURDIR/*.proto
+--natsrpc_out=. \
+$CURDIR/request.proto

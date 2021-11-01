@@ -4,19 +4,18 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/byebyebruce/natsrpc/example/pb"
-	"github.com/nats-io/nats-server/v2/server"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/byebyebruce/natsrpc/example/pb"
+
 	"github.com/byebyebruce/natsrpc"
 )
 
 var (
-	url    = flag.String("url", "nats://127.0.0.1:4222", "nats server")
+	url       = flag.String("url", "nats://127.0.0.1:4222", "nats server")
 	namespace = flag.String("ns", "testsapce", "namespace")
 	group     = flag.String("g", "", "subscribe group")
 	id        = flag.String("id", "", "service id")
@@ -33,14 +32,12 @@ func main() {
 	natsrpc.IfNotNilPanic(err)
 	defer server.Close(time.Second)
 
-	opts := []natsrpc.Option{
+	opts := []natsrpc.ServiceOption{
 		natsrpc.WithNamespace(*namespace),
-		natsrpc.WithGroup(*group),
+		natsrpc.WithServiceGroup(*group),
 		natsrpc.WithID(*id),
 		natsrpc.WithTimeout(time.Second),
-		natsrpc.WithRecoveryHandler(func(e interface{}) {
-			fmt.Println(e)
-		})}
+	}
 
 	s, err := testdata.RegisterGreeter(server, &example.ExampleGreeter{}, opts...)
 	if nil != err {
@@ -53,7 +50,6 @@ func main() {
 	fmt.Println(s.Name(), "start")
 	<-sig
 }
-
 
 type ExampleGreeter struct {
 }

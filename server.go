@@ -3,7 +3,6 @@ package natsrpc
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 // Server server
 type Server struct {
 	*sync.WaitGroup
+	opt      serverOptions                     // options
 	enc      *nats.EncodedConn                 // NATS Encode Conn
 	mu       sync.Mutex                        // lock
 	services map[*service][]*nats.Subscription // 服务 name->service
@@ -21,13 +21,20 @@ type Server struct {
 var _ IServer = (*Server)(nil)
 
 // NewServer 构造器
-func NewServer(enc *nats.EncodedConn) (*Server, error) {
+func NewServer(enc *nats.EncodedConn, option ...ServerOption) (*Server, error) {
 	if !enc.Conn.IsConnected() {
 		return nil, fmt.Errorf("enc is not connected")
 	}
+
+	options := defaultServerOptions
+	for _, v := range option {
+		v(&options)
+	}
+
 	d := &Server{
-		enc:       enc,
 		WaitGroup: &sync.WaitGroup{},
+		opt:       options,
+		enc:       enc,
 		services:  make(map[*service][]*nats.Subscription),
 	}
 	return d, nil
@@ -84,7 +91,7 @@ func (s *Server) remove(service *service) bool {
 }
 
 // Register 注册服务
-func (s *Server) Register(name string, svc interface{}, opts ...Option) (IService, error) {
+func (s *Server) Register(name string, svc interface{}, opts ...ServiceOption) (IService, error) {
 	// new 一个服务
 	service, err := newService(name, svc, opts...)
 	if nil != err {
@@ -119,10 +126,11 @@ func (s *Server) subscribeMethod(service *service) error {
 		cb := func(msg *nats.Msg) {
 			s.Add(1)
 			go func() {
+
 				defer s.Done()
 				err := s.handle(context.Background(), service, m, msg.Data, msg.Reply)
 				if err != nil {
-					log.Println(err.Error())
+					s.opt.logger.Println(err.Error())
 				}
 			}()
 		}
@@ -137,10 +145,15 @@ func (s *Server) subscribeMethod(service *service) error {
 }
 
 func (s *Server) handle(ctx context.Context, service *service, m *method, b []byte, r string) error {
-	reply, err := service.handle(ctx, m, b)
-	if nil != err {
-		log.Printf("m.execute error[%v]", err)
+	if s.opt.recoverHandler != nil {
+		defer func() {
+			if e := recover(); e != nil {
+				s.opt.recoverHandler(e)
+			}
+		}()
 	}
+
+	reply, _ := service.handle(ctx, m, b)
 
 	if "" == r {
 		return nil
@@ -152,10 +165,14 @@ func (s *Server) handle(ctx context.Context, service *service, m *method, b []by
 		Subject: r,
 		Data:    reply,
 	}
-	if nil != err {
-		//respMsg.Header = nats.Header{}
-		//respMsg.Header.Add(headerError, err.Error())
-	}
+
+	// header
+	/*
+		if nil != err {
+			respMsg.Header = nats.Header{}
+			respMsg.Header.Add(headerError, err.Error())
+		}
+	*/
 	return s.enc.Conn.PublishMsg(respMsg)
 }
 

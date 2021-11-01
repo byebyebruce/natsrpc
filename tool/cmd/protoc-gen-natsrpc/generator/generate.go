@@ -34,7 +34,7 @@ func (m *NatsRpcModule) Execute(targets map[string]pgs.File, packages map[string
 		// 解析出file语法树
 		fileSpec := m.ExtraFile(f)
 		base := strings.Split(f.Name().String(), ".")[0]
-		m.OverwriteCustomTemplateFile(path.Join(m.OutputPath(), fmt.Sprintf("%s.natsrpc.pb.go", base)), tmp, fileSpec, 0644)
+		m.OverwriteCustomTemplateFile(path.Join(m.OutputPath(), fmt.Sprintf("%s.pb.natsrpc.go", base)), tmp, fileSpec, 0644)
 
 		m.Pop()
 	}
@@ -66,7 +66,7 @@ func (m *NatsRpcModule) ExtraService(service pgs.Service) codegen.ServiceSpec {
 	svcDescs, _ := proto.ExtensionDescs(svcOpts)
 	for _, desc := range svcDescs {
 		// 找到对应field
-		if desc.Field == natsrpc.E_ServceAsync.Field {
+		if desc.Field == natsrpc.E_ServiceAsync.Field {
 			ext, _ := proto.GetExtension(svcOpts, desc)
 			// 解析出methodType
 			if value, ok := ext.(*bool); ok {
@@ -94,11 +94,11 @@ func (m *NatsRpcModule) ExtraService(service pgs.Service) codegen.ServiceSpec {
 		descs, _ := proto.ExtensionDescs(opts)
 		for _, desc := range descs {
 			// 找到对应field
-			if desc.Field == natsrpc.E_MethodType.Field {
+			if desc.Field == natsrpc.E_Publish.Field {
 				ext, _ := proto.GetExtension(opts, desc)
 				// 解析出methodType
-				if value, ok := ext.(*natsrpc.MethodType); ok {
-					methodSpec.MethodType = *value
+				if value, ok := ext.(*bool); ok {
+					methodSpec.Publish = *value
 					break
 				}
 			}

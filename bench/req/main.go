@@ -29,8 +29,7 @@ func (a *BenchReqService) Request(ctx context.Context, req *natsrpc.Empty) (*nat
 func main() {
 	flag.Parse()
 
-	spaceOpt := natsrpc.WithNamespace("myspace")
-	groupOpt := natsrpc.WithGroup("mygroup")
+	groupOpt := natsrpc.WithServiceGroup("mygroup")
 
 	var serviceName = "bench"
 	enc, err := natsrpc.NewPBEnc(*natsURL)
@@ -44,7 +43,7 @@ func main() {
 			panic(err)
 		}
 		defer server.Close(time.Second)
-		_, err = server.Register(serviceName, &BenchReqService{}, spaceOpt, groupOpt)
+		_, err = server.Register(serviceName, &BenchReqService{}, groupOpt)
 		if nil != err {
 			panic(err)
 		}
@@ -56,7 +55,6 @@ func main() {
 	fmt.Println("start...")
 	wg := sync.WaitGroup{}
 	req := &natsrpc.Empty{}
-	subject := natsrpc.CombineSubject(serviceName, "Request")
 	for i := 0; i <= *cn; i++ {
 		wg.Add(1)
 		go func(idx int) {
@@ -65,7 +63,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			client, err := natsrpc.NewClient(enc, spaceOpt)
+			client, err := natsrpc.NewClient(enc, serviceName)
 			if nil != err {
 				panic(err)
 			}
@@ -78,7 +76,7 @@ func main() {
 				default:
 				}
 				resp := &natsrpc.Empty{}
-				if err := client.Request(ctx, subject, req, resp); nil != err {
+				if err := client.Request("Request", req, resp); nil != err {
 					atomic.AddUint32(&totalFailed, 1)
 					continue
 				}

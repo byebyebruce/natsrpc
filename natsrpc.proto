@@ -1,22 +1,18 @@
 syntax = "proto3";
 
 package natsrpc;
-option go_package = "natsrpc";
+option go_package = "github.com/byebyebruce/natsrpc";
+
 import "google/protobuf/descriptor.proto";
+//import "protoc-gen-go/descriptor/descriptor.proto";
 
 extend google.protobuf.ServiceOptions {
-	bool servceAsync = 43230; // service异步handler
+	bool serviceAsync = 43230; // service异步handler
 	bool clientAsync = 43231; // client异步请求
 }
 
-enum MethodType {
-  A = 0; // async 异步
-  S = 1; // sync 同步
-  P = 2; // publish 广播
-}
-
 extend google.protobuf.MethodOptions {
-  MethodType methodType = 2360;
+  bool publish = 2360; // false表示request(需要返回值)，true表示广播(不需要返回值)
 }
 
 message Empty {}
