@@ -9,18 +9,29 @@ import (
 )
 
 var tpl *template.Template
+var sTpl *template.Template
 
 func init() {
-	tmp, err := template.New("codegen").Parse(tempFile)
+	var err error
+	tpl, err = template.New("codegen").Parse(tempFile)
 	if err != nil {
 		panic(err)
 	}
-	tpl = tmp
+
+	sTpl, err = template.New("st").Parse(serviceTmpl)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Template 模板
 func Template() *template.Template {
 	return tpl
+}
+
+// Template 模板
+func ServiceTemplate() *template.Template {
+	return sTpl
 }
 
 // GenFile 生成代码文件

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package pb;
+option go_package = "github.com/byebyebruce/tool/generator/example/pb";
+
+message HelloRequest {
+  string name = 1;
+}
+
+message Empty {
+}
+
+service Example {
+  rpc Hello (HelloRequest) returns (Empty) {}
+}

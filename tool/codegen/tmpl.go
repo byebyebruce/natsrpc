@@ -114,3 +114,30 @@ func (c *{{ $clientName }}Client) Publish{{ .MethodName }}(ctx context.Context, 
 
 {{- end}}
 */
+
+const serviceTmpl = `{{- range .ServiceList}}
+{{$serviceAsync := .ServiceAsync}}
+{{$clientAsync := .ClientAsync}}
+
+// {{ .ServiceName }}
+type {{ .ServiceName }} interface {
+{{- range .MethodList }}
+// {{ .MethodName }}
+	{{- if eq .Publish false }}
+		{{- if eq $serviceAsync true }}
+		{{ .MethodName }}(ctx context.Context, req *{{ .InputTypeName }}, cb func(*{{ .OutputTypeName }}, error))	
+		{{- else }}
+		{{ .MethodName }}(ctx context.Context, req *{{ .InputTypeName }}) (*{{ .OutputTypeName }}, error)
+		{{- end }}
+	{{- else }}
+		{{ .MethodName }}(ctx context.Context, req *{{ .InputTypeName }})
+	{{- end }}
+{{- end }}
+}
+
+// Register{{ .ServiceName }}
+func Register{{ .ServiceName }}(server *natsrpc.Server, s {{ .ServiceName }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+	return server.Register("{{ $.GoPackageName }}.{{ .ServiceName }}", s, opts...)
+}
+{{- end }}
+`
