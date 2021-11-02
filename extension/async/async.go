@@ -16,17 +16,17 @@ func New(fc chan func()) *AsyncFunc {
 	}
 }
 
-func (c *AsyncFunc) Do(ctx context.Context, f func() (interface{}, error)) (ret interface{}, err error) {
+func (c *AsyncFunc) Do(ctx context.Context, cb func() (interface{}, error)) (ret interface{}, err error) {
 	over := make(chan struct{})
-	cb := func() {
+	f := func() {
 		defer close(over)
-		ret, err = f()
+		ret, err = cb()
 	}
 	select {
 	case <-ctx.Done():
 		err = ctx.Err()
 		return
-	case c.fc <- cb:
+	case c.fc <- f:
 	}
 	select {
 	case <-over:

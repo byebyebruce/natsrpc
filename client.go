@@ -1,6 +1,8 @@
 package natsrpc
 
 import (
+	"context"
+
 	"github.com/nats-io/nats.go"
 )
 
@@ -33,7 +35,22 @@ func (c *Client) Publish(method string, req interface{}) error {
 }
 
 // Request 请求
-func (c *Client) Request(method string, req interface{}, rep interface{}, opt ...CallOption) error {
+func (c *Client) Request(ctx context.Context, method string, req interface{}, rep interface{}, opt ...CallOption) error {
+	callOpt := callOptions{}
+	for _, v := range opt {
+		v(&callOpt)
+	}
+	if callOpt.id == nil {
+		callOpt.id = &c.opt.id
+	}
+
+	subject := CombineSubject(c.opt.namespace, c.serviceName, method, *callOpt.id)
+	return c.enc.RequestWithContext(ctx, subject, req, rep)
+}
+
+// Request 请求
+/*
+func (c *Client) RequestWithOption(method string, req interface{}, rep interface{}, opt ...CallOption) error {
 	callOpt := callOptions{}
 	for _, v := range opt {
 		v(&callOpt)
@@ -57,3 +74,4 @@ func (c *Client) Request(method string, req interface{}, rep interface{}, opt ..
 	}
 	return nil
 }
+*/

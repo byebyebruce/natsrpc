@@ -1,13 +1,19 @@
 syntax = "proto3";
 
 package request;
-option go_package = "github.com/byebyebruce/example/request";
+option go_package = "github.com/byebyebruce/example/request;request";
 
 import "natsrpc.proto";
 import "greet.proto";
 
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+
 service Greeter {
-  rpc Hello (pb.HelloRequest) returns (pb.HelloReply) {}
+  rpc Hello (HelloRequest) returns (pb.HelloReply) {}
   rpc ToAll (natsrpc.Empty) returns (natsrpc.Empty) {
     option (natsrpc.publish) = true;
   }
