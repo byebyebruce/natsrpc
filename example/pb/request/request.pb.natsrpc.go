@@ -27,14 +27,12 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 // Greeter
 type Greeter interface {
 	// Hello
-	Hello(ctx context.Context, req *HelloRequest) (*pb.HelloReply, error)
-	// ToAll
-	ToAll(ctx context.Context, req *natsrpc.Empty)
+	Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error)
 }
 
 // RegisterGreeter
 func RegisterGreeter(server *natsrpc.Server, s Greeter, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
-	return server.Register("github.com.byebyebruce.example.request.Greeter", s, opts...)
+	return server.Register("github.com.byebyebruce.example.pb.request.Greeter", s, opts...)
 }
 
 // GreeterClient
@@ -44,7 +42,7 @@ type GreeterClient struct {
 
 // NewGreeterClient
 func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.ClientOption) (*GreeterClient, error) {
-	c, err := natsrpc.NewClient(enc, "github.com.byebyebruce.example.request.Greeter", opts...)
+	c, err := natsrpc.NewClient(enc, "github.com.byebyebruce.example.pb.request.Greeter", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,13 +53,8 @@ func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.ClientOption) (*Gre
 }
 
 // Hello
-func (c *GreeterClient) Hello(ctx context.Context, req *HelloRequest) (*pb.HelloReply, error) {
+func (c *GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
 	rep := &pb.HelloReply{}
 	err := c.c.Request(ctx, "Hello", req, rep)
 	return rep, err
-}
-
-// ToAll
-func (c *GreeterClient) ToAll(ctx context.Context, notify *natsrpc.Empty) error {
-	return c.c.Publish("ToAll", notify)
 }

@@ -8,25 +8,14 @@ import (
 	"text/template"
 )
 
-var tpl *template.Template
 var sTpl *template.Template
 
 func init() {
 	var err error
-	tpl, err = template.New("codegen").Parse(tempFile)
-	if err != nil {
-		panic(err)
-	}
-
 	sTpl, err = template.New("st").Parse(serviceTmpl)
 	if err != nil {
 		panic(err)
 	}
-}
-
-// Template 模板
-func Template() *template.Template {
-	return tpl
 }
 
 // Template 模板
@@ -35,8 +24,8 @@ func ServiceTemplate() *template.Template {
 }
 
 // GenFile 生成代码文件
-func GenFile(data FileSpec, file string) error {
-	src, err := GenText(tpl, data)
+func GenFile(t *template.Template, data FileSpec, file string) error {
+	src, err := GenText(t, data)
 	if nil != err {
 		return err
 	}
