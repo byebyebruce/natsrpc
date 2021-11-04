@@ -76,7 +76,7 @@ func main() {
 				default:
 				}
 				resp := &natsrpc.Empty{}
-				if err := client.Request("Request", req, resp); nil != err {
+				if err := client.Request(context.Background(), "Request", req, resp); nil != err {
 					atomic.AddUint32(&totalFailed, 1)
 					continue
 				}

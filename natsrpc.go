@@ -2,7 +2,6 @@
 package natsrpc
 
 import (
-	"fmt"
 	"log"
 	"time"
 )
@@ -13,9 +12,9 @@ const (
 
 var defaultServerOptions = serverOptions{
 	logger: &log.Logger{},
-	recoverHandler: func(i interface{}) {
-		fmt.Println("panic", i)
-	},
+	//recoverHandler: func(i interface{}) {
+	//	fmt.Println("panic", i)
+	//},
 }
 
 var defaultServiceOptions = serviceOptions{

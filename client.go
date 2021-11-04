@@ -40,11 +40,12 @@ func (c *Client) Request(ctx context.Context, method string, req interface{}, re
 	for _, v := range opt {
 		v(&callOpt)
 	}
-	if callOpt.id == nil {
-		callOpt.id = &c.opt.id
+	if callOpt.timeout != nil {
+		newCtx, cancel := context.WithTimeout(ctx, *callOpt.timeout)
+		defer cancel()
+		ctx = newCtx
 	}
-
-	subject := CombineSubject(c.opt.namespace, c.serviceName, method, *callOpt.id)
+	subject := CombineSubject(c.opt.namespace, c.serviceName, method, c.opt.id)
 	return c.enc.RequestWithContext(ctx, subject, req, rep)
 }
 

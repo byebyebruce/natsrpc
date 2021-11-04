@@ -27,6 +27,9 @@ func NewServer(enc *nats.EncodedConn, option ...ServerOption) (*Server, error) {
 	}
 
 	options := defaultServerOptions
+	options.recoverHandler = func(i interface{}) {
+		options.logger.Println("panic", i)
+	}
 	for _, v := range option {
 		v(&options)
 	}

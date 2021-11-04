@@ -99,8 +99,6 @@ func WithClientTimeout(timeout time.Duration) ClientOption {
 
 type callOptions struct {
 	timeout *time.Duration
-	id      *string // id
-	cb      func(interface{}, error)
 }
 
 type CallOption func(options *callOptions)
@@ -109,19 +107,5 @@ type CallOption func(options *callOptions)
 func WithCallTimeout(timeout time.Duration) CallOption {
 	return func(options *callOptions) {
 		options.timeout = &timeout
-	}
-}
-
-// WithCallID id
-func WithCallID(id interface{}) CallOption {
-	return func(options *callOptions) {
-		id := fmt.Sprintf("%v", id)
-		options.id = &id
-	}
-}
-
-func WithCallback(cb func(interface{}, error)) CallOption {
-	return func(options *callOptions) {
-		options.cb = cb
 	}
 }

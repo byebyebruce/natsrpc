@@ -9,6 +9,6 @@ import "message.proto";
 
 service Greeter {
   rpc HelloToAll (pb.HelloRequest) returns (natsrpc.Empty) {
-    option (natsrpc.publish) = true;
+    option (natsrpc.publish) = true; // publish method.(no reply)
   }
 }

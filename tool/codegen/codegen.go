@@ -12,7 +12,7 @@ var sTpl *template.Template
 
 func init() {
 	var err error
-	sTpl, err = template.New("st").Parse(serviceTmpl)
+	sTpl, err = template.New("tmpl").Parse(serviceTmpl)
 	if err != nil {
 		panic(err)
 	}

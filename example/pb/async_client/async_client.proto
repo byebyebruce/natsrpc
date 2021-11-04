@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package async_client;
+option go_package = "github.com/byebyebruce/example/pb/async_client;async_client";
+
+import "natsrpc.proto";
+import "message.proto";
+
+service Greeter1 {
+  option (natsrpc.clientAsync) = true; // async callback
+
+  rpc Hello (pb.HelloRequest) returns (pb.HelloReply) {}
+  rpc HelloToAll (pb.HelloRequest) returns (natsrpc.Empty) {
+    option (natsrpc.publish) = true;
+  }
+}
