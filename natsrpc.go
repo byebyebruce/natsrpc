@@ -6,10 +6,6 @@ import (
 	"time"
 )
 
-const (
-//headerError = "error"
-)
-
 var defaultServerOptions = serverOptions{
 	logger: &log.Logger{},
 	//recoverHandler: func(i interface{}) {

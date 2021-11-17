@@ -71,13 +71,13 @@ func newService(name string, i interface{}, opts ...ServiceOption) (*service, er
 	return s, nil
 }
 
-func (s *service) handle(ctx context.Context, m *method, b []byte) ([]byte, error) {
+func (s *service) handle(ctx context.Context, m *method, sub string, b []byte) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.opt.timeout)
 	defer cancel()
 
 	req := m.newRequest()
 	if len(b) > 0 {
-		if err := s.server.Unmarshal(b, req); nil != err {
+		if err := s.server.enc.Enc.Decode(sub, b, req); nil != err {
 			return nil, err
 		}
 	}
@@ -90,5 +90,5 @@ func (s *service) handle(ctx context.Context, m *method, b []byte) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
-	return s.server.Marshal(resp)
+	return s.server.enc.Enc.Encode(sub, resp)
 }

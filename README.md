@@ -81,6 +81,6 @@ type Greeter interface {
 
 ## TODO
 - [x] service 定义文件改成gRPC标准
+- [x] 支持支持返回错误
 - [ ] 支持goroutine池
-- [ ] 支持header
 - [ ] 收发包顺序

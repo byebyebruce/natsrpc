@@ -4,7 +4,6 @@ package natsrpc;
 option go_package = "github.com/byebyebruce/natsrpc;natsrpc";
 
 import "google/protobuf/descriptor.proto";
-//import "protoc-gen-go/descriptor/descriptor.proto";
 
 extend google.protobuf.ServiceOptions {
 	bool serviceAsync = 43230; // service异步handler
@@ -13,6 +12,17 @@ extend google.protobuf.ServiceOptions {
 
 extend google.protobuf.MethodOptions {
   bool publish = 2360; // false表示request(需要返回值)，true表示广播(不需要返回值)
+}
+
+/*
+message request {
+  bytes data = 1;
+  map<string,string> header = 2; // 目前没用，等后面nats.go更新到新版本直接用内置的header
+}
+*/
+message reply {
+  bytes data = 1;
+  string error = 2;
 }
 
 message Empty {}

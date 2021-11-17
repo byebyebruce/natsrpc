@@ -2,6 +2,7 @@ package natsrpc
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/nats-io/nats.go"
 )
@@ -46,7 +47,18 @@ func (c *Client) Request(ctx context.Context, method string, req interface{}, re
 		ctx = newCtx
 	}
 	subject := CombineSubject(c.opt.namespace, c.serviceName, method, c.opt.id)
-	return c.enc.RequestWithContext(ctx, subject, req, rep)
+	rp := &Reply{}
+	err := c.enc.RequestWithContext(ctx, subject, req, rp)
+	if err != nil {
+		return err
+	}
+	if len(rp.Error) > 0 {
+		return fmt.Errorf(rp.Error)
+	}
+	if err := c.enc.Enc.Decode(subject, rp.Data, rep); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Request 请求
