@@ -9,7 +9,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Server server
+// Server RPC server
 type Server struct {
 	*sync.WaitGroup
 	opt      serverOptions                     // options

@@ -7,7 +7,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Client client
+// Client RPC client
 type Client struct {
 	enc         *nats.EncodedConn // NATS Encode Conn
 	serviceName string            // 服务名

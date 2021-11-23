@@ -10,8 +10,9 @@
  | |\  |/ ____ \| |  ____) | | | \ \| |    | |____ 
  |_| \_/_/    \_\_| |_____/  |_|  \_\_|     \_____|
 ```
-> NATSRPC 是一个基于[NATS](https://nats.io/)作为消息通信，使用gRPC接口文件生成Client和Server代码的rpc框架
-
+> NATSRPC 是一个基于[NATS](https://nats.io/)作为消息通信，使用[gRPC](https://www.grpc.io/)的方式来定义接口的RPC框架
+## Why NATSRPC  
+NATS收发消息需要手动定义subject，request，reply，handler等繁琐且易出错的代码。gRPC需要用服务发现到endpoint才能发送请求。NATRPC的目的就是要像gRPC一样定义接口，像NATS一样不关心具体网络位置，只需要监听和发送就能完成RPC调用。
 ## Feature
 * 使用简单，不需要服务发现
 * 使用gRPC接口定义方式，接口定义清晰，学习成本低
