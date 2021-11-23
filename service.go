@@ -76,9 +76,19 @@ func (s *service) handle(ctx context.Context, m *method, sub string, b []byte) (
 	defer cancel()
 
 	req := m.newRequest()
+
 	if len(b) > 0 {
-		if err := s.server.enc.Enc.Decode(sub, b, req); nil != err {
+		rpcReq := &Request{}
+		if err := s.server.enc.Enc.Decode(sub, b, rpcReq); nil != err {
 			return nil, err
+		}
+		if len(rpcReq.Header) > 0 {
+			ctx = WithHeader(ctx, rpcReq.Header)
+		}
+		if len(rpcReq.Payload) > 0 {
+			if err := s.server.enc.Enc.Decode(sub, rpcReq.Payload, req); nil != err {
+				return nil, err
+			}
 		}
 	}
 

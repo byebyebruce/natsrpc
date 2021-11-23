@@ -31,34 +31,66 @@ func NewClient(enc *nats.EncodedConn, serviceName string, opts ...ClientOption) 
 
 // Publish 发布
 func (c *Client) Publish(method string, req interface{}) error {
+	// subject
 	subject := CombineSubject(c.opt.namespace, c.serviceName, method, c.opt.id)
-	return c.enc.Publish(subject, req)
+
+	// req
+	rpcReq, err := c.newRequest(nil, subject, req)
+	if err != nil {
+		return err
+	}
+	return c.enc.Publish(subject, rpcReq)
 }
 
 // Request 请求
 func (c *Client) Request(ctx context.Context, method string, req interface{}, rep interface{}, opt ...CallOption) error {
+	// opt
 	callOpt := callOptions{}
 	for _, v := range opt {
 		v(&callOpt)
 	}
+
+	// ctx
 	if callOpt.timeout != nil {
 		newCtx, cancel := context.WithTimeout(ctx, *callOpt.timeout)
 		defer cancel()
 		ctx = newCtx
 	}
+	// subject
 	subject := CombineSubject(c.opt.namespace, c.serviceName, method, c.opt.id)
+
+	// req
+	rpcReq, err := c.newRequest(ctx, subject, req)
+	if err != nil {
+		return err
+	}
 	rp := &Reply{}
-	err := c.enc.RequestWithContext(ctx, subject, req, rp)
+
+	// call
+	err = c.enc.RequestWithContext(ctx, subject, rpcReq, rp)
 	if err != nil {
 		return err
 	}
 	if len(rp.Error) > 0 {
 		return fmt.Errorf(rp.Error)
 	}
-	if err := c.enc.Enc.Decode(subject, rp.Data, rep); err != nil {
+
+	// decode
+	if err := c.enc.Enc.Decode(subject, rp.Payload, rep); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (c *Client) newRequest(ctx context.Context, subject string, req interface{}) (*Request, error) {
+	payload, err := c.enc.Enc.Encode(subject, req)
+	if err != nil {
+		return nil, err
+	}
+	return &Request{
+		Payload: payload,
+		Header:  Header(ctx),
+	}, nil
 }
 
 // Request 请求

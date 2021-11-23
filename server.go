@@ -163,7 +163,7 @@ func (s *Server) handle(ctx context.Context, service *service, m *method, msg *n
 		return fmt.Errorf("conn colsed")
 	}
 	rp := &Reply{
-		Data: reply,
+		Payload: reply,
 	}
 	if err != nil {
 		rp.Error = err.Error()

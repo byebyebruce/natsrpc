@@ -2,6 +2,7 @@
 package natsrpc
 
 import (
+	"context"
 	"log"
 	"time"
 )
@@ -40,4 +41,21 @@ type IClient interface {
 type IService interface {
 	Name() string
 	Close() bool
+}
+
+type headerKey struct{}
+
+// WithHeader 填充Header
+func WithHeader(ctx context.Context, header string) context.Context {
+	newCtx := context.WithValue(ctx, headerKey{}, header)
+	return newCtx
+}
+
+// Header 获得Header
+func Header(ctx context.Context) string {
+	val := ctx.Value(headerKey{})
+	if val != nil {
+		return val.(string)
+	}
+	return ""
 }

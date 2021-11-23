@@ -72,7 +72,11 @@ type Greeter interface {
 ```
 6. [main.go](example/0.main_test.go) 启动server和client
 ## 更多示例
-[更多示例](example)
+1. [请求](example/1.request_test.go)
+2. [广播](example/2.publish_test.go)
+3. [异步请求](example/3.asyncclient_test.go)
+4. [异步回复](example/4.asyncservice_test.go)
+5. [请求头](example/5.header_test.go)
 
 ## 压测工具
 1. 广播 `go run bench/pub/main.go -server=nats://127.0.0.1:4222`
@@ -81,6 +85,6 @@ type Greeter interface {
 
 ## TODO
 - [x] service 定义文件改成gRPC标准
-- [x] 支持支持返回错误
+- [x] 支持返回错误
+- [x] 支持Header
 - [ ] 支持goroutine池
-- [ ] 收发包顺序
