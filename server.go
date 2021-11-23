@@ -9,7 +9,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Server server
+// Server RPC server
 type Server struct {
 	*sync.WaitGroup
 	opt      serverOptions                     // options
@@ -129,9 +129,8 @@ func (s *Server) subscribeMethod(service *service) error {
 		cb := func(msg *nats.Msg) {
 			s.Add(1)
 			go func() {
-
 				defer s.Done()
-				err := s.handle(context.Background(), service, m, msg.Data, msg.Reply)
+				err := s.handle(context.Background(), service, m, msg)
 				if err != nil {
 					s.opt.logger.Println(err.Error())
 				}
@@ -147,7 +146,7 @@ func (s *Server) subscribeMethod(service *service) error {
 	return nil
 }
 
-func (s *Server) handle(ctx context.Context, service *service, m *method, b []byte, r string) error {
+func (s *Server) handle(ctx context.Context, service *service, m *method, msg *nats.Msg) error {
 	if s.opt.recoverHandler != nil {
 		defer func() {
 			if e := recover(); e != nil {
@@ -156,17 +155,26 @@ func (s *Server) handle(ctx context.Context, service *service, m *method, b []by
 		}()
 	}
 
-	reply, _ := service.handle(ctx, m, b)
-
-	if "" == r {
+	reply, err := service.handle(ctx, m, msg.Subject, msg.Data)
+	if len(msg.Reply) == 0 {
 		return nil
 	}
 	if s.enc.Conn.IsClosed() {
 		return fmt.Errorf("conn colsed")
 	}
+	rp := &Reply{
+		Payload: reply,
+	}
+	if err != nil {
+		rp.Error = err.Error()
+	}
+	b, e := s.enc.Enc.Encode(msg.Subject, rp)
+	if e != nil {
+		return e
+	}
 	respMsg := &nats.Msg{
-		Subject: r,
-		Data:    reply,
+		Subject: msg.Reply,
+		Data:    b,
 	}
 
 	// header
@@ -177,12 +185,4 @@ func (s *Server) handle(ctx context.Context, service *service, m *method, b []by
 		}
 	*/
 	return s.enc.Conn.PublishMsg(respMsg)
-}
-
-func (s *Server) Unmarshal(b []byte, i interface{}) error {
-	return s.enc.Enc.Decode("", b, i)
-}
-
-func (s *Server) Marshal(i interface{}) ([]byte, error) {
-	return s.enc.Enc.Encode("", i)
 }
