@@ -18,24 +18,19 @@
 * 代码生成器一键生成
 * 支持空间隔离
 * 支持定向发送也支持负载均衡(nats的同组内随机)
-* 不用手动定义subject
+* 支持Header和返回Error
 
 ## 安装工具
-* protoc v3.17.3
-    * [Linux](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-linux-x86_64.zip)
-    * [MacOS](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-osx-x86_64.zip)
-    * [Windows](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-win64.zip)
+* protoc(v3.17.3) [Linux](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-linux-x86_64.zip)/[MacOS](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-osx-x86_64.zip)/[Windows](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-win64.zip)
 
-* 插件
+* protoc插件
 ```
 go get -u github.com/golang/protobuf/protoc-gen-go@v1.3.5
-go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.16.0
-go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.16.0
 go get -u github.com/byebyebruce/natsrpc/tool/cmd/protoc-gen-natsrpc
 ```
 
 ## 快速使用
-* 需要先启动nats-server
+* 启动nats-server(没有部署好的nats-server可以`go run tool/cmd/simple_natsserver/main.go`)
 1. 创建工程
 `go mod init natsrpc_test`
 2. 引用包 `go get github.com/byebyebruce/natsrpc`
