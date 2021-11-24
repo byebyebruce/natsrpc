@@ -50,16 +50,23 @@ type GreeterWrapper struct {
 // Hello DO NOT USE
 func (s *GreeterWrapper) Hello(ctx context.Context, req *pb.HelloRequest) (rep *pb.HelloReply, err error) {
 	done := make(chan struct{})
-	s.doer.Do(ctx, func() {
-		cb := func(r *pb.HelloReply, e error) {
+	cb := func(r *pb.HelloReply, e error) {
+		select {
+		case <-ctx.Done():
+			return
+		default:
 			rep, err = r, e
 			select {
 			case done <- struct{}{}:
 			default:
 			}
 		}
+	}
+
+	s.doer.Do(ctx, func() {
 		s.s.Hello(ctx, req, cb)
 	})
+
 	select {
 	case <-ctx.Done():
 		rep, err = nil, ctx.Err()
@@ -76,30 +83,32 @@ func (s *GreeterWrapper) HelloToAll(ctx context.Context, req *pb.HelloRequest) {
 }
 
 // GreeterClient
-type GreeterClient struct {
+type GreeterClient interface {
+	// Hello
+	Hello(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error)
+	// HelloToAll
+	HelloToAll(notify *pb.HelloRequest) error
+}
+type _GreeterClient struct {
 	c *natsrpc.Client
 }
 
 // NewGreeterClient
-func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.ClientOption) (*GreeterClient, error) {
+func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.ClientOption) (GreeterClient, error) {
 	c, err := natsrpc.NewClient(enc, "github.com.byebyebruce.example.pb.async_service.Greeter", opts...)
 	if err != nil {
 		return nil, err
 	}
-	ret := &GreeterClient{
+	ret := &_GreeterClient{
 		c: c,
 	}
 	return ret, nil
 }
-
-// Hello
-func (c *GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error) {
+func (c *_GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error) {
 	rep := &pb.HelloReply{}
 	err := c.c.Request(ctx, "Hello", req, rep, opt...)
 	return rep, err
 }
-
-// HelloToAll
-func (c *GreeterClient) HelloToAll(notify *pb.HelloRequest) error {
+func (c *_GreeterClient) HelloToAll(notify *pb.HelloRequest) error {
 	return c.c.Publish("HelloToAll", notify)
 }

@@ -36,23 +36,25 @@ func RegisterGreeter(server *natsrpc.Server, s Greeter, opts ...natsrpc.ServiceO
 }
 
 // GreeterClient
-type GreeterClient struct {
+type GreeterClient interface {
+	// HelloToAll
+	HelloToAll(notify *pb.HelloRequest) error
+}
+type _GreeterClient struct {
 	c *natsrpc.Client
 }
 
 // NewGreeterClient
-func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.ClientOption) (*GreeterClient, error) {
+func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.ClientOption) (GreeterClient, error) {
 	c, err := natsrpc.NewClient(enc, "github.com.byebyebruce.example.pb.publish.Greeter", opts...)
 	if err != nil {
 		return nil, err
 	}
-	ret := &GreeterClient{
+	ret := &_GreeterClient{
 		c: c,
 	}
 	return ret, nil
 }
-
-// HelloToAll
-func (c *GreeterClient) HelloToAll(notify *pb.HelloRequest) error {
+func (c *_GreeterClient) HelloToAll(notify *pb.HelloRequest) error {
 	return c.c.Publish("HelloToAll", notify)
 }

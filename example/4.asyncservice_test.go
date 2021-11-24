@@ -36,6 +36,7 @@ func TestAsyncService(t *testing.T) {
 	}()
 	ps := &AsyncServiceSvc{}
 	svc, err := async.RegisterGreeter(server, ps, d)
+	natsrpc.IfNotNilPanic(err)
 	defer svc.Close()
 
 	cli, err := async.NewGreeterClient(enc)

@@ -27,10 +27,10 @@ func TestHeader(t *testing.T) {
 	const haha = "haha"
 	svc, err := request.RegisterGreeter(server, &HeaderSvc{
 		header: haha,
-	})
+	}, natsrpc.WithServiceNamespace("header"))
 	defer svc.Close()
 
-	cli, err := request.NewGreeterClient(enc)
+	cli, err := request.NewGreeterClient(enc, natsrpc.WithClientNamespace("header"))
 	natsrpc.IfNotNilPanic(err)
 	rep, err := cli.Hello(natsrpc.WithHeader(context.Background(), haha), &pb.HelloRequest{
 		Name: haha,

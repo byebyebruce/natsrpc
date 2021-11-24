@@ -38,26 +38,30 @@ func RegisterGreeter(server *natsrpc.Server, s Greeter, opts ...natsrpc.ServiceO
 }
 
 // GreeterClient
-type GreeterClient struct {
+type GreeterClient interface {
+	// Hello
+	Hello(ctx context.Context, req *pb.HelloRequest, cb func(*pb.HelloReply, error), opt ...natsrpc.CallOption)
+	// HelloToAll
+	HelloToAll(notify *pb.HelloRequest) error
+}
+type _GreeterClient struct {
 	c    *natsrpc.Client
 	doer natsrpc.AsyncDoer
 }
 
 // NewGreeterClient
-func NewGreeterClient(enc *nats.EncodedConn, doer natsrpc.AsyncDoer, opts ...natsrpc.ClientOption) (*GreeterClient, error) {
+func NewGreeterClient(enc *nats.EncodedConn, doer natsrpc.AsyncDoer, opts ...natsrpc.ClientOption) (GreeterClient, error) {
 	c, err := natsrpc.NewClient(enc, "github.com.byebyebruce.example.pb.async_client.Greeter", opts...)
 	if err != nil {
 		return nil, err
 	}
-	ret := &GreeterClient{
+	ret := &_GreeterClient{
 		c:    c,
 		doer: doer,
 	}
 	return ret, nil
 }
-
-// Hello
-func (c *GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest, cb func(*pb.HelloReply, error), opt ...natsrpc.CallOption) {
+func (c *_GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest, cb func(*pb.HelloReply, error), opt ...natsrpc.CallOption) {
 	go func() {
 		rep := &pb.HelloReply{}
 		err := c.c.Request(ctx, "Hello", req, rep, opt...)
@@ -67,8 +71,6 @@ func (c *GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest, cb func
 		c.doer.Do(ctx, newCb)
 	}()
 }
-
-// HelloToAll
-func (c *GreeterClient) HelloToAll(notify *pb.HelloRequest) error {
+func (c *_GreeterClient) HelloToAll(notify *pb.HelloRequest) error {
 	return c.c.Publish("HelloToAll", notify)
 }
