@@ -53,6 +53,9 @@ func WithHeader(ctx context.Context, header string) context.Context {
 
 // Header 获得Header
 func Header(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
 	val := ctx.Value(headerKey{})
 	if val != nil {
 		return val.(string)
