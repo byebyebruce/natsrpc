@@ -1,4 +1,4 @@
-package codegen
+package codegen_tmpl
 
 const serviceTmpl = `{{- range .ServiceList}}
 {{$serviceName := .ServiceName}}

@@ -53,6 +53,6 @@ func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.ClientOption) (*Gre
 }
 
 // HelloToAll
-func (c *GreeterClient) HelloToAll(ctx context.Context, notify *pb.HelloRequest) error {
+func (c *GreeterClient) HelloToAll(notify *pb.HelloRequest) error {
 	return c.c.Publish("HelloToAll", notify)
 }

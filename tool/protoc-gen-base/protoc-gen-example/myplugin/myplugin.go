@@ -1,13 +1,11 @@
 package myplugin
 
-import (
-	"github.com/byebyebruce/natsrpc/tool/generator"
-)
+import protoc_gen_base "github.com/byebyebruce/natsrpc/tool/protoc-gen-base"
 
 // MyPlugin is an implementation of the Go protocol buffer compiler's
 // plugin architecture.  It generates bindings for MyPlugin support.
 type MyPlugin struct {
-	gen *generator.Generator
+	gen *protoc_gen_base.Generator
 }
 
 // Name returns the name of this plugin, "MyPlugin".
@@ -23,13 +21,13 @@ var (
 )
 
 // Init initializes the plugin.
-func (g *MyPlugin) Init(gen *generator.Generator) {
+func (g *MyPlugin) Init(gen *protoc_gen_base.Generator) {
 	g.gen = gen
 }
 
 // Given a type name defined in a .proto, return its object.
 // Also record that we're using it, to guarantee the associated import.
-func (g *MyPlugin) objectNamed(name string) generator.Object {
+func (g *MyPlugin) objectNamed(name string) protoc_gen_base.Object {
 	g.gen.RecordTypeUse(name)
 	return g.gen.ObjectNamed(name)
 }
@@ -43,7 +41,7 @@ func (g *MyPlugin) typeName(str string) string {
 func (g *MyPlugin) P(args ...interface{}) { g.gen.P(args...) }
 
 // Generate generates code for the services in the given file.
-func (g *MyPlugin) Generate(file *generator.FileDescriptor) {
+func (g *MyPlugin) Generate(file *protoc_gen_base.FileDescriptor) {
 	if len(file.FileDescriptorProto.Service) == 0 {
 		return
 	}
@@ -61,6 +59,6 @@ func (g *MyPlugin) Generate(file *generator.FileDescriptor) {
 }
 
 // GenerateImports generates the import declaration for this file.
-func (g *MyPlugin) GenerateImports(file *generator.FileDescriptor) {
+func (g *MyPlugin) GenerateImports(file *protoc_gen_base.FileDescriptor) {
 	g.P("// import TODO")
 }

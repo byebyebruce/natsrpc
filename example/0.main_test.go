@@ -1,12 +1,13 @@
 package example
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/extension/simpleserver"
+	"github.com/byebyebruce/natsrpc/tool/nats_server"
 	"github.com/nats-io/nats.go"
 )
 
@@ -18,7 +19,7 @@ var (
 func TestMain(m *testing.M) {
 	var err error
 
-	s := simpleserver.Run(nil)
+	s := nats_server.Run(nil)
 	defer s.Shutdown()
 
 	enc, err = natsrpc.NewPBEnc(s.ClientURL())
@@ -30,4 +31,15 @@ func TestMain(m *testing.M) {
 	defer server.Close(time.Second)
 
 	os.Exit(m.Run())
+}
+
+type asyncDoer struct {
+	c chan func()
+}
+
+func (d *asyncDoer) Do(ctx context.Context, f func()) {
+	select {
+	case d.c <- f:
+	case <-ctx.Done():
+	}
 }

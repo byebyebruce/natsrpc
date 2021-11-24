@@ -11,22 +11,28 @@ import (
 )
 
 type HeaderSvc struct {
+	header string
 }
 
 func (h *HeaderSvc) Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
 	fmt.Println("Hello comes", req.Name, "header:", natsrpc.Header(ctx))
+	if h.header != natsrpc.Header(ctx) {
+		panic("header error")
+	}
 	return &pb.HelloReply{
 		Message: req.Name,
 	}, nil
 }
 func TestHeader(t *testing.T) {
-	svc, err := request.RegisterGreeter(server, &HeaderSvc{})
+	const haha = "haha"
+	svc, err := request.RegisterGreeter(server, &HeaderSvc{
+		header: haha,
+	})
 	defer svc.Close()
 
 	cli, err := request.NewGreeterClient(enc)
 	natsrpc.IfNotNilPanic(err)
-	const haha = "haha"
-	rep, err := cli.Hello(natsrpc.WithHeader(context.Background(), "header"), &pb.HelloRequest{
+	rep, err := cli.Hello(natsrpc.WithHeader(context.Background(), haha), &pb.HelloRequest{
 		Name: haha,
 	})
 	natsrpc.IfNotNilPanic(err)

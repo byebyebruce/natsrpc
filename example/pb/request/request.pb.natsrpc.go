@@ -53,8 +53,8 @@ func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.ClientOption) (*Gre
 }
 
 // Hello
-func (c *GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+func (c *GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error) {
 	rep := &pb.HelloReply{}
-	err := c.c.Request(ctx, "Hello", req, rep)
+	err := c.c.Request(ctx, "Hello", req, rep, opt...)
 	return rep, err
 }

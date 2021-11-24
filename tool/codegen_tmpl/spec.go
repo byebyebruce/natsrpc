@@ -1,11 +1,13 @@
-package codegen
+package codegen_tmpl
 
+// FileSpec 文件描述
 type FileSpec struct {
 	PackageName   string
 	GoPackageName string
 	ServiceList   []ServiceSpec
 }
 
+// ServiceSpec 服务描述
 type ServiceSpec struct {
 	ServiceName  string
 	MethodList   []ServiceMethodSpec
@@ -13,6 +15,7 @@ type ServiceSpec struct {
 	ClientAsync  bool // client 异步handler
 }
 
+// ServiceMethodSpec 方法描述
 type ServiceMethodSpec struct {
 	MethodName     string
 	InputTypeName  string

@@ -27,7 +27,7 @@ func TestPublish(t *testing.T) {
 	cli, err := publish.NewGreeterClient(enc)
 	natsrpc.IfNotNilPanic(err)
 	const haha = "haha"
-	err = cli.HelloToAll(context.Background(), &pb.HelloRequest{
+	err = cli.HelloToAll(&pb.HelloRequest{
 		Name: haha,
 	})
 	natsrpc.IfNotNilPanic(err)

@@ -11,17 +11,6 @@ import (
 	async "github.com/byebyebruce/natsrpc/example/pb/async_service"
 )
 
-type asyncDoer struct {
-	c chan func()
-}
-
-func (d *asyncDoer) Do(ctx context.Context, f func()) {
-	select {
-	case d.c <- f:
-	case <-ctx.Done():
-	}
-}
-
 type AsyncServiceSvc struct{}
 
 func (h AsyncServiceSvc) Hello(ctx context.Context, req *pb.HelloRequest, cb func(*pb.HelloReply, error)) {
