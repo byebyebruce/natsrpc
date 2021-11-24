@@ -1,4 +1,4 @@
-package generator
+package protoc_gen_base
 
 import (
 	"io/ioutil"

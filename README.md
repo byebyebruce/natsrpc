@@ -83,4 +83,5 @@ type Greeter interface {
 - [x] service 定义文件改成gRPC标准
 - [x] 支持返回错误
 - [x] 支持Header
+- [x] 生成Client接口
 - [ ] 支持goroutine池

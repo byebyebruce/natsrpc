@@ -1,4 +1,4 @@
-package simpleserver
+package nats_server
 
 import (
 	"fmt"

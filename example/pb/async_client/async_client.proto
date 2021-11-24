@@ -6,7 +6,7 @@ option go_package = "github.com/byebyebruce/example/pb/async_client;async_client
 import "natsrpc.proto";
 import "message.proto";
 
-service Greeter1 {
+service Greeter {
   option (natsrpc.clientAsync) = true; // async callback
 
   rpc Hello (pb.HelloRequest) returns (pb.HelloReply) {}

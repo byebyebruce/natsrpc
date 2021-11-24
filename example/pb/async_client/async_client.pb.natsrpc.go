@@ -24,40 +24,44 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-// Greeter1
-type Greeter1 interface {
+// Greeter
+type Greeter interface {
 	// Hello
 	Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error)
 	// HelloToAll
 	HelloToAll(ctx context.Context, req *pb.HelloRequest)
 }
 
-// RegisterGreeter1
-func RegisterGreeter1(server *natsrpc.Server, s Greeter1, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
-	return server.Register("github.com.byebyebruce.example.pb.async_client.Greeter1", s, opts...)
+// RegisterGreeter
+func RegisterGreeter(server *natsrpc.Server, s Greeter, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+	return server.Register("github.com.byebyebruce.example.pb.async_client.Greeter", s, opts...)
 }
 
-// Greeter1Client
-type Greeter1Client struct {
+// GreeterClient
+type GreeterClient interface {
+	// Hello
+	Hello(ctx context.Context, req *pb.HelloRequest, cb func(*pb.HelloReply, error), opt ...natsrpc.CallOption)
+	// HelloToAll
+	HelloToAll(notify *pb.HelloRequest) error
+}
+type _GreeterClient struct {
 	c    *natsrpc.Client
 	doer natsrpc.AsyncDoer
 }
 
-// NewGreeter1Client
-func NewGreeter1Client(enc *nats.EncodedConn, doer natsrpc.AsyncDoer, opts ...natsrpc.ClientOption) (*Greeter1Client, error) {
-	c, err := natsrpc.NewClient(enc, "github.com.byebyebruce.example.pb.async_client.Greeter1", opts...)
+// NewGreeterClient
+func NewGreeterClient(enc *nats.EncodedConn, doer natsrpc.AsyncDoer, opts ...natsrpc.ClientOption) (GreeterClient, error) {
+	c, err := natsrpc.NewClient(enc, "github.com.byebyebruce.example.pb.async_client.Greeter", opts...)
 	if err != nil {
 		return nil, err
 	}
-	ret := &Greeter1Client{
+	ret := &_GreeterClient{
 		c:    c,
 		doer: doer,
 	}
 	return ret, nil
 }
-
-// Hello
-func (c *Greeter1Client) Hello(ctx context.Context, req *pb.HelloRequest, cb func(*pb.HelloReply, error), opt ...natsrpc.CallOption) {
+func (c *_GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest, cb func(*pb.HelloReply, error), opt ...natsrpc.CallOption) {
 	go func() {
 		rep := &pb.HelloReply{}
 		err := c.c.Request(ctx, "Hello", req, rep, opt...)
@@ -67,8 +71,6 @@ func (c *Greeter1Client) Hello(ctx context.Context, req *pb.HelloRequest, cb fun
 		c.doer.Do(ctx, newCb)
 	}()
 }
-
-// HelloToAll
-func (c *Greeter1Client) HelloToAll(notify *pb.HelloRequest) error {
+func (c *_GreeterClient) HelloToAll(notify *pb.HelloRequest) error {
 	return c.c.Publish("HelloToAll", notify)
 }

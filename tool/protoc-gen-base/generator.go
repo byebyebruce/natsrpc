@@ -9,7 +9,7 @@
 //
 // Deprecated: Use the "google.golang.org/protobuf/compiler/protogen" package
 // instead to write protoc plugins in Go.
-package generator
+package protoc_gen_base
 
 import (
 	"bufio"
