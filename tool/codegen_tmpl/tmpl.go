@@ -68,7 +68,7 @@ type {{ $serviceWrapperName }} struct {
 			}
 
 			s.doer.Do(ctx, func() {
-				s.s.Hello(ctx, req, cb)
+				s.s.{{ .MethodName }}(ctx, req, cb)
 			})
 
 			select {
