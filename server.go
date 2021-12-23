@@ -27,9 +27,6 @@ func NewServer(enc *nats.EncodedConn, option ...ServerOption) (*Server, error) {
 	}
 
 	options := defaultServerOptions
-	options.recoverHandler = func(i interface{}) {
-		options.logger.Println("panic", i)
-	}
 	for _, v := range option {
 		v(&options)
 	}
@@ -132,7 +129,7 @@ func (s *Server) subscribeMethod(service *service) error {
 				defer s.Done()
 				err := s.handle(context.Background(), service, m, msg)
 				if err != nil {
-					s.opt.logger.Println(err.Error())
+					s.opt.errorHandler(err.Error())
 				}
 			}()
 		}
@@ -177,12 +174,5 @@ func (s *Server) handle(ctx context.Context, service *service, m *method, msg *n
 		Data:    b,
 	}
 
-	// header
-	/*
-		if nil != err {
-			respMsg.Header = nats.Header{}
-			respMsg.Header.Add(headerError, err.Error())
-		}
-	*/
 	return s.enc.Conn.PublishMsg(respMsg)
 }

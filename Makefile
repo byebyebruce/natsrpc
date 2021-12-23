@@ -1,4 +1,4 @@
-gen:
+protoc-gen-natsrpc:
 	go install ./tool/cmd/protoc-gen-natsrpc
 
 test:

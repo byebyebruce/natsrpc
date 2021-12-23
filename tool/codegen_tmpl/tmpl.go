@@ -2,14 +2,15 @@ package codegen_tmpl
 
 const serviceTmpl = `{{- range .ServiceList}}
 {{$serviceName := .ServiceName}}
+{{$serviceInterface := print .ServiceName "Interface"}}
 {{$serviceAsync := .ServiceAsync}}
 {{$serviceWrapperName := print .ServiceName "Wrapper"}}
 {{$clientAsync := .ClientAsync}}
 {{$clientInterface := print .ServiceName "Client"}}
 {{$clientWrapperName := print "_" .ServiceName "Client"}}
 
-// {{ $serviceName }}
-type {{ $serviceName }} interface {
+// {{ $serviceInterface }}
+type {{ $serviceInterface }} interface {
 {{- range .MethodList }}
 // {{ .MethodName }}
 	{{- if eq .Publish false }}
@@ -26,11 +27,11 @@ type {{ $serviceName }} interface {
 
 // Register{{ $serviceName }}
 {{- if eq $serviceAsync false }}
-func Register{{ $serviceName }}(server *natsrpc.Server, s {{ $serviceName }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+func Register{{ $serviceName }}(server *natsrpc.Server, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
 	return server.Register("{{ $.GoPackageName }}.{{ $serviceName }}", s, opts...)
 }
 {{- else }}
-func Register{{ $serviceName }}(server *natsrpc.Server, s {{ $serviceName }}, doer natsrpc.AsyncDoer, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+func Register{{ $serviceName }}(server *natsrpc.Server, doer natsrpc.AsyncDoer, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
 	ss := &{{ $serviceWrapperName }}{
 		doer: doer,
 		s:    s,
@@ -41,7 +42,7 @@ func Register{{ $serviceName }}(server *natsrpc.Server, s {{ $serviceName }}, do
 // {{ $serviceWrapperName }} DO NOT USE
 type {{ $serviceWrapperName }} struct {
 	doer natsrpc.AsyncDoer
-	s    {{ $serviceName }}
+	s    {{ $serviceInterface }}
 }
 {{- range .MethodList }}
 // {{ .MethodName }} DO NOT USE
