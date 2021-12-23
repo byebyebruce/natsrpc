@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/example/pb"
-	async "github.com/byebyebruce/natsrpc/example/pb/async_service"
+	"gitlab.uuzu.com/sanguox/natsrpc"
+	"gitlab.uuzu.com/sanguox/natsrpc/example/pb"
+	async "gitlab.uuzu.com/sanguox/natsrpc/example/pb/async_service"
 )
 
 type AsyncServiceSvc struct{}

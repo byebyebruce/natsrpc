@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package natsrpc;
-option go_package = "github.com/byebyebruce/natsrpc;natsrpc";
+option go_package = "gitlab.uuzu.com/sanguox/natsrpc;natsrpc";
 
 import "google/protobuf/descriptor.proto";
 

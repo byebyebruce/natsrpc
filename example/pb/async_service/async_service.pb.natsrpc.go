@@ -6,10 +6,10 @@ package async_service
 import (
 	context "context"
 	fmt "fmt"
-	natsrpc "github.com/byebyebruce/natsrpc"
-	pb "github.com/byebyebruce/natsrpc/example/pb"
 	proto "github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
+	natsrpc "gitlab.uuzu.com/sanguox/natsrpc"
+	pb "gitlab.uuzu.com/sanguox/natsrpc/example/pb"
 	math "math"
 )
 
@@ -38,7 +38,7 @@ func RegisterGreeter(server *natsrpc.Server, doer natsrpc.AsyncDoer, s GreeterIn
 		doer: doer,
 		s:    s,
 	}
-	return server.Register("github.com.byebyebruce.example.pb.async_service.Greeter", ss, opts...)
+	return server.Register("gitlab.uuzu.com.sanguox.natsrpc.example.pb.async_service.Greeter", ss, opts...)
 }
 
 // GreeterWrapper DO NOT USE
@@ -95,7 +95,7 @@ type _GreeterClient struct {
 
 // NewGreeterClient
 func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.ClientOption) (GreeterClient, error) {
-	c, err := natsrpc.NewClient(enc, "github.com.byebyebruce.example.pb.async_service.Greeter", opts...)
+	c, err := natsrpc.NewClient(enc, "gitlab.uuzu.com.sanguox.natsrpc.example.pb.async_service.Greeter", opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-module github.com/byebyebruce/natsrpc
+module gitlab.uuzu.com/sanguox/natsrpc
 
 go 1.13
 

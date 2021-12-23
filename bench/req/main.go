@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/byebyebruce/natsrpc"
+	"gitlab.uuzu.com/sanguox/natsrpc"
 )
 
 var (

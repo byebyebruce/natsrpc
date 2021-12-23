@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/byebyebruce/natsrpc/tool/codegen_plugin"
-	protoc_gen_base "github.com/byebyebruce/natsrpc/tool/protoc-gen-base"
+	"gitlab.uuzu.com/sanguox/natsrpc/tool/codegen_plugin"
+	protoc_gen_base "gitlab.uuzu.com/sanguox/natsrpc/tool/protoc-gen-base"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/byebyebruce/natsrpc/tool/nats_server"
+	"gitlab.uuzu.com/sanguox/natsrpc/tool/nats_server"
 )
 
 func main() {

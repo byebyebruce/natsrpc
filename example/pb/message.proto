@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package pb;
-option go_package = "github.com/byebyebruce/natsrpc/example/pb;pb";
+option go_package = "gitlab.uuzu.com/sanguox/natsrpc/example/pb;pb";
 
 // The request message containing the user's name.
 message HelloRequest {

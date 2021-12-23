@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/tool/nats_server"
 	"github.com/nats-io/nats.go"
+	"gitlab.uuzu.com/sanguox/natsrpc"
+	"gitlab.uuzu.com/sanguox/natsrpc/tool/nats_server"
 )
 
 var (

@@ -3,11 +3,11 @@ package codegen_plugin
 import (
 	"strings"
 
-	"github.com/byebyebruce/natsrpc/tool/codegen_tmpl"
-	protoc_gen_base "github.com/byebyebruce/natsrpc/tool/protoc-gen-base"
+	"gitlab.uuzu.com/sanguox/natsrpc/tool/codegen_tmpl"
+	protoc_gen_base "gitlab.uuzu.com/sanguox/natsrpc/tool/protoc-gen-base"
 
-	"github.com/byebyebruce/natsrpc"
 	"github.com/golang/protobuf/proto"
+	"gitlab.uuzu.com/sanguox/natsrpc"
 )
 
 // MyPlugin is an implementation of the Go protocol buffer compiler's
@@ -55,7 +55,7 @@ func (g *MyPlugin) Generate(file *protoc_gen_base.FileDescriptor) {
 	}
 
 	contextPkg = string(g.gen.AddImport("context"))
-	g.gen.AddImport("github.com/byebyebruce/natsrpc")
+	g.gen.AddImport("gitlab.uuzu.com/sanguox/natsrpc")
 	g.gen.AddImport("github.com/nats-io/nats.go")
 
 	goPkg := strings.Replace(strings.Split(file.GetOptions().GetGoPackage(), ";")[0], "/", ".", -1)
