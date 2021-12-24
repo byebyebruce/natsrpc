@@ -45,19 +45,23 @@ func (c *Client) Publish(method string, req interface{}) error {
 // Request 请求
 func (c *Client) Request(ctx context.Context, method string, req interface{}, rep interface{}, opt ...CallOption) error {
 	// opt
-	callOpt := callOptions{}
+	callOpt := callOptions{
+		namespace: c.opt.namespace,
+		id:        c.opt.id,
+		timeout:   c.opt.timeout,
+	}
 	for _, v := range opt {
 		v(&callOpt)
 	}
 
 	// ctx
-	if callOpt.timeout != nil {
-		newCtx, cancel := context.WithTimeout(ctx, *callOpt.timeout)
+	if callOpt.timeout > 0 {
+		newCtx, cancel := context.WithTimeout(ctx, callOpt.timeout)
 		defer cancel()
 		ctx = newCtx
 	}
 	// subject
-	subject := CombineSubject(c.opt.namespace, c.serviceName, method, c.opt.id)
+	subject := CombineSubject(callOpt.namespace, c.serviceName, method, callOpt.id)
 
 	// req
 	rpcReq, err := c.newRequest(ctx, subject, req)

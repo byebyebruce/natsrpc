@@ -25,12 +25,14 @@ type serviceOptions struct {
 type clientOptions struct {
 	namespace string        // 空间(划分隔离)
 	id        string        // id
-	timeout   time.Duration // 请求/handle的超时
+	timeout   time.Duration // 请求handle的超时
 }
 
 // callOptions 调用选项
 type callOptions struct {
-	timeout *time.Duration
+	namespace string        // 空间(划分隔离) 会覆盖clientOptions.namesapce
+	id        string        // id 会覆盖clientOptions.id
+	timeout   time.Duration // 请求handle的超时 会覆盖clientOptions.timeout
 }
 
 var defaultServerOptions = serverOptions{
@@ -132,7 +134,21 @@ type CallOption func(options *callOptions)
 // WithCallTimeout call 超时时间
 func WithCallTimeout(timeout time.Duration) CallOption {
 	return func(options *callOptions) {
-		options.timeout = &timeout
+		options.timeout = timeout
+	}
+}
+
+// WithCallID call id
+func WithCallID(id interface{}) CallOption {
+	return func(options *callOptions) {
+		options.id = fmt.Sprint(id)
+	}
+}
+
+// WithCallNamespace 空间集群
+func WithCallNamespace(namespace string) CallOption {
+	return func(options *callOptions) {
+		options.namespace = namespace
 	}
 }
 
