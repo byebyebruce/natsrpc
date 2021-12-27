@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package request;
-option go_package = "gitlab.uuzu.com/sanguox/natsrpc/example/pb/request;request";
+option go_package = "gitlab.uuzu.com/war/natsrpc/example/pb/request;request";
 
 import "message.proto";
 

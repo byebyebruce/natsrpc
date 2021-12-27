@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"gitlab.uuzu.com/sanguox/natsrpc/example/pb/async_client"
+	"gitlab.uuzu.com/war/natsrpc/example/pb/async_client"
 
-	"gitlab.uuzu.com/sanguox/natsrpc"
-	"gitlab.uuzu.com/sanguox/natsrpc/example/pb"
+	"gitlab.uuzu.com/war/natsrpc"
+	"gitlab.uuzu.com/war/natsrpc/example/pb"
 )
 
 type AsyncClientSvc struct{}

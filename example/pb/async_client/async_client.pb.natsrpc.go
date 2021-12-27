@@ -8,8 +8,8 @@ import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
-	natsrpc "gitlab.uuzu.com/sanguox/natsrpc"
-	pb "gitlab.uuzu.com/sanguox/natsrpc/example/pb"
+	natsrpc "gitlab.uuzu.com/war/natsrpc"
+	pb "gitlab.uuzu.com/war/natsrpc/example/pb"
 	math "math"
 )
 
@@ -34,7 +34,7 @@ type GreeterInterface interface {
 
 // RegisterGreeter
 func RegisterGreeter(server *natsrpc.Server, s GreeterInterface, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
-	return server.Register("gitlab.uuzu.com.sanguox.natsrpc.example.pb.async_client.Greeter", s, opts...)
+	return server.Register("gitlab.uuzu.com.war.natsrpc.example.pb.async_client.Greeter", s, opts...)
 }
 
 // GreeterClient
@@ -51,7 +51,7 @@ type _GreeterClient struct {
 
 // NewGreeterClient
 func NewGreeterClient(enc *nats.EncodedConn, doer natsrpc.AsyncDoer, opts ...natsrpc.ClientOption) (GreeterClient, error) {
-	c, err := natsrpc.NewClient(enc, "gitlab.uuzu.com.sanguox.natsrpc.example.pb.async_client.Greeter", opts...)
+	c, err := natsrpc.NewClient(enc, "gitlab.uuzu.com.war.natsrpc.example.pb.async_client.Greeter", opts...)
 	if err != nil {
 		return nil, err
 	}

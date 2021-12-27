@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package async_service;
-option go_package = "gitlab.uuzu.com/sanguox/natsrpc/example/pb/async_service;async_service";
+option go_package = "gitlab.uuzu.com/war/natsrpc/example/pb/async_service;async_service";
 
 import "natsrpc.proto";
 import "message.proto";

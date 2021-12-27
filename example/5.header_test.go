@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"gitlab.uuzu.com/sanguox/natsrpc"
-	"gitlab.uuzu.com/sanguox/natsrpc/example/pb"
-	"gitlab.uuzu.com/sanguox/natsrpc/example/pb/request"
+	"gitlab.uuzu.com/war/natsrpc"
+	"gitlab.uuzu.com/war/natsrpc/example/pb"
+	"gitlab.uuzu.com/war/natsrpc/example/pb/request"
 )
 
 type HeaderSvc struct {

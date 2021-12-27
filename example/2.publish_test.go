@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"gitlab.uuzu.com/sanguox/natsrpc"
-	"gitlab.uuzu.com/sanguox/natsrpc/example/pb"
-	"gitlab.uuzu.com/sanguox/natsrpc/example/pb/publish"
+	"gitlab.uuzu.com/war/natsrpc"
+	"gitlab.uuzu.com/war/natsrpc/example/pb"
+	"gitlab.uuzu.com/war/natsrpc/example/pb/publish"
 )
 
 type PublishSvc struct {

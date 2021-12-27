@@ -1,4 +1,4 @@
-module gitlab.uuzu.com/sanguox/natsrpc
+module gitlab.uuzu.com/war/natsrpc
 
 go 1.13
 

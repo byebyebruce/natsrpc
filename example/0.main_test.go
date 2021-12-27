@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
-	"gitlab.uuzu.com/sanguox/natsrpc"
-	"gitlab.uuzu.com/sanguox/natsrpc/tool/nats_server"
+	"gitlab.uuzu.com/war/natsrpc"
+	"gitlab.uuzu.com/war/natsrpc/tool/nats_server"
 )
 
 var (
