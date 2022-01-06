@@ -3,6 +3,8 @@ package natsrpc
 import (
 	"context"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type A struct {
@@ -20,14 +22,9 @@ func Test_Service(t *testing.T) {
 	serviceName := "natsrpc.A"
 	id := "1"
 	s, err := newService(serviceName, &A{}, WithServiceNamespace(namespace), WithServiceID(id))
-
-	if nil != err {
-		t.Error(err)
-	}
+	assert.Nil(t, err)
 
 	for k, v := range s.methods {
-		if CombineSubject(namespace, serviceName, v.name, id) != k {
-			t.Error("subject not match")
-		}
+		assert.Equal(t, CombineSubject(namespace, serviceName, id, v.name), k)
 	}
 }

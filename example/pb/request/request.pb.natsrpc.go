@@ -28,6 +28,8 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 type GreeterInterface interface {
 	// Hello
 	Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error)
+	// HelloError
+	HelloError(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error)
 }
 
 // RegisterGreeter
@@ -39,6 +41,8 @@ func RegisterGreeter(server *natsrpc.Server, s GreeterInterface, opts ...natsrpc
 type GreeterClient interface {
 	// Hello
 	Hello(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error)
+	// HelloError
+	HelloError(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error)
 }
 type _GreeterClient struct {
 	c *natsrpc.Client
@@ -58,5 +62,10 @@ func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.ClientOption) (Gree
 func (c *_GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error) {
 	rep := &pb.HelloReply{}
 	err := c.c.Request(ctx, "Hello", req, rep, opt...)
+	return rep, err
+}
+func (c *_GreeterClient) HelloError(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error) {
+	rep := &pb.HelloReply{}
+	err := c.c.Request(ctx, "HelloError", req, rep, opt...)
 	return rep, err
 }

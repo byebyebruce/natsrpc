@@ -48,7 +48,7 @@ func newService(name string, i interface{}, opts ...ServiceOption) (*service, er
 	s := &service{
 		opt:     opt,
 		methods: map[string]*method{},
-		name:    name,
+		name:    CombineSubject(opt.namespace, name, opt.id), // name = namespace.package.service.id
 		val:     i,
 	}
 
@@ -64,8 +64,8 @@ func newService(name string, i interface{}, opts ...ServiceOption) (*service, er
 		if _, ok := s.methods[v.name]; ok {
 			return nil, fmt.Errorf("service [%s] duplicate method [%s]", name, v.name)
 		}
-		// subject = namespace.package.service.method.id
-		subject := CombineSubject(s.opt.namespace, s.name, v.name, s.opt.id)
+		// subject = namespace.package.service.id.method
+		subject := CombineSubject(s.name, v.name)
 		s.methods[subject] = v
 	}
 	return s, nil

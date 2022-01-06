@@ -10,6 +10,7 @@ import (
 // Client RPC client
 type Client struct {
 	enc         *nats.EncodedConn // NATS Encode Conn
+	name        string            // 名字
 	serviceName string            // 服务名
 	opt         clientOptions     // 选项
 }
@@ -23,16 +24,31 @@ func NewClient(enc *nats.EncodedConn, serviceName string, opts ...ClientOption) 
 	c := &Client{
 		enc:         enc,
 		serviceName: serviceName,
+		name:        CombineSubject(opt.namespace, serviceName, opt.id),
 		opt:         opt,
 	}
 
 	return c, nil
 }
 
+// Name 名字
+func (c *Client) Name() string {
+	return c.name
+}
+
 // Publish 发布
-func (c *Client) Publish(method string, req interface{}) error {
+func (c *Client) Publish(method string, req interface{}, opt ...CallOption) error {
+	// opt
+	callOpt := callOptions{
+		namespace: c.opt.namespace,
+		id:        c.opt.id,
+		timeout:   c.opt.timeout,
+	}
+	for _, v := range opt {
+		v(&callOpt)
+	}
 	// subject
-	subject := CombineSubject(c.opt.namespace, c.serviceName, method, c.opt.id)
+	subject := CombineSubject(c.opt.namespace, c.serviceName, c.opt.id, method)
 
 	// req
 	rpcReq, err := c.newRequest(nil, subject, req)
@@ -61,7 +77,7 @@ func (c *Client) Request(ctx context.Context, method string, req interface{}, re
 		ctx = newCtx
 	}
 	// subject
-	subject := CombineSubject(callOpt.namespace, c.serviceName, method, callOpt.id)
+	subject := CombineSubject(callOpt.namespace, c.serviceName, callOpt.id, method)
 
 	// req
 	rpcReq, err := c.newRequest(ctx, subject, req)

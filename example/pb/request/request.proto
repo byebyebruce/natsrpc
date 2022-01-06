@@ -8,4 +8,5 @@ import "message.proto";
 
 service Greeter {
   rpc Hello (pb.HelloRequest) returns (pb.HelloReply) {}
+  rpc HelloError (pb.HelloRequest) returns (pb.HelloReply) {}
 }

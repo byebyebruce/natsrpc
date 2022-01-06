@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"gitlab.uuzu.com/war/natsrpc/example/pb"
 	"gitlab.uuzu.com/war/natsrpc/example/pb/async_client"
 
-	"gitlab.uuzu.com/war/natsrpc"
-	"gitlab.uuzu.com/war/natsrpc/example/pb"
+	"github.com/stretchr/testify/assert"
 )
 
 type AsyncClientSvc struct{}
@@ -36,21 +36,18 @@ func TestAsyncClient(t *testing.T) {
 	}()
 	ps := &AsyncClientSvc{}
 	svc, err := async_client.RegisterGreeter(server, ps)
+	assert.Nil(t, err)
 	defer svc.Close()
 
 	cli, err := async_client.NewGreeterClient(enc, d)
-	natsrpc.IfNotNilPanic(err)
+	assert.Nil(t, err)
 
 	over := make(chan struct{})
-	const haha = "haha"
 
 	cli.Hello(context.Background(), &pb.HelloRequest{Name: haha}, func(reply *pb.HelloReply, err error) {
 		defer close(over)
-		natsrpc.IfNotNilPanic(err)
-		fmt.Println(reply, err)
-		if reply.Message != haha {
-			t.Error("not match")
-		}
+		assert.Nil(t, err)
+		assert.Equal(t, haha, reply.Message)
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)

@@ -16,6 +16,8 @@ var (
 	server *natsrpc.Server
 )
 
+const haha = "haha"
+
 func TestMain(m *testing.M) {
 	var err error
 
