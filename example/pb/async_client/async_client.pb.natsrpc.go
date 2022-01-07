@@ -65,10 +65,10 @@ func (c *_GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest, cb fun
 	go func() {
 		rep := &pb.HelloReply{}
 		err := c.c.Request(ctx, "Hello", req, rep, opt...)
-		newCb := func() {
+		newCb := func(_ func(interface{}, error)) {
 			cb(rep, err)
 		}
-		c.doer.Do(ctx, newCb)
+		c.doer.AsyncDo(ctx, newCb)
 	}()
 }
 func (c *_GreeterClient) HelloToAll(notify *pb.HelloRequest) error {

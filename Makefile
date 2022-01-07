@@ -1,3 +1,5 @@
+all: protoc-gen-natsrpc example_pb test
+
 protoc-gen-natsrpc:
 	go install ./tool/cmd/protoc-gen-natsrpc
 

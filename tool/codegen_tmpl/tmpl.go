@@ -48,36 +48,22 @@ type {{ $serviceWrapperName }} struct {
 // {{ .MethodName }} DO NOT USE
 	{{- if eq .Publish true }}
 		func (s *{{ $serviceWrapperName }}){{ .MethodName }}(ctx context.Context, req *{{ .InputTypeName }}) {
-			s.doer.Do(ctx, func() {
+			s.doer.AsyncDo(ctx, func(_ func(interface{}, error)) {
 				s.s.{{ .MethodName }}(ctx , req)
 			})
 		}
 	{{- else }}
-		func (s *{{ $serviceWrapperName }}){{ .MethodName }}(ctx context.Context, req *{{ .InputTypeName }})(rep *{{ .OutputTypeName }}, err error) {
-			done := make(chan struct{})
-			cb := func(r *{{ .OutputTypeName }}, e error) {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-					rep, err = r, e
-					select {
-					case done <- struct{}{}:
-					default:
-					}
-				}
+		func (s *{{ $serviceWrapperName }}){{ .MethodName }}(ctx context.Context, req *{{ .InputTypeName }})(*{{ .OutputTypeName }}, error) {
+			f := func(cb func(interface{}, error)) {
+				s.s.{{ .MethodName }}(ctx, req, func(r *{{ .OutputTypeName }}, e error) {
+					cb(r,e)
+				})
 			}
-
-			s.doer.Do(ctx, func() {
-				s.s.{{ .MethodName }}(ctx, req, cb)
-			})
-
-			select {
-			case <-ctx.Done():
-				rep, err = nil, ctx.Err()
-			case <-done:
+			temp, err := s.doer.AsyncDo(ctx, f)
+			if temp==nil {
+				return nil, err
 			}
-			return
+			return temp.(*{{ .OutputTypeName }}), err
 		}
 	{{- end }}
 {{- end }}
@@ -145,10 +131,10 @@ func New{{ $clientInterface }}(enc *nats.EncodedConn, opts ...natsrpc.ClientOpti
 				go func() {
 					rep := &{{ .OutputTypeName }}{}
 					err := c.c.Request(ctx, "{{ .MethodName }}", req, rep, opt...)
-					newCb := func() {
+					newCb := func(_ func(interface{},error)) {
 						cb(rep, err)
 					}
-					c.doer.Do(ctx, newCb)
+					c.doer.AsyncDo(ctx, newCb)
 				}()
 			}
 		{{- else }}

@@ -106,5 +106,5 @@ func IfNotNilPanic(err error) {
 }
 
 type AsyncDoer interface {
-	Do(context.Context, func())
+	AsyncDo(context.Context, func(func(interface{}, error))) (interface{}, error)
 }

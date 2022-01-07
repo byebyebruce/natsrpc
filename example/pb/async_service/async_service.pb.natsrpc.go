@@ -48,36 +48,22 @@ type GreeterWrapper struct {
 }
 
 // Hello DO NOT USE
-func (s *GreeterWrapper) Hello(ctx context.Context, req *pb.HelloRequest) (rep *pb.HelloReply, err error) {
-	done := make(chan struct{})
-	cb := func(r *pb.HelloReply, e error) {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			rep, err = r, e
-			select {
-			case done <- struct{}{}:
-			default:
-			}
-		}
+func (s *GreeterWrapper) Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+	f := func(cb func(interface{}, error)) {
+		s.s.Hello(ctx, req, func(r *pb.HelloReply, e error) {
+			cb(r, e)
+		})
 	}
-
-	s.doer.Do(ctx, func() {
-		s.s.Hello(ctx, req, cb)
-	})
-
-	select {
-	case <-ctx.Done():
-		rep, err = nil, ctx.Err()
-	case <-done:
+	temp, err := s.doer.AsyncDo(ctx, f)
+	if temp == nil {
+		return nil, err
 	}
-	return
+	return temp.(*pb.HelloReply), err
 }
 
 // HelloToAll DO NOT USE
 func (s *GreeterWrapper) HelloToAll(ctx context.Context, req *pb.HelloRequest) {
-	s.doer.Do(ctx, func() {
+	s.doer.AsyncDo(ctx, func(_ func(interface{}, error)) {
 		s.s.HelloToAll(ctx, req)
 	})
 }
