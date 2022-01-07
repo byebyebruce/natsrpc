@@ -83,7 +83,7 @@ type {{ $clientInterface }} interface {
 			{{ .MethodName }}(ctx context.Context, req *{{ .InputTypeName }}, opt ...natsrpc.CallOption)(*{{ .OutputTypeName }}, error)
 		{{- end }}
 	{{- else }}
-		{{ .MethodName }}(notify *{{ .InputTypeName }}) error
+		{{ .MethodName }}(notify *{{ .InputTypeName }}, opt ...natsrpc.CallOption) error
 	{{- end }}
 {{- end }}
 }
@@ -145,8 +145,8 @@ func New{{ $clientInterface }}(enc *nats.EncodedConn, opts ...natsrpc.ClientOpti
 			}
 		{{- end }}
 	{{- else }}
-		func (c *{{ $clientWrapperName }}) {{ .MethodName }}(notify *{{ .InputTypeName }}) error {
-			return c.c.Publish("{{ .MethodName }}", notify)
+		func (c *{{ $clientWrapperName }}) {{ .MethodName }}(notify *{{ .InputTypeName }}, opt ...natsrpc.CallOption) error {
+			return c.c.Publish("{{ .MethodName }}", notify, opt...)
 		}
 	{{- end }}
 {{- end }}

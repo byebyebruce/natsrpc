@@ -73,7 +73,7 @@ type GreeterClient interface {
 	// Hello
 	Hello(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error)
 	// HelloToAll
-	HelloToAll(notify *pb.HelloRequest) error
+	HelloToAll(notify *pb.HelloRequest, opt ...natsrpc.CallOption) error
 }
 type _GreeterClient struct {
 	c *natsrpc.Client
@@ -95,6 +95,6 @@ func (c *_GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest, opt ..
 	err := c.c.Request(ctx, "Hello", req, rep, opt...)
 	return rep, err
 }
-func (c *_GreeterClient) HelloToAll(notify *pb.HelloRequest) error {
-	return c.c.Publish("HelloToAll", notify)
+func (c *_GreeterClient) HelloToAll(notify *pb.HelloRequest, opt ...natsrpc.CallOption) error {
+	return c.c.Publish("HelloToAll", notify, opt...)
 }

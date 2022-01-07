@@ -38,7 +38,7 @@ func RegisterGreeter(server *natsrpc.Server, s GreeterInterface, opts ...natsrpc
 // GreeterClient
 type GreeterClient interface {
 	// HelloToAll
-	HelloToAll(notify *pb.HelloRequest) error
+	HelloToAll(notify *pb.HelloRequest, opt ...natsrpc.CallOption) error
 }
 type _GreeterClient struct {
 	c *natsrpc.Client
@@ -55,6 +55,6 @@ func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.ClientOption) (Gree
 	}
 	return ret, nil
 }
-func (c *_GreeterClient) HelloToAll(notify *pb.HelloRequest) error {
-	return c.c.Publish("HelloToAll", notify)
+func (c *_GreeterClient) HelloToAll(notify *pb.HelloRequest, opt ...natsrpc.CallOption) error {
+	return c.c.Publish("HelloToAll", notify, opt...)
 }
