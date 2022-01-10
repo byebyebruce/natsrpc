@@ -39,7 +39,7 @@ func TestAsyncClient(t *testing.T) {
 	assert.Nil(t, err)
 	defer svc.Close()
 
-	cli, err := async_client.NewGreeterClient(enc, d)
+	cli, err := async_client.NewGreeterAsyncClient(enc, d)
 	assert.Nil(t, err)
 
 	over := make(chan struct{})

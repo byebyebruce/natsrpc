@@ -2,6 +2,7 @@ package codegen_tmpl
 
 import (
 	"bytes"
+	_ "embed"
 	"go/format"
 	"io/ioutil"
 	"os"
@@ -9,6 +10,9 @@ import (
 )
 
 var sTpl *template.Template
+
+//go:embed tmpl.gohtml
+var serviceTmpl string
 
 func init() {
 	var err error

@@ -7,6 +7,7 @@ import (
 	protoc_gen_base "gitlab.uuzu.com/war/natsrpc/tool/protoc-gen-base"
 
 	"github.com/golang/protobuf/proto"
+
 	"gitlab.uuzu.com/war/natsrpc"
 )
 
@@ -66,6 +67,7 @@ func (g *MyPlugin) Generate(file *protoc_gen_base.FileDescriptor) {
 	for _, service := range file.FileDescriptorProto.Service {
 		s := codegen_tmpl.ServiceSpec{}
 		s.ServiceName = service.GetName()
+		s.Comment = service.GetName() // TODO
 		if v, err := proto.GetExtension(service.GetOptions(), natsrpc.E_ServiceAsync); err == nil {
 			s.ServiceAsync = *(v.(*bool))
 		}
@@ -78,6 +80,7 @@ func (g *MyPlugin) Generate(file *protoc_gen_base.FileDescriptor) {
 				ms.Publish = *(v.(*bool))
 			}
 			ms.MethodName = m.GetName()
+			ms.Comment = m.GetName() // TODO
 			ms.InputTypeName = g.typeName(m.GetInputType())
 			ms.OutputTypeName = g.typeName(m.GetOutputType())
 			s.MethodList = append(s.MethodList, ms)

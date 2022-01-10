@@ -24,16 +24,16 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-// GreeterInterface
-type GreeterInterface interface {
-	// Hello
+// GreeterService Greeter service interface
+type GreeterService interface {
+	// Hello call Hello
 	Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error)
-	// HelloError
+	// HelloError call HelloError
 	HelloError(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error)
 }
 
-// RegisterGreeter
-func RegisterGreeter(server *natsrpc.Server, s GreeterInterface, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+// RegisterGreeter register Greeter service
+func RegisterGreeter(server *natsrpc.Server, s GreeterService, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
 	return server.Register("gitlab.uuzu.com.war.natsrpc.example.pb.request.Greeter", s, opts...)
 }
 
@@ -44,6 +44,7 @@ type GreeterClient interface {
 	// HelloError
 	HelloError(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error)
 }
+
 type _GreeterClient struct {
 	c *natsrpc.Client
 }

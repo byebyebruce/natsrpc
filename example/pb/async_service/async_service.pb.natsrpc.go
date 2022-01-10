@@ -24,16 +24,16 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-// GreeterInterface
-type GreeterInterface interface {
-	// Hello
+// GreeterService Greeter service interface
+type GreeterService interface {
+	// Hello call Hello
 	Hello(ctx context.Context, req *pb.HelloRequest, cb func(*pb.HelloReply, error))
-	// HelloToAll
+	// HelloToAll call HelloToAll
 	HelloToAll(ctx context.Context, req *pb.HelloRequest)
 }
 
-// RegisterGreeter
-func RegisterGreeter(server *natsrpc.Server, doer natsrpc.AsyncDoer, s GreeterInterface, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+// RegisterGreeter register Greeter service
+func RegisterGreeter(server *natsrpc.Server, doer natsrpc.AsyncDoer, s GreeterService, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
 	ss := &GreeterWrapper{
 		doer: doer,
 		s:    s,
@@ -44,7 +44,7 @@ func RegisterGreeter(server *natsrpc.Server, doer natsrpc.AsyncDoer, s GreeterIn
 // GreeterWrapper DO NOT USE
 type GreeterWrapper struct {
 	doer natsrpc.AsyncDoer
-	s    GreeterInterface
+	s    GreeterService
 }
 
 // Hello DO NOT USE
@@ -75,6 +75,7 @@ type GreeterClient interface {
 	// HelloToAll
 	HelloToAll(notify *pb.HelloRequest, opt ...natsrpc.CallOption) error
 }
+
 type _GreeterClient struct {
 	c *natsrpc.Client
 }
