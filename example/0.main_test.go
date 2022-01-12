@@ -9,7 +9,7 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"gitlab.uuzu.com/war/natsrpc"
-	"gitlab.uuzu.com/war/natsrpc/tool/nats_server"
+	"gitlab.uuzu.com/war/natsrpc/example/nats_server"
 )
 
 var (
