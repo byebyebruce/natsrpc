@@ -47,7 +47,7 @@ var defaultServerOptions = serverOptions{
 var defaultServiceOptions = serviceOptions{
 	namespace: "default",
 	id:        "",
-	group:     "",
+	group:     "default", // 默认default组，同组内只有一个service收到
 	timeout:   time.Duration(3) * time.Second,
 }
 
@@ -77,10 +77,17 @@ func WithServerRecovery(h func(interface{})) ServerOption {
 // ServiceOption service option
 type ServiceOption func(options *serviceOptions)
 
-// WithServiceGroup 订阅组
+// WithServiceGroup 订阅组(同组内只有个service收到)
 func WithServiceGroup(group string) ServiceOption {
 	return func(options *serviceOptions) {
 		options.group = group
+	}
+}
+
+// WithServiceNoGroup 取消订阅组(所有有个service收到)
+func WithServiceNoGroup() ServiceOption {
+	return func(options *serviceOptions) {
+		options.group = ""
 	}
 }
 
