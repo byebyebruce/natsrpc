@@ -154,7 +154,7 @@ func WithCallNamespace(namespace string) CallOption {
 
 type IServer interface {
 	ClearAllSubscription()
-	Close(duration time.Duration) (err error)
+	Close(ctx context.Context) (err error)
 }
 
 type IClient interface {

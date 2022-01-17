@@ -42,7 +42,7 @@ func main() {
 		if nil != err {
 			panic(err)
 		}
-		defer server.Close(time.Second)
+		defer server.Close(context.Background())
 		_, err = server.Register(serviceName, &BenchReqService{}, groupOpt)
 		if nil != err {
 			panic(err)

@@ -31,7 +31,9 @@ func TestMain(m *testing.M) {
 
 	server, err = natsrpc.NewServer(enc)
 	natsrpc.IfNotNilPanic(err)
-	defer server.Close(time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	defer server.Close(ctx)
 
 	os.Exit(m.Run())
 }

@@ -48,7 +48,7 @@ func main() {
 
 		server, err := natsrpc.NewServer(enc)
 		natsrpc.IfNotNilPanic(err)
-		defer server.Close(time.Second)
+		defer server.Close(context.Background())
 
 		_, err = server.Register(serviceName, &BenchNotifyService{}, op...)
 		if nil != err {
