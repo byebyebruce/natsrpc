@@ -6,8 +6,9 @@ import (
 	"github.com/byebyebruce/natsrpc/tool/codegen_tmpl"
 	protoc_gen_base "github.com/byebyebruce/natsrpc/tool/protoc-gen-base"
 
-	"github.com/byebyebruce/natsrpc"
 	"github.com/golang/protobuf/proto"
+
+	"github.com/byebyebruce/natsrpc"
 )
 
 // MyPlugin is an implementation of the Go protocol buffer compiler's
@@ -66,6 +67,7 @@ func (g *MyPlugin) Generate(file *protoc_gen_base.FileDescriptor) {
 	for _, service := range file.FileDescriptorProto.Service {
 		s := codegen_tmpl.ServiceSpec{}
 		s.ServiceName = service.GetName()
+		s.Comment = service.GetName() // TODO
 		if v, err := proto.GetExtension(service.GetOptions(), natsrpc.E_ServiceAsync); err == nil {
 			s.ServiceAsync = *(v.(*bool))
 		}
@@ -78,6 +80,7 @@ func (g *MyPlugin) Generate(file *protoc_gen_base.FileDescriptor) {
 				ms.Publish = *(v.(*bool))
 			}
 			ms.MethodName = m.GetName()
+			ms.Comment = m.GetName() // TODO
 			ms.InputTypeName = g.typeName(m.GetInputType())
 			ms.OutputTypeName = g.typeName(m.GetOutputType())
 			s.MethodList = append(s.MethodList, ms)

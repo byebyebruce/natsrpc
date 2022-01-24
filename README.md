@@ -1,6 +1,4 @@
 # NATSRPC
-[![Go doc](https://img.shields.io/badge/go.dev-reference-brightgreen?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/byebyebruce/natsrpc)
-[![Go Report](https://goreportcard.com/badge/github.com/byebyebruce/natsrpc)](https://goreportcard.com/report/github.com/byebyebruce/natsrpc)
 
 ```
   _   _       _______ _____   _____  _____   _____ 
@@ -26,12 +24,12 @@ NATS收发消息需要手动定义subject，request，reply，handler等繁琐�
 
 * protoc插件
 ```
-go get -u github.com/golang/protobuf/protoc-gen-go@v1.3.5
-go get -u github.com/byebyebruce/natsrpc/tool/cmd/protoc-gen-natsrpc
+go install github.com/golang/protobuf/protoc-gen-go@v1.3.5
+go install github.com/byebyebruce/natsrpc/tool/cmd/protoc-gen-natsrpc@latest
 ```
 
 ## 快速使用
-* 启动nats-server(没有部署好的nats-server可以`go run tool/cmd/simple_natsserver/main.go`)
+* 启动nats-server(没有部署好的nats-server可以`go run example/cmd/simple_natsserver/main.go`)
 1. 创建工程
 `go mod init natsrpc_test`
 2. 引用包 `go get github.com/byebyebruce/natsrpc`
@@ -40,7 +38,7 @@ go get -u github.com/byebyebruce/natsrpc/tool/cmd/protoc-gen-natsrpc
 syntax = "proto3";
 
 package natsrpc_test;
-option go_package = "github.com/byebyebruce/example/natsrpc_test;natsrpc_test";
+option go_package = "github.com/byebyebruce/natsrpc/example/natsrpc_test;natsrpc_test";
 
 message HelloRequest {
   string name = 1;
@@ -85,3 +83,4 @@ type Greeter interface {
 - [x] 支持Header
 - [x] 生成Client接口
 - [ ] 支持goroutine池
+- [ ] 支持中间件

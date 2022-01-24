@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/stretchr/testify/assert"
 )
 
 type testMarshaller struct {
@@ -48,32 +49,24 @@ func Test_Parse(t *testing.T) {
 		t.Error("name error")
 	}
 	_, err = parseMethod(&MethodErrorTest{})
-	if nil == err {
-		t.Error(err)
-	}
+	assert.NotNil(t, err)
 }
 
 func TestMethod_Handle(t *testing.T) {
 	s := &MethodTest{}
 	ret, err := parseMethod(s)
-	if nil != err {
-		t.Error(err)
-	}
+	assert.Nil(t, err)
+
 	a := &Empty{}
 	b, _ := pbMarshaller.Marshal(a)
 
 	m, ok := ret["Request"]
-	if !ok {
-		t.Error("m is nil")
-		return
-	}
+	assert.Equal(t, true, ok)
+
 	req := m.newRequest()
 	pbMarshaller.Unmarshal(b, req)
 	_, err = m.handle(s, context.Background(), req)
-	if nil != err {
-		t.Error(err)
-	}
-
+	assert.Nil(t, err)
 }
 
 func BenchmarkMethod_Handle(b *testing.B) {

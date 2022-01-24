@@ -4,17 +4,16 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/nats-io/nats.go"
 )
 
 // Server RPC server
 type Server struct {
-	*sync.WaitGroup
+	wg       sync.WaitGroup                    // wait group
+	mu       sync.Mutex                        // lock
 	opt      serverOptions                     // options
 	enc      *nats.EncodedConn                 // NATS Encode Conn
-	mu       sync.Mutex                        // lock
 	services map[*service][]*nats.Subscription // 服务 name->service
 }
 
@@ -27,31 +26,25 @@ func NewServer(enc *nats.EncodedConn, option ...ServerOption) (*Server, error) {
 	}
 
 	options := defaultServerOptions
-	options.recoverHandler = func(i interface{}) {
-		options.logger.Println("panic", i)
-	}
 	for _, v := range option {
 		v(&options)
 	}
 
 	d := &Server{
-		WaitGroup: &sync.WaitGroup{},
-		opt:       options,
-		enc:       enc,
-		services:  make(map[*service][]*nats.Subscription),
+		opt:      options,
+		enc:      enc,
+		services: make(map[*service][]*nats.Subscription),
 	}
 	return d, nil
 }
 
 // Close 关闭
-func (s *Server) Close(duration time.Duration) (err error) {
+func (s *Server) Close(ctx context.Context) (err error) {
 	s.ClearAllSubscription()
 
-	ctx, cancel := context.WithTimeout(context.Background(), duration)
-	defer cancel()
 	over := make(chan struct{})
 	go func() {
-		s.Wait()
+		s.wg.Wait()
 		close(over)
 	}()
 	select {
@@ -59,7 +52,7 @@ func (s *Server) Close(duration time.Duration) (err error) {
 		err = ctx.Err()
 	case <-over:
 	}
-	if err1 := s.enc.FlushTimeout(duration); err == nil && err1 != nil {
+	if err1 := s.enc.Flush(); err == nil && err1 != nil {
 		err = err1
 	}
 	return
@@ -127,12 +120,12 @@ func (s *Server) subscribeMethod(service *service) error {
 	for subject, v := range service.methods {
 		m := v
 		cb := func(msg *nats.Msg) {
-			s.Add(1)
+			s.wg.Add(1)
 			go func() {
-				defer s.Done()
+				defer s.wg.Done()
 				err := s.handle(context.Background(), service, m, msg)
 				if err != nil {
-					s.opt.logger.Println(err.Error())
+					s.opt.errorHandler(err.Error())
 				}
 			}()
 		}
@@ -177,12 +170,5 @@ func (s *Server) handle(ctx context.Context, service *service, m *method, msg *n
 		Data:    b,
 	}
 
-	// header
-	/*
-		if nil != err {
-			respMsg.Header = nats.Header{}
-			respMsg.Header.Add(headerError, err.Error())
-		}
-	*/
 	return s.enc.Conn.PublishMsg(respMsg)
 }

@@ -13,15 +13,16 @@ import (
 
 var (
 	natsURL   = flag.String("url", "nats://127.0.0.1:4222", "nats server")
-	sn        = flag.Int("s", 128, "server number")
-	cn        = flag.Int("c", 128, "client number")
+	cn        = flag.Int("c", 64, "client number")
 	totalTime = flag.Int("t", 10, "total time")
 )
 
 type BenchReqService struct {
+	total int32
 }
 
 func (a *BenchReqService) Request(ctx context.Context, req *natsrpc.Empty) (*natsrpc.Empty, error) {
+	atomic.AddInt32(&a.total, 1)
 	repl := &natsrpc.Empty{}
 	return repl, nil
 }
@@ -32,21 +33,21 @@ func main() {
 	groupOpt := natsrpc.WithServiceGroup("mygroup")
 
 	var serviceName = "bench"
-	enc, err := natsrpc.NewPBEnc(*natsURL)
+	serverEnc, err := natsrpc.NewPBEnc(*natsURL)
 	if err != nil {
 		panic(err)
 	}
 
-	for i := 0; i < *sn; i++ {
-		server, err := natsrpc.NewServer(enc)
-		if nil != err {
-			panic(err)
-		}
-		defer server.Close(time.Second)
-		_, err = server.Register(serviceName, &BenchReqService{}, groupOpt)
-		if nil != err {
-			panic(err)
-		}
+	server, err := natsrpc.NewServer(serverEnc)
+	if nil != err {
+		panic(err)
+	}
+	defer server.Close(context.Background())
+
+	bs := &BenchReqService{}
+	_, err = server.Register(serviceName, bs, groupOpt)
+	if nil != err {
+		panic(err)
 	}
 
 	var totalSuccess uint32
@@ -87,5 +88,6 @@ func main() {
 	}
 
 	wg.Wait()
-	fmt.Println("elapse:", *totalTime, "qps", totalSuccess/uint32(*totalTime), "req", totalSuccess+totalFailed, "success", totalSuccess, "failed", totalFailed)
+	fmt.Println("elapse:", *totalTime, "qps", totalSuccess/uint32(*totalTime), "req", totalSuccess+totalFailed, "success", totalSuccess, "reply", bs.total,
+		"failed", totalFailed)
 }

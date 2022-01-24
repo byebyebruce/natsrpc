@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package request;
-option go_package = "github.com/byebyebruce/example/pb/publish;publish";
+option go_package = "github.com/byebyebruce/natsrpc/example/pb/publish;publish";
 
 import "natsrpc.proto";
 import "message.proto";

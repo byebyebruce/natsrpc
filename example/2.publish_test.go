@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/byebyebruce/natsrpc"
 	"github.com/byebyebruce/natsrpc/example/pb"
 	"github.com/byebyebruce/natsrpc/example/pb/publish"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type PublishSvc struct {
@@ -22,17 +23,17 @@ func (h *PublishSvc) HelloToAll(ctx context.Context, req *pb.HelloRequest) {
 func TestPublish(t *testing.T) {
 	ps := &PublishSvc{}
 	svc, err := publish.RegisterGreeter(server, ps)
+	assert.Nil(t, err)
 	defer svc.Close()
 
 	cli, err := publish.NewGreeterClient(enc)
-	natsrpc.IfNotNilPanic(err)
-	const haha = "haha"
+	assert.Nil(t, err)
+
 	err = cli.HelloToAll(&pb.HelloRequest{
 		Name: haha,
 	})
-	natsrpc.IfNotNilPanic(err)
+	assert.Nil(t, err)
+
 	time.Sleep(time.Millisecond * 100)
-	if ps.name != haha {
-		t.Error("not match")
-	}
+	assert.Equal(t, ps.name, haha)
 }

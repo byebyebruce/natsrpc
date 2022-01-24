@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/byebyebruce/natsrpc"
 	"github.com/byebyebruce/natsrpc/example/pb"
-	async "github.com/byebyebruce/natsrpc/example/pb/async_service"
+	"github.com/byebyebruce/natsrpc/example/pb/async_service"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type AsyncServiceSvc struct{}
@@ -35,21 +36,20 @@ func TestAsyncService(t *testing.T) {
 		}
 	}()
 	ps := &AsyncServiceSvc{}
-	svc, err := async.RegisterGreeter(server, ps, d)
-	natsrpc.IfNotNilPanic(err)
+	svc, err := async_service.RegisterGreeter(server, d, ps)
+	assert.Nil(t, err)
 	defer svc.Close()
 
-	cli, err := async.NewGreeterClient(enc)
-	natsrpc.IfNotNilPanic(err)
-	const haha = "haha"
+	cli, err := async_service.NewGreeterClient(enc)
+	assert.Nil(t, err)
+
 	reply, err := cli.Hello(context.Background(), &pb.HelloRequest{Name: haha})
+	assert.Nil(t, err)
 	fmt.Println(reply, err)
-	if reply.Message != haha {
-		t.Error("not match")
-	}
+	assert.Equal(t, haha, reply.Message)
 
 	cli.HelloToAll(&pb.HelloRequest{Name: haha})
 
-	natsrpc.IfNotNilPanic(err)
+	assert.Nil(t, err)
 	time.Sleep(time.Millisecond * 100)
 }

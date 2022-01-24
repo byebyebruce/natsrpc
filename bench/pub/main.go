@@ -37,9 +37,9 @@ func main() {
 		*cn = runtime.NumCPU()
 	}
 
-	var serviceName = fmt.Sprintf("å%d", time.Now().UnixNano())
+	var serviceName = fmt.Sprintf("%d", time.Now().UnixNano())
 
-	op := []natsrpc.ServiceOption{}
+	op := []natsrpc.ServiceOption{natsrpc.WithServiceNoGroup()}
 
 	for i := 0; i < *sn; i++ {
 		enc, err := natsrpc.NewPBEnc(*url)
@@ -48,7 +48,7 @@ func main() {
 
 		server, err := natsrpc.NewServer(enc)
 		natsrpc.IfNotNilPanic(err)
-		defer server.Close(time.Second)
+		defer server.Close(context.Background())
 
 		_, err = server.Register(serviceName, &BenchNotifyService{}, op...)
 		if nil != err {
