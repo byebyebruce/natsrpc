@@ -12,7 +12,7 @@ import (
 	"github.com/nats-io/nats.go/encoders/protobuf"
 )
 
-// NewPBEnc 创建enc
+// NewEnc 创建enc
 func NewEnc(url string, encType string, option ...nats.Option) (*nats.EncodedConn, error) {
 	nc, err := nats.Connect(url, option...)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/byebyebruce/natsrpc"
+	"github.com/byebyebruce/natsrpc/testdata"
 )
 
 var (
@@ -24,7 +25,7 @@ var n int32
 type BenchNotifyService struct {
 }
 
-func (a *BenchNotifyService) Notify(ctx context.Context, req *natsrpc.Empty) {
+func (a *BenchNotifyService) Notify(ctx context.Context, req *testdata.Empty) {
 	atomic.AddInt32(&n, 1)
 }
 
@@ -61,7 +62,7 @@ func main() {
 
 	fmt.Println("start...")
 	wg := sync.WaitGroup{}
-	req := &natsrpc.Empty{}
+	req := &testdata.Empty{}
 
 	for i := 0; i <= *cn; i++ {
 		wg.Add(1)

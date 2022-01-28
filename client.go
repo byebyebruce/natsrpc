@@ -39,7 +39,7 @@ func (c *Client) Name() string {
 // Publish 发布
 func (c *Client) Publish(method string, req interface{}, opt ...CallOption) error {
 	// opt
-	callOpt := callOptions{
+	callOpt := CallOptions{
 		namespace: c.opt.namespace,
 		id:        c.opt.id,
 		timeout:   c.opt.timeout,
@@ -47,21 +47,25 @@ func (c *Client) Publish(method string, req interface{}, opt ...CallOption) erro
 	for _, v := range opt {
 		v(&callOpt)
 	}
+	if c.opt.cm != nil {
+		c.opt.cm(context.Background(), method, req, &callOpt)
+	}
 	// subject
 	subject := CombineSubject(c.opt.namespace, c.serviceName, c.opt.id, method)
 
 	// req
-	rpcReq, err := c.newRequest(nil, subject, req)
+	rpcReq, err := c.newRequest(subject, req, callOpt.header)
 	if err != nil {
 		return err
 	}
+
 	return c.enc.Publish(subject, rpcReq)
 }
 
 // Request 请求
 func (c *Client) Request(ctx context.Context, method string, req interface{}, rep interface{}, opt ...CallOption) error {
 	// opt
-	callOpt := callOptions{
+	callOpt := CallOptions{
 		namespace: c.opt.namespace,
 		id:        c.opt.id,
 		timeout:   c.opt.timeout,
@@ -76,11 +80,13 @@ func (c *Client) Request(ctx context.Context, method string, req interface{}, re
 		defer cancel()
 		ctx = newCtx
 	}
+	if c.opt.cm != nil {
+		c.opt.cm(ctx, method, req, &callOpt)
+	}
 	// subject
 	subject := CombineSubject(callOpt.namespace, c.serviceName, callOpt.id, method)
-
 	// req
-	rpcReq, err := c.newRequest(ctx, subject, req)
+	rpcReq, err := c.newRequest(subject, req, callOpt.header)
 	if err != nil {
 		return err
 	}
@@ -102,21 +108,21 @@ func (c *Client) Request(ctx context.Context, method string, req interface{}, re
 	return nil
 }
 
-func (c *Client) newRequest(ctx context.Context, subject string, req interface{}) (*Request, error) {
+func (c *Client) newRequest(subject string, req interface{}, header map[string]string) (*Request, error) {
 	payload, err := c.enc.Enc.Encode(subject, req)
 	if err != nil {
 		return nil, err
 	}
 	return &Request{
 		Payload: payload,
-		Header:  Header(ctx),
+		Header:  header,
 	}, nil
 }
 
 // Request 请求
 /*
 func (c *Client) RequestWithOption(method string, req interface{}, rep interface{}, opt ...CallOption) error {
-	callOpt := callOptions{}
+	callOpt := CallOptions{}
 	for _, v := range opt {
 		v(&callOpt)
 	}

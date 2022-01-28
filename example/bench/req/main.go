@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/byebyebruce/natsrpc"
+	"github.com/byebyebruce/natsrpc/testdata"
 )
 
 var (
@@ -21,9 +22,9 @@ type BenchReqService struct {
 	total int32
 }
 
-func (a *BenchReqService) Request(ctx context.Context, req *natsrpc.Empty) (*natsrpc.Empty, error) {
+func (a *BenchReqService) Request(ctx context.Context, req *testdata.Empty) (*testdata.Empty, error) {
 	atomic.AddInt32(&a.total, 1)
-	repl := &natsrpc.Empty{}
+	repl := &testdata.Empty{}
 	return repl, nil
 }
 
@@ -55,7 +56,7 @@ func main() {
 
 	fmt.Println("start...")
 	wg := sync.WaitGroup{}
-	req := &natsrpc.Empty{}
+	req := &testdata.Empty{}
 	for i := 0; i <= *cn; i++ {
 		wg.Add(1)
 		go func(idx int) {
@@ -76,7 +77,7 @@ func main() {
 					return
 				default:
 				}
-				resp := &natsrpc.Empty{}
+				resp := &testdata.Empty{}
 				if err := client.Request(context.Background(), "Request", req, resp); nil != err {
 					atomic.AddUint32(&totalFailed, 1)
 					continue

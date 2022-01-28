@@ -17,7 +17,7 @@ extend google.protobuf.MethodOptions {
 // Request 请求
 message Request {
   bytes payload = 1; // 包体
-  string header = 2; // 包头
+  map<string,string> header = 2; // 包头
 }
 
 // Reply 返回
@@ -26,12 +26,3 @@ message Reply {
   string error = 2; // 错误
 }
 
-message Empty {}
-
-message Int32 {
-  int32 val = 1;
-}
-
-message String {
-  string val = 1;
-}

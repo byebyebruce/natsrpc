@@ -7,7 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	natsrpc "github.com/byebyebruce/natsrpc"
-	pb "github.com/byebyebruce/natsrpc/example/pb"
+	testdata "github.com/byebyebruce/natsrpc/testdata"
 	proto "github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
 	math "math"
@@ -27,9 +27,9 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 // GreeterService Greeter service interface
 type GreeterService interface {
 	// Hello call Hello
-	Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error)
+	Hello(ctx context.Context, req *testdata.HelloRequest) (*testdata.HelloReply, error)
 	// HelloToAll call HelloToAll
-	HelloToAll(ctx context.Context, req *pb.HelloRequest)
+	HelloToAll(ctx context.Context, req *testdata.HelloRequest)
 }
 
 // RegisterGreeter register Greeter service
@@ -40,9 +40,9 @@ func RegisterGreeter(server *natsrpc.Server, s GreeterService, opts ...natsrpc.S
 // GreeterClient
 type GreeterClient interface {
 	// Hello
-	Hello(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error)
+	Hello(ctx context.Context, req *testdata.HelloRequest, opt ...natsrpc.CallOption) (*testdata.HelloReply, error)
 	// HelloToAll
-	HelloToAll(notify *pb.HelloRequest, opt ...natsrpc.CallOption) error
+	HelloToAll(notify *testdata.HelloRequest, opt ...natsrpc.CallOption) error
 }
 
 type _GreeterClient struct {
@@ -60,12 +60,12 @@ func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.ClientOption) (Gree
 	}
 	return ret, nil
 }
-func (c *_GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error) {
-	rep := &pb.HelloReply{}
+func (c *_GreeterClient) Hello(ctx context.Context, req *testdata.HelloRequest, opt ...natsrpc.CallOption) (*testdata.HelloReply, error) {
+	rep := &testdata.HelloReply{}
 	err := c.c.Request(ctx, "Hello", req, rep, opt...)
 	return rep, err
 }
-func (c *_GreeterClient) HelloToAll(notify *pb.HelloRequest, opt ...natsrpc.CallOption) error {
+func (c *_GreeterClient) HelloToAll(notify *testdata.HelloRequest, opt ...natsrpc.CallOption) error {
 	return c.c.Publish("HelloToAll", notify, opt...)
 }
 
@@ -73,9 +73,9 @@ func (c *_GreeterClient) HelloToAll(notify *pb.HelloRequest, opt ...natsrpc.Call
 // GreeterAsyncClient
 type GreeterAsyncClient interface {
 	// Hello
-	Hello(ctx context.Context, req *pb.HelloRequest, cb func(*pb.HelloReply, error), opt ...natsrpc.CallOption)
+	Hello(ctx context.Context, req *testdata.HelloRequest, cb func(*testdata.HelloReply, error), opt ...natsrpc.CallOption)
 	// HelloToAll
-	HelloToAll(notify *pb.HelloRequest, opt ...natsrpc.CallOption) error
+	HelloToAll(notify *testdata.HelloRequest, opt ...natsrpc.CallOption) error
 }
 
 type _GreeterAsyncClient struct {
@@ -95,9 +95,9 @@ func NewGreeterAsyncClient(enc *nats.EncodedConn, doer natsrpc.AsyncDoer, opts .
 	}
 	return ret, nil
 }
-func (c *_GreeterAsyncClient) Hello(ctx context.Context, req *pb.HelloRequest, cb func(*pb.HelloReply, error), opt ...natsrpc.CallOption) {
+func (c *_GreeterAsyncClient) Hello(ctx context.Context, req *testdata.HelloRequest, cb func(*testdata.HelloReply, error), opt ...natsrpc.CallOption) {
 	go func() {
-		rep := &pb.HelloReply{}
+		rep := &testdata.HelloReply{}
 		err := c.c.Request(ctx, "Hello", req, rep, opt...)
 		newCb := func(_ func(interface{}, error)) {
 			cb(rep, err)
@@ -105,6 +105,6 @@ func (c *_GreeterAsyncClient) Hello(ctx context.Context, req *pb.HelloRequest, c
 		c.doer.AsyncDo(ctx, newCb)
 	}()
 }
-func (c *_GreeterAsyncClient) HelloToAll(notify *pb.HelloRequest, opt ...natsrpc.CallOption) error {
+func (c *_GreeterAsyncClient) HelloToAll(notify *testdata.HelloRequest, opt ...natsrpc.CallOption) error {
 	return c.c.Publish("HelloToAll", notify, opt...)
 }

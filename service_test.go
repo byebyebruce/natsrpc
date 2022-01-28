@@ -5,16 +5,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/byebyebruce/natsrpc/testdata"
 )
 
 type A struct {
 }
 
-func (a *A) Func1(ctx context.Context, req *Empty) {
+func (a *A) Func1(ctx context.Context, req *testdata.Empty) {
 }
 
-func (a *A) Func2(ctx context.Context, req *Empty) (*Empty, error) {
-	return &Empty{}, nil
+func (a *A) Func2(ctx context.Context, req *testdata.Empty) (*testdata.Empty, error) {
+	return &testdata.Empty{}, nil
 }
 
 func Test_Service(t *testing.T) {

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/byebyebruce/natsrpc/example/pb"
 	"github.com/byebyebruce/natsrpc/example/pb/publish"
+	"github.com/byebyebruce/natsrpc/testdata"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +16,7 @@ type PublishSvc struct {
 	name string
 }
 
-func (h *PublishSvc) HelloToAll(ctx context.Context, req *pb.HelloRequest) {
+func (h *PublishSvc) HelloToAll(ctx context.Context, req *testdata.HelloRequest) {
 	fmt.Println("Hello to all", req.Name)
 	h.name = req.Name
 }
@@ -29,7 +29,7 @@ func TestPublish(t *testing.T) {
 	cli, err := publish.NewGreeterClient(enc)
 	assert.Nil(t, err)
 
-	err = cli.HelloToAll(&pb.HelloRequest{
+	err = cli.HelloToAll(&testdata.HelloRequest{
 		Name: haha,
 	})
 	assert.Nil(t, err)

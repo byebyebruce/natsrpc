@@ -6,22 +6,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/byebyebruce/natsrpc/example/pb"
 	"github.com/byebyebruce/natsrpc/example/pb/async_client"
+	"github.com/byebyebruce/natsrpc/testdata"
 
 	"github.com/stretchr/testify/assert"
 )
 
 type AsyncClientSvc struct{}
 
-func (h AsyncClientSvc) Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+func (h AsyncClientSvc) Hello(ctx context.Context, req *testdata.HelloRequest) (*testdata.HelloReply, error) {
 	fmt.Println("Hello comes", req.Name)
-	rp := &pb.HelloReply{
+	rp := &testdata.HelloReply{
 		Message: req.Name,
 	}
 	return rp, nil
 }
-func (h AsyncClientSvc) HelloToAll(ctx context.Context, req *pb.HelloRequest) {
+func (h AsyncClientSvc) HelloToAll(ctx context.Context, req *testdata.HelloRequest) {
 	fmt.Println("HelloToAll", req.Name)
 }
 
@@ -44,7 +44,7 @@ func TestAsyncClient(t *testing.T) {
 
 	over := make(chan struct{})
 
-	cli.Hello(context.Background(), &pb.HelloRequest{Name: haha}, func(reply *pb.HelloReply, err error) {
+	cli.Hello(context.Background(), &testdata.HelloRequest{Name: haha}, func(reply *testdata.HelloReply, err error) {
 		defer close(over)
 		assert.Nil(t, err)
 		assert.Equal(t, haha, reply.Message)

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/example/pb"
 	"github.com/byebyebruce/natsrpc/example/pb/request"
+	"github.com/byebyebruce/natsrpc/testdata"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -18,14 +18,14 @@ type RequestSvc struct {
 	t   *testing.T
 }
 
-func (h *RequestSvc) Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+func (h *RequestSvc) Hello(ctx context.Context, req *testdata.HelloRequest) (*testdata.HelloReply, error) {
 	assert.Equal(h.t, haha, req.Name)
-	return &pb.HelloReply{
+	return &testdata.HelloReply{
 		Message: haha + haha,
 	}, nil
 }
 
-func (h *RequestSvc) HelloError(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+func (h *RequestSvc) HelloError(ctx context.Context, req *testdata.HelloRequest) (*testdata.HelloReply, error) {
 	return nil, fmt.Errorf(haha)
 }
 
@@ -46,19 +46,19 @@ func TestRequest(t *testing.T) {
 		natsrpc.WithClientID(id))
 	assert.Nil(t, err)
 
-	rep, err := cli.Hello(context.Background(), &pb.HelloRequest{
+	rep, err := cli.Hello(context.Background(), &testdata.HelloRequest{
 		Name: haha,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, haha+haha, rep.Message)
 
-	rep, err = cli.HelloError(context.Background(), &pb.HelloRequest{
+	rep, err = cli.HelloError(context.Background(), &testdata.HelloRequest{
 		Name: haha,
 	})
 	assert.NotNil(t, err)
 	assert.Equal(t, haha, err.Error())
 
-	rep, err = cli.Hello(context.Background(), &pb.HelloRequest{
+	rep, err = cli.Hello(context.Background(), &testdata.HelloRequest{
 		Name: haha,
 	}, natsrpc.WithCallNamespace("errornamespace"),
 		natsrpc.WithCallTimeout(time.Millisecond*100))

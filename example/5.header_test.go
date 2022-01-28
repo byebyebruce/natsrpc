@@ -6,48 +6,54 @@ import (
 	"testing"
 
 	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/example/pb"
-	"github.com/byebyebruce/natsrpc/example/pb/request"
+	"github.com/byebyebruce/natsrpc/example/pb/header"
+	"github.com/byebyebruce/natsrpc/testdata"
 
 	"github.com/stretchr/testify/assert"
 )
 
 type HeaderSvc struct {
-	header string
+	header map[string]string
 }
 
-func (h *HeaderSvc) Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+func (h *HeaderSvc) Hello(ctx context.Context, req *testdata.HelloRequest) (*testdata.HelloReply, error) {
 	fmt.Println("Hello comes", req.Name, "header:", natsrpc.Header(ctx))
-	if h.header != natsrpc.Header(ctx) {
+	hd := natsrpc.Header(ctx)
+	if h.header[haha] != hd[haha] {
 		panic("header error")
 	}
-	return &pb.HelloReply{
+	return &testdata.HelloReply{
 		Message: req.Name,
 	}, nil
 }
 
-func (h *HeaderSvc) HelloError(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
+func (h *HeaderSvc) HelloPublish(ctx context.Context, req *testdata.HelloRequest) {
 	fmt.Println("Hello comes", req.Name, "header:", natsrpc.Header(ctx))
-	if h.header != natsrpc.Header(ctx) {
+	hd := natsrpc.Header(ctx)
+	if h.header[haha] != hd[haha] {
 		panic("header error")
 	}
-	return &pb.HelloReply{
-		Message: req.Name,
-	}, nil
 }
 
 func TestHeader(t *testing.T) {
-	svc, err := request.RegisterGreeter(server, &HeaderSvc{
-		header: haha,
-	}, natsrpc.WithServiceNamespace("header"))
+	hs := &HeaderSvc{
+		header: map[string]string{haha: haha},
+	}
+	svc, err := header.RegisterGreeter(server, hs, natsrpc.WithServiceNamespace("header"))
 	defer svc.Close()
 	assert.Nil(t, err)
 
-	cli, err := request.NewGreeterClient(enc, natsrpc.WithClientNamespace("header"))
+	cli, err := header.NewGreeterClient(enc, natsrpc.WithClientNamespace("header"))
 	assert.Nil(t, err)
-	rep, err := cli.Hello(natsrpc.WithHeader(context.Background(), haha), &pb.HelloRequest{
+
+	rep, err := cli.Hello(context.Background(), &testdata.HelloRequest{
 		Name: haha,
-	})
+	}, natsrpc.WithCallHeader(hs.header))
 	assert.Nil(t, err)
 	assert.Equal(t, haha, rep.GetMessage())
+
+	err = cli.HelloPublish(&testdata.HelloRequest{
+		Name: haha,
+	}, natsrpc.WithCallHeader(hs.header))
+	assert.Nil(t, err)
 }

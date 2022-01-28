@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"github.com/byebyebruce/natsrpc/testdata"
 )
 
 type testMarshaller struct {
@@ -23,19 +24,19 @@ var pbMarshaller = testMarshaller{}
 type MethodTest struct {
 }
 
-func (a *MethodTest) Publish(ctx context.Context, req *Empty) {
+func (a *MethodTest) Publish(ctx context.Context, req *testdata.Empty) {
 	_ = req
 }
 
-func (a *MethodTest) Request(ctx context.Context, req *Empty) (*Empty, error) {
-	repl := &Empty{}
+func (a *MethodTest) Request(ctx context.Context, req *testdata.Empty) (*testdata.Empty, error) {
+	repl := &testdata.Empty{}
 	return repl, nil
 }
 
 type MethodErrorTest struct {
 }
 
-func (a *MethodErrorTest) Func1(repl *Empty) {
+func (a *MethodErrorTest) Func1(repl *testdata.Empty) {
 
 }
 
@@ -57,7 +58,7 @@ func TestMethod_Handle(t *testing.T) {
 	ret, err := parseMethod(s)
 	assert.Nil(t, err)
 
-	a := &Empty{}
+	a := &testdata.Empty{}
 	b, _ := pbMarshaller.Marshal(a)
 
 	m, ok := ret["Request"]

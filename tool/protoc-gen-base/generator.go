@@ -497,10 +497,11 @@ func (g *Generator) CommandLineParameters(parameter string) {
 		var nplugins []Plugin
 		for _, p := range plugins {
 			if enabled[p.Name()] {
+				// go:nolint
 				nplugins = append(nplugins, p)
 			}
 		}
-		//plugins = nplugins
+		// plugins = nplugins
 	}
 }
 

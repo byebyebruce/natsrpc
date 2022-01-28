@@ -24,7 +24,7 @@ NATS收发消息需要手动定义subject，request，reply，handler等繁琐�
 
 * protoc插件
 ```
-go install github.com/golang/protobuf/protoc-gen-go@v1.3.5
+go install github.com/golang/protobuf/protoc-gen-go@v1.5.2
 go install github.com/byebyebruce/natsrpc/tool/cmd/protoc-gen-natsrpc@latest
 ```
 
@@ -73,9 +73,9 @@ type Greeter interface {
 5. [请求头](example/5.header_test.go)
 
 ## 压测工具
-1. 广播 `go run bench/pub/main.go -server=nats://127.0.0.1:4222`
+1. 广播 `go run example/bench/pub/main.go -url=nats://127.0.0.1:4222`
 
-2. 请求 `go run bench/req/main.go -server=nats://127.0.0.1:4222`
+2. 请求 `go run example/bench/req/main.go -url=nats://127.0.0.1:4222`
 
 ## TODO
 - [x] service 定义文件改成gRPC标准

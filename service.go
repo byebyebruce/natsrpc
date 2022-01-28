@@ -83,7 +83,7 @@ func (s *service) handle(ctx context.Context, m *method, sub string, b []byte) (
 			return nil, err
 		}
 		if len(rpcReq.Header) > 0 {
-			ctx = WithHeader(ctx, rpcReq.Header)
+			ctx = withHeader(ctx, rpcReq.Header)
 		}
 		if len(rpcReq.Payload) > 0 {
 			if err := s.server.enc.Enc.Decode(sub, rpcReq.Payload, req); nil != err {
@@ -96,6 +96,11 @@ func (s *service) handle(ctx context.Context, m *method, sub string, b []byte) (
 		resp interface{}
 		err  error
 	)
+	if s.opt.mw != nil {
+		if err := s.opt.mw(ctx, m.name, req); err != nil {
+			return nil, err
+		}
+	}
 	resp, err = m.handle(s.val, ctx, req)
 	if err != nil {
 		return nil, err

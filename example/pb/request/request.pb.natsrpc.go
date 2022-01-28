@@ -7,7 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	natsrpc "github.com/byebyebruce/natsrpc"
-	pb "github.com/byebyebruce/natsrpc/example/pb"
+	testdata "github.com/byebyebruce/natsrpc/testdata"
 	proto "github.com/golang/protobuf/proto"
 	nats "github.com/nats-io/nats.go"
 	math "math"
@@ -27,9 +27,9 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 // GreeterService Greeter service interface
 type GreeterService interface {
 	// Hello call Hello
-	Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error)
+	Hello(ctx context.Context, req *testdata.HelloRequest) (*testdata.HelloReply, error)
 	// HelloError call HelloError
-	HelloError(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error)
+	HelloError(ctx context.Context, req *testdata.HelloRequest) (*testdata.HelloReply, error)
 }
 
 // RegisterGreeter register Greeter service
@@ -40,9 +40,9 @@ func RegisterGreeter(server *natsrpc.Server, s GreeterService, opts ...natsrpc.S
 // GreeterClient
 type GreeterClient interface {
 	// Hello
-	Hello(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error)
+	Hello(ctx context.Context, req *testdata.HelloRequest, opt ...natsrpc.CallOption) (*testdata.HelloReply, error)
 	// HelloError
-	HelloError(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error)
+	HelloError(ctx context.Context, req *testdata.HelloRequest, opt ...natsrpc.CallOption) (*testdata.HelloReply, error)
 }
 
 type _GreeterClient struct {
@@ -60,13 +60,13 @@ func NewGreeterClient(enc *nats.EncodedConn, opts ...natsrpc.ClientOption) (Gree
 	}
 	return ret, nil
 }
-func (c *_GreeterClient) Hello(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error) {
-	rep := &pb.HelloReply{}
+func (c *_GreeterClient) Hello(ctx context.Context, req *testdata.HelloRequest, opt ...natsrpc.CallOption) (*testdata.HelloReply, error) {
+	rep := &testdata.HelloReply{}
 	err := c.c.Request(ctx, "Hello", req, rep, opt...)
 	return rep, err
 }
-func (c *_GreeterClient) HelloError(ctx context.Context, req *pb.HelloRequest, opt ...natsrpc.CallOption) (*pb.HelloReply, error) {
-	rep := &pb.HelloReply{}
+func (c *_GreeterClient) HelloError(ctx context.Context, req *testdata.HelloRequest, opt ...natsrpc.CallOption) (*testdata.HelloReply, error) {
+	rep := &testdata.HelloReply{}
 	err := c.c.Request(ctx, "HelloError", req, rep, opt...)
 	return rep, err
 }

@@ -6,23 +6,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/byebyebruce/natsrpc/example/pb"
 	"github.com/byebyebruce/natsrpc/example/pb/async_service"
+	"github.com/byebyebruce/natsrpc/testdata"
 
 	"github.com/stretchr/testify/assert"
 )
 
 type AsyncServiceSvc struct{}
 
-func (h AsyncServiceSvc) Hello(ctx context.Context, req *pb.HelloRequest, cb func(*pb.HelloReply, error)) {
+func (h AsyncServiceSvc) Hello(ctx context.Context, req *testdata.HelloRequest, cb func(*testdata.HelloReply, error)) {
 	fmt.Println("Hello comes", req.Name)
-	rp := &pb.HelloReply{
+	rp := &testdata.HelloReply{
 		Message: req.Name,
 	}
 	cb(rp, nil)
 	cb(rp, nil) // is ok
 }
-func (h AsyncServiceSvc) HelloToAll(ctx context.Context, req *pb.HelloRequest) {
+func (h AsyncServiceSvc) HelloToAll(ctx context.Context, req *testdata.HelloRequest) {
 	fmt.Println("HelloToAll", req.Name)
 }
 
@@ -43,12 +43,12 @@ func TestAsyncService(t *testing.T) {
 	cli, err := async_service.NewGreeterClient(enc)
 	assert.Nil(t, err)
 
-	reply, err := cli.Hello(context.Background(), &pb.HelloRequest{Name: haha})
+	reply, err := cli.Hello(context.Background(), &testdata.HelloRequest{Name: haha})
 	assert.Nil(t, err)
 	fmt.Println(reply, err)
 	assert.Equal(t, haha, reply.Message)
 
-	cli.HelloToAll(&pb.HelloRequest{Name: haha})
+	cli.HelloToAll(&testdata.HelloRequest{Name: haha})
 
 	assert.Nil(t, err)
 	time.Sleep(time.Millisecond * 100)

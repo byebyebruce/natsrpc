@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package pb;
-option go_package = "github.com/byebyebruce/natsrpc/example/pb;pb";
+package testdata;
+option go_package = "github.com/byebyebruce/natsrpc/testdata;testdata";
 
 // The request message containing the user's name.
 message HelloRequest {
@@ -11,4 +11,14 @@ message HelloRequest {
 // The response message containing the greetings
 message HelloReply {
   string message = 1;
+}
+
+message Empty {}
+
+message Int32 {
+  int32 val = 1;
+}
+
+message String {
+  string val = 1;
 }

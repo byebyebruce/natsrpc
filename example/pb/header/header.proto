@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package header;
+option go_package = "github.com/byebyebruce/natsrpc/example/pb/header;header";
+
+import "testdata.proto";
+import "natsrpc.proto";
+
+
+service Greeter {
+  rpc Hello (testdata.HelloRequest) returns (testdata.HelloReply) {}
+  rpc HelloPublish (testdata.HelloRequest) returns (testdata.Empty) {
+    option (natsrpc.publish) = true; // publish method.(no reply)
+  }
+}

@@ -1,4 +1,7 @@
-all: protoc-gen-natsrpc test example
+all: generate protoc-gen-natsrpc test example
+
+generate:
+	go generate ./...
 
 protoc-gen-natsrpc:
 	go install ./tool/cmd/protoc-gen-natsrpc

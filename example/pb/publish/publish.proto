@@ -4,11 +4,11 @@ package request;
 option go_package = "github.com/byebyebruce/natsrpc/example/pb/publish;publish";
 
 import "natsrpc.proto";
-import "message.proto";
+import "testdata.proto";
 
 
 service Greeter {
-  rpc HelloToAll (pb.HelloRequest) returns (natsrpc.Empty) {
+  rpc HelloToAll (testdata.HelloRequest) returns (testdata.Empty) {
     option (natsrpc.publish) = true; // publish method.(no reply)
   }
 }

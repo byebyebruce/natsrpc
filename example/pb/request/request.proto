@@ -3,10 +3,10 @@ syntax = "proto3";
 package request;
 option go_package = "github.com/byebyebruce/natsrpc/example/pb/request;request";
 
-import "message.proto";
+import "testdata.proto";
 
 
 service Greeter {
-  rpc Hello (pb.HelloRequest) returns (pb.HelloReply) {}
-  rpc HelloError (pb.HelloRequest) returns (pb.HelloReply) {}
+  rpc Hello (testdata.HelloRequest) returns (testdata.HelloReply) {}
+  rpc HelloError (testdata.HelloRequest) returns (testdata.HelloReply) {}
 }

@@ -4,14 +4,14 @@ package async_service;
 option go_package = "github.com/byebyebruce/natsrpc/example/pb/async_service;async_service";
 
 import "natsrpc.proto";
-import "message.proto";
+import "testdata.proto";
 
 
 service Greeter {
   option (natsrpc.serviceAsync) = true; // async reply
 
-  rpc Hello (pb.HelloRequest) returns (pb.HelloReply) {}
-  rpc HelloToAll (pb.HelloRequest) returns (natsrpc.Empty) {
+  rpc Hello (testdata.HelloRequest) returns (testdata.HelloReply) {}
+  rpc HelloToAll (testdata.HelloRequest) returns (testdata.Empty) {
     option (natsrpc.publish) = true;
   }
 }
