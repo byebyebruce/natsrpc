@@ -110,7 +110,6 @@ func (s *Server) Register(name string, svc interface{}, opts ...ServiceOption) (
 	if err := s.subscribeMethod(service); nil != err {
 		return nil, err
 	}
-	s.services[service] = make([]*nats.Subscription, 0, len(service.methods))
 	return service, nil
 }
 

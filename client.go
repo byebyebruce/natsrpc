@@ -51,7 +51,7 @@ func (c *Client) Publish(method string, req interface{}, opt ...CallOption) erro
 		c.opt.cm(context.Background(), method, req, &callOpt)
 	}
 	// subject
-	subject := CombineSubject(c.opt.namespace, c.serviceName, c.opt.id, method)
+	subject := CombineSubject(callOpt.namespace, c.serviceName, callOpt.id, method)
 
 	// req
 	rpcReq, err := c.newRequest(subject, req, callOpt.header)
