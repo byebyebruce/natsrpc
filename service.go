@@ -97,11 +97,16 @@ func (s *service) handle(ctx context.Context, m *method, sub string, b []byte) (
 		err  error
 	)
 	if s.opt.mw != nil {
-		if err := s.opt.mw(ctx, m.name, req); err != nil {
+		next := func(ctx1 context.Context, req1 interface{}) {
+			resp, err = m.handle(s.val, ctx1, req1)
+		}
+		if err := s.opt.mw(ctx, m.name, req, next); err != nil {
 			return nil, err
 		}
+	} else {
+		resp, err = m.handle(s.val, ctx, req)
 	}
-	resp, err = m.handle(s.val, ctx, req)
+
 	if err != nil {
 		return nil, err
 	}

@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/byebyebruce/natsrpc/testdata"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"github.com/byebyebruce/natsrpc/testdata"
 )
 
 type testMarshaller struct {

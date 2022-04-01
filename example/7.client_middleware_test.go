@@ -13,13 +13,9 @@ import (
 )
 
 type ClientMiddlewareSvc struct {
-	header map[string]string
-	ts     *testing.T
 }
 
 func (h *ClientMiddlewareSvc) Hello(ctx context.Context, req *testdata.HelloRequest) (*testdata.HelloReply, error) {
-	hd := natsrpc.Header(ctx)
-	assert.Equal(h.ts, h.header[haha], hd[haha])
 	return &testdata.HelloReply{
 		Message: req.Name,
 	}, nil
@@ -30,18 +26,17 @@ func (h *ClientMiddlewareSvc) HelloError(ctx context.Context, req *testdata.Hell
 }
 
 func TestClientMiddleware(t *testing.T) {
-	cms := &ClientMiddlewareSvc{
-		ts:     t,
-		header: map[string]string{haha: haha},
-	}
+	cms := &ClientMiddlewareSvc{}
 	svc, err := request.RegisterGreeter(server, cms)
 	assert.Nil(t, err)
 	defer svc.Close()
 
-	ch := natsrpc.WithCallHeader(map[string]string{haha: haha})
+	i := 0
 	cli, err := request.NewGreeterClient(enc,
-		natsrpc.WithClientMiddleware(func(ctx context.Context, sub string, req interface{}, options *natsrpc.CallOptions) {
-			ch(options)
+		natsrpc.WithClientMiddleware(func(ctx context.Context, method string, req interface{}, next func(ctx context.Context, req interface{})) {
+			i++
+			next(ctx, req)
+			i++
 		}))
 	assert.Nil(t, err)
 
@@ -49,5 +44,6 @@ func TestClientMiddleware(t *testing.T) {
 		Name: haha,
 	})
 	assert.Nil(t, err)
+	assert.Equal(t, i, 2)
 
 }

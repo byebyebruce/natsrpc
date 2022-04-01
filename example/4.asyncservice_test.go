@@ -36,7 +36,7 @@ func TestAsyncService(t *testing.T) {
 		}
 	}()
 	ps := &AsyncServiceSvc{}
-	svc, err := async_service.RegisterGreeter(server, d, ps)
+	svc, err := async_service.RegisterAsyncGreeter(server, d, ps)
 	assert.Nil(t, err)
 	defer svc.Close()
 

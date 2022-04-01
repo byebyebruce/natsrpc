@@ -96,9 +96,10 @@ func NewGreeterAsyncClient(enc *nats.EncodedConn, doer natsrpc.AsyncDoer, opts .
 	return ret, nil
 }
 func (c *_GreeterAsyncClient) Hello(ctx context.Context, req *testdata.HelloRequest, cb func(*testdata.HelloReply, error), opt ...natsrpc.CallOption) {
+	reqClone := proto.Clone(req)
 	go func() {
 		rep := &testdata.HelloReply{}
-		err := c.c.Request(ctx, "Hello", req, rep, opt...)
+		err := c.c.Request(ctx, "Hello", reqClone, rep, opt...)
 		newCb := func(_ func(interface{}, error)) {
 			cb(rep, err)
 		}

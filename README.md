@@ -25,7 +25,7 @@ NATS收发消息需要手动定义subject，request，reply，handler等繁琐�
 * protoc插件
 ```
 go install github.com/golang/protobuf/protoc-gen-go@v1.5.2
-go install github.com/byebyebruce/natsrpc/tool/cmd/protoc-gen-natsrpc@latest
+go install github.com/byebyebruce/natsrpc/cmd/protoc-gen-natsrpc@latest
 ```
 
 ## 快速使用
@@ -82,5 +82,5 @@ type Greeter interface {
 - [x] 支持返回错误
 - [x] 支持Header
 - [x] 生成Client接口
+- [x] 支持中间件
 - [ ] 支持goroutine池
-- [ ] 支持中间件

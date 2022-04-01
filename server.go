@@ -100,11 +100,14 @@ func (s *Server) Register(name string, svc interface{}, opts ...ServiceOption) (
 	if _, ok := s.services[service]; ok {
 		return nil, fmt.Errorf("service [%s] duplicate", service.name)
 	}
-	for k := range s.services {
-		if k.Name() == service.Name() {
-			return nil, fmt.Errorf("service [%s] duplicate", service.name)
+	/*
+		for k := range s.services {
+			if k.Name() == service.Name() {
+				return nil, fmt.Errorf("service [%s] duplicate", service.name)
+			}
 		}
-	}
+	*/
+
 	service.server = s
 
 	if err := s.subscribeMethod(service); nil != err {

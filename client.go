@@ -38,32 +38,22 @@ func (c *Client) Name() string {
 
 // Publish 发布
 func (c *Client) Publish(method string, req interface{}, opt ...CallOption) error {
-	// opt
-	callOpt := CallOptions{
-		namespace: c.opt.namespace,
-		id:        c.opt.id,
-		timeout:   c.opt.timeout,
-	}
-	for _, v := range opt {
-		v(&callOpt)
-	}
-	if c.opt.cm != nil {
-		c.opt.cm(context.Background(), method, req, &callOpt)
-	}
-	// subject
-	subject := CombineSubject(callOpt.namespace, c.serviceName, callOpt.id, method)
-
-	// req
-	rpcReq, err := c.newRequest(subject, req, callOpt.header)
-	if err != nil {
-		return err
-	}
-
-	return c.enc.Publish(subject, rpcReq)
+	return c.call(nil, method, req, nil, opt...)
 }
 
 // Request 请求
 func (c *Client) Request(ctx context.Context, method string, req interface{}, rep interface{}, opt ...CallOption) error {
+	return c.call(ctx, method, req, rep, opt...)
+}
+
+func (c *Client) call(ctx context.Context, method string, req interface{}, rep interface{}, opt ...CallOption) error {
+	if c.opt.recoverHandler != nil {
+		defer func() {
+			if e := recover(); e != nil {
+				c.opt.recoverHandler(e)
+			}
+		}()
+	}
 	// opt
 	callOpt := CallOptions{
 		namespace: c.opt.namespace,
@@ -74,38 +64,55 @@ func (c *Client) Request(ctx context.Context, method string, req interface{}, re
 		v(&callOpt)
 	}
 
+	isPublish := ctx == nil && rep == nil
 	// ctx
-	if callOpt.timeout > 0 {
-		newCtx, cancel := context.WithTimeout(ctx, callOpt.timeout)
-		defer cancel()
-		ctx = newCtx
+	if !isPublish {
+		if callOpt.timeout > 0 {
+			newCtx, cancel := context.WithTimeout(ctx, callOpt.timeout)
+			defer cancel()
+			ctx = newCtx
+		}
 	}
-	if c.opt.cm != nil {
-		c.opt.cm(ctx, method, req, &callOpt)
-	}
+
 	// subject
 	subject := CombineSubject(callOpt.namespace, c.serviceName, callOpt.id, method)
-	// req
-	rpcReq, err := c.newRequest(subject, req, callOpt.header)
-	if err != nil {
-		return err
-	}
-	rp := &Reply{}
 
-	// call
-	err = c.enc.RequestWithContext(ctx, subject, rpcReq, rp)
-	if err != nil {
-		return err
+	var retErr error
+	next := func(ctx1 context.Context, req1 interface{}) {
+		// req
+		rpcReq, err := c.newRequest(subject, req1, callOpt.header)
+		if err != nil {
+			retErr = err
+			return
+		}
+		if isPublish { // publish
+			retErr = c.enc.Publish(subject, rpcReq)
+			return
+		} else { // request
+			rp := &Reply{}
+			// call
+			err = c.enc.RequestWithContext(ctx1, subject, rpcReq, rp)
+			if err != nil {
+				retErr = err
+				return
+			}
+			if len(rp.Error) > 0 {
+				retErr = fmt.Errorf(rp.Error)
+				return
+			}
+			// decode
+			if err := c.enc.Enc.Decode(subject, rp.Payload, rep); err != nil {
+				retErr = err
+				return
+			}
+		}
 	}
-	if len(rp.Error) > 0 {
-		return fmt.Errorf(rp.Error)
+	if c.opt.cm == nil {
+		next(ctx, req)
+	} else {
+		c.opt.cm(ctx, method, req, next)
 	}
-
-	// decode
-	if err := c.enc.Enc.Decode(subject, rp.Payload, rep); err != nil {
-		return err
-	}
-	return nil
+	return retErr
 }
 
 func (c *Client) newRequest(subject string, req interface{}, header map[string]string) (*Request, error) {

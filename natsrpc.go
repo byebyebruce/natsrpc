@@ -5,6 +5,7 @@ package natsrpc
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -14,8 +15,8 @@ type serverOptions struct {
 	recoverHandler func(interface{}) // recover handler
 }
 
-type serviceMiddleware func(ctx context.Context, method string, req interface{}) error
-type callMiddleware func(ctx context.Context, method string, req interface{}, options *CallOptions)
+type serviceMiddleware func(ctx context.Context, method string, req interface{}, next func(ctx context.Context, req interface{})) error
+type callMiddleware func(ctx context.Context, method string, req interface{}, next func(ctx context.Context, req interface{}))
 
 // serviceOptions service 选项
 type serviceOptions struct {
@@ -28,10 +29,11 @@ type serviceOptions struct {
 
 // clientOptions client 选项
 type clientOptions struct {
-	namespace string         // 空间(划分隔离)
-	id        string         // id
-	timeout   time.Duration  // 请求handle的超时
-	cm        callMiddleware // 调用中间件
+	namespace      string            // 空间(划分隔离)
+	id             string            // id
+	timeout        time.Duration     // 请求handle的超时
+	cm             callMiddleware    // 调用中间件
+	recoverHandler func(interface{}) // recover handler
 }
 
 // CallOptions 调用选项
@@ -44,10 +46,10 @@ type CallOptions struct {
 
 var defaultServerOptions = serverOptions{
 	errorHandler: func(i interface{}) {
-		fmt.Println("error", i)
+		fmt.Fprintf(os.Stderr, "error:%v\n", i)
 	},
 	recoverHandler: func(i interface{}) {
-		fmt.Println("panic", i)
+		fmt.Fprintf(os.Stderr, "server panic:%v\n", i)
 	},
 }
 
@@ -62,6 +64,9 @@ var defaultClientOptions = clientOptions{
 	namespace: "default",
 	id:        "",
 	timeout:   time.Duration(3) * time.Second,
+	recoverHandler: func(i interface{}) {
+		fmt.Fprintf(os.Stderr, "client panic:%v\n", i)
+	},
 }
 
 // ServerOption server option

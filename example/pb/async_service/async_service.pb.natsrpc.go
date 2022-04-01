@@ -33,7 +33,7 @@ type GreeterService interface {
 }
 
 // RegisterGreeter register Greeter service
-func RegisterGreeter(server *natsrpc.Server, doer natsrpc.AsyncDoer, s GreeterService, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+func RegisterAsyncGreeter(server *natsrpc.Server, doer natsrpc.AsyncDoer, s GreeterService, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
 	ss := &GreeterWrapper{
 		doer: doer,
 		s:    s,

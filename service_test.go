@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/byebyebruce/natsrpc/testdata"
+	"github.com/stretchr/testify/assert"
 )
 
 type A struct {

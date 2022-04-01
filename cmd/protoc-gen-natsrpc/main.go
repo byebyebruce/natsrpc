@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/byebyebruce/natsrpc/tool/codegen_plugin"
-	"github.com/byebyebruce/natsrpc/tool/protoc-gen-base"
+	protoc_gen_base "github.com/byebyebruce/natsrpc/tool/protoc-gen-base"
 )
 
 func main() {

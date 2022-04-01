@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/byebyebruce/natsrpc"
 	"github.com/byebyebruce/natsrpc/example/pb/request"
@@ -26,11 +27,15 @@ func (h *ServiceMiddlewareSvc) HelloError(ctx context.Context, req *testdata.Hel
 
 func TestServiceMiddleware(t *testing.T) {
 	var errorCount int32 = 0
-	opt := natsrpc.WithServiceMiddleware(func(ctx context.Context, method string, req interface{}) error {
+	opt := natsrpc.WithServiceMiddleware(func(ctx context.Context, method string, req interface{}, next func(context.Context, interface{})) error {
 		if "HelloError" == method {
 			atomic.AddInt32(&errorCount, 1)
 			return fmt.Errorf(haha + haha)
 		}
+		start := time.Now()
+		next(ctx, req)
+		elapse := time.Now().Sub(start)
+		fmt.Println(method, "elapse:", elapse)
 		return nil
 	})
 	svc, err := request.RegisterGreeter(server, &ServiceMiddlewareSvc{}, opt)

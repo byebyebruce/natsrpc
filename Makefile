@@ -4,7 +4,7 @@ generate:
 	go generate ./...
 
 protoc-gen-natsrpc:
-	go install ./tool/cmd/protoc-gen-natsrpc
+	go install ./cmd/protoc-gen-natsrpc
 
 test:
 	go test ./...
