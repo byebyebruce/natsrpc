@@ -40,7 +40,7 @@ func TestAsyncService(t *testing.T) {
 	assert.Nil(t, err)
 	defer svc.Close()
 
-	cli, err := async_service.NewGreeterClient(enc)
+	cli, err := async_service.NewGreeterNATSRPCClient(enc)
 	assert.Nil(t, err)
 
 	reply, err := cli.Hello(context.Background(), &testdata.HelloRequest{Name: haha})

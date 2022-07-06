@@ -34,14 +34,14 @@ func TestRequest(t *testing.T) {
 		ns = "mysapce"
 		id = 1234
 	)
-	svc, err := request.RegisterGreeter(server, &RequestSvc{t: t},
+	svc, err := request.RegisterGreeterNATSRPCServer(server, &RequestSvc{t: t},
 		natsrpc.WithServiceNamespace(ns),
 		natsrpc.WithServiceID(id))
 	assert.Nil(t, err)
 	defer svc.Close()
 	fmt.Println("svc:", svc.Name())
 
-	cli, err := request.NewGreeterClient(enc,
+	cli, err := request.NewGreeterNATSRPCClient(enc,
 		natsrpc.WithClientNamespace(ns),
 		natsrpc.WithClientID(id))
 	assert.Nil(t, err)

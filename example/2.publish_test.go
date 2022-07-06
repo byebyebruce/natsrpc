@@ -22,11 +22,11 @@ func (h *PublishSvc) HelloToAll(ctx context.Context, req *testdata.HelloRequest)
 }
 func TestPublish(t *testing.T) {
 	ps := &PublishSvc{}
-	svc, err := publish.RegisterGreeter(server, ps)
+	svc, err := publish.RegisterGreeterNATSRPCServer(server, ps)
 	assert.Nil(t, err)
 	defer svc.Close()
 
-	cli, err := publish.NewGreeterClient(enc)
+	cli, err := publish.NewGreeterNATSRPCClient(enc)
 	assert.Nil(t, err)
 
 	err = cli.HelloToAll(&testdata.HelloRequest{

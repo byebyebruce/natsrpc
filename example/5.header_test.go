@@ -39,11 +39,11 @@ func TestHeader(t *testing.T) {
 	hs := &HeaderSvc{
 		header: map[string]string{haha: haha},
 	}
-	svc, err := header.RegisterGreeter(server, hs, natsrpc.WithServiceNamespace("header"))
+	svc, err := header.RegisterGreeterNATSRPCServer(server, hs, natsrpc.WithServiceNamespace("header"))
 	defer svc.Close()
 	assert.Nil(t, err)
 
-	cli, err := header.NewGreeterClient(enc, natsrpc.WithClientNamespace("header"))
+	cli, err := header.NewGreeterNATSRPCClient(enc, natsrpc.WithClientNamespace("header"))
 	assert.Nil(t, err)
 
 	rep, err := cli.Hello(context.Background(), &testdata.HelloRequest{

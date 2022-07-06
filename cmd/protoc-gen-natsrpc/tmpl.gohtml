@@ -1,13 +1,13 @@
 {{- range .Services}}
 {{$ServiceType := .ServiceType}}
-{{$serviceInterface := print .ServiceType "Service"}}
+{{$serviceInterface := print .ServiceType "NATSRPCServer"}}
 {{$serviceAsync := .ServiceAsync}}
 {{$serviceWrapperName := print .ServiceType "Wrapper"}}
 {{$clientAsync := .ClientAsync}}
-{{$clientInterface := print .ServiceType "Client"}}
-{{$clientWrapperName := print "_" .ServiceType "Client"}}
+{{$clientInterface := print .ServiceType "NATSRPCClient"}}
+{{$clientWrapperName := print "_" .ServiceType "NATSRPCClient"}}
 {{$asyncClientInterface := print .ServiceType "AsyncClient"}}
-{{$asyncClientWrapperName := print "_" .ServiceType "AsyncClient"}}
+{{$asyncClientWrapperName := print "_" .ServiceType "AsyncNATSRPCClient"}}
 
 {{ .Comment -}}
 type {{ $serviceInterface }} interface {
@@ -27,9 +27,9 @@ type {{ $serviceInterface }} interface {
 {{- end }}
 }
 
-// Register{{ $ServiceType }} register {{ $ServiceType }} service
+// Register{{ $serviceInterface }} register {{ $ServiceType }} service
 {{- if eq $serviceAsync false }}
-func Register{{ $ServiceType }}(server *natsrpc.Server, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+func Register{{ $serviceInterface }}(server *natsrpc.Server, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
 	return server.Register("{{ $.GoPackageName }}.{{ $ServiceType }}", s, opts...)
 }
 {{- else }}

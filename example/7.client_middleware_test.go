@@ -27,12 +27,12 @@ func (h *ClientMiddlewareSvc) HelloError(ctx context.Context, req *testdata.Hell
 
 func TestClientMiddleware(t *testing.T) {
 	cms := &ClientMiddlewareSvc{}
-	svc, err := request.RegisterGreeter(server, cms)
+	svc, err := request.RegisterGreeterNATSRPCServer(server, cms)
 	assert.Nil(t, err)
 	defer svc.Close()
 
 	i := 0
-	cli, err := request.NewGreeterClient(enc,
+	cli, err := request.NewGreeterNATSRPCClient(enc,
 		natsrpc.WithClientMiddleware(func(ctx context.Context, method string, req interface{}, next func(ctx context.Context, req interface{})) {
 			i++
 			next(ctx, req)

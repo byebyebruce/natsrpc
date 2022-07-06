@@ -38,11 +38,11 @@ func TestServiceMiddleware(t *testing.T) {
 		fmt.Println(method, "elapse:", elapse)
 		return nil
 	})
-	svc, err := request.RegisterGreeter(server, &ServiceMiddlewareSvc{}, opt)
+	svc, err := request.RegisterGreeterNATSRPCServer(server, &ServiceMiddlewareSvc{}, opt)
 	assert.Nil(t, err)
 	defer svc.Close()
 
-	cli, err := request.NewGreeterClient(enc)
+	cli, err := request.NewGreeterNATSRPCClient(enc)
 	assert.Nil(t, err)
 
 	rep, err := cli.Hello(context.Background(), &testdata.HelloRequest{})

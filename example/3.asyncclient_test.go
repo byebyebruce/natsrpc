@@ -35,7 +35,7 @@ func TestAsyncClient(t *testing.T) {
 		}
 	}()
 	ps := &AsyncClientSvc{}
-	svc, err := async_client.RegisterGreeter(server, ps)
+	svc, err := async_client.RegisterGreeterNATSRPCServer(server, ps)
 	assert.Nil(t, err)
 	defer svc.Close()
 

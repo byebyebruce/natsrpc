@@ -21,13 +21,13 @@ var _ = fmt.Errorf
 var _ = natsrpc.Version
 var _ = nats_go.Version
 
-type GreeterService interface {
+type GreeterNATSRPCServer interface {
 	Hello(ctx context.Context, req *testdata.HelloRequest, cb func(*testdata.HelloReply, error))
 	HelloToAll(ctx context.Context, req *testdata.HelloRequest)
 }
 
-// RegisterGreeter register Greeter service
-func RegisterAsyncGreeter(server *natsrpc.Server, doer natsrpc.AsyncDoer, s GreeterService, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+// RegisterGreeterNATSRPCServer register Greeter service
+func RegisterAsyncGreeter(server *natsrpc.Server, doer natsrpc.AsyncDoer, s GreeterNATSRPCServer, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
 	ss := &GreeterWrapper{
 		doer: doer,
 		s:    s,
@@ -38,7 +38,7 @@ func RegisterAsyncGreeter(server *natsrpc.Server, doer natsrpc.AsyncDoer, s Gree
 // GreeterWrapper DO NOT USE
 type GreeterWrapper struct {
 	doer natsrpc.AsyncDoer
-	s    GreeterService
+	s    GreeterNATSRPCServer
 }
 
 // Hello DO NOT USE
@@ -62,31 +62,31 @@ func (s *GreeterWrapper) HelloToAll(ctx context.Context, req *testdata.HelloRequ
 	})
 }
 
-type GreeterClient interface {
+type GreeterNATSRPCClient interface {
 	Hello(ctx context.Context, req *testdata.HelloRequest, opt ...natsrpc.CallOption) (*testdata.HelloReply, error)
 	HelloToAll(notify *testdata.HelloRequest, opt ...natsrpc.CallOption) error
 }
 
-type _GreeterClient struct {
+type _GreeterNATSRPCClient struct {
 	c *natsrpc.Client
 }
 
-// NewGreeterClient
-func NewGreeterClient(enc *nats_go.EncodedConn, opts ...natsrpc.ClientOption) (GreeterClient, error) {
+// NewGreeterNATSRPCClient
+func NewGreeterNATSRPCClient(enc *nats_go.EncodedConn, opts ...natsrpc.ClientOption) (GreeterNATSRPCClient, error) {
 	c, err := natsrpc.NewClient(enc, "github.com.byebyebruce.natsrpc.example.pb.async_service.Greeter", opts...)
 	if err != nil {
 		return nil, err
 	}
-	ret := &_GreeterClient{
+	ret := &_GreeterNATSRPCClient{
 		c: c,
 	}
 	return ret, nil
 }
-func (c *_GreeterClient) Hello(ctx context.Context, req *testdata.HelloRequest, opt ...natsrpc.CallOption) (*testdata.HelloReply, error) {
+func (c *_GreeterNATSRPCClient) Hello(ctx context.Context, req *testdata.HelloRequest, opt ...natsrpc.CallOption) (*testdata.HelloReply, error) {
 	rep := &testdata.HelloReply{}
 	err := c.c.Request(ctx, "Hello", req, rep, opt...)
 	return rep, err
 }
-func (c *_GreeterClient) HelloToAll(notify *testdata.HelloRequest, opt ...natsrpc.CallOption) error {
+func (c *_GreeterNATSRPCClient) HelloToAll(notify *testdata.HelloRequest, opt ...natsrpc.CallOption) error {
 	return c.c.Publish("HelloToAll", notify, opt...)
 }
