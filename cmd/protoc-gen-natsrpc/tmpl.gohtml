@@ -1,0 +1,180 @@
+{{- range .Services}}
+{{$ServiceType := .ServiceType}}
+{{$serviceInterface := print .ServiceType "Service"}}
+{{$serviceAsync := .ServiceAsync}}
+{{$serviceWrapperName := print .ServiceType "Wrapper"}}
+{{$clientAsync := .ClientAsync}}
+{{$clientInterface := print .ServiceType "Client"}}
+{{$clientWrapperName := print "_" .ServiceType "Client"}}
+{{$asyncClientInterface := print .ServiceType "AsyncClient"}}
+{{$asyncClientWrapperName := print "_" .ServiceType "AsyncClient"}}
+
+{{ .Comment -}}
+type {{ $serviceInterface }} interface {
+{{- range .Methods }}
+	{{- if eq .Publish false }}
+		{{- if eq $serviceAsync true }}
+			{{ .Comment -}}
+			{{ .Name }}(ctx context.Context, req *{{ .Request }}, cb func(*{{ .Reply }}, error))
+		{{- else }}
+			{{ .Comment -}}
+			{{ .Name }}(ctx context.Context, req *{{ .Request }}) (*{{ .Reply }}, error)
+		{{- end }}
+	{{- else }}
+		{{ .Comment -}}
+		{{ .Name }}(ctx context.Context, req *{{ .Request }})
+	{{- end }}
+{{- end }}
+}
+
+// Register{{ $ServiceType }} register {{ $ServiceType }} service
+{{- if eq $serviceAsync false }}
+func Register{{ $ServiceType }}(server *natsrpc.Server, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+	return server.Register("{{ $.GoPackageName }}.{{ $ServiceType }}", s, opts...)
+}
+{{- else }}
+func RegisterAsync{{ $ServiceType }}(server *natsrpc.Server, doer natsrpc.AsyncDoer, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+	ss := &{{ $serviceWrapperName }}{
+		doer: doer,
+		s:    s,
+	}
+	return server.Register("{{ $.GoPackageName }}.{{ $ServiceType }}", ss, opts...)
+}
+
+// {{ $serviceWrapperName }} DO NOT USE
+type {{ $serviceWrapperName }} struct {
+	doer natsrpc.AsyncDoer
+	s    {{ $serviceInterface }}
+}
+{{- range .Methods }}
+// {{ .Name }} DO NOT USE
+	{{- if eq .Publish true }}
+		func (s *{{ $serviceWrapperName }}){{ .Name }}(ctx context.Context, req *{{ .Request }}) {
+			s.doer.AsyncDo(ctx, func(_ func(interface{}, error)) {
+				s.s.{{ .Name }}(ctx , req)
+			})
+		}
+	{{- else }}
+		func (s *{{ $serviceWrapperName }}){{ .Name }}(ctx context.Context, req *{{ .Request }})(*{{ .Reply }}, error) {
+			f := func(cb func(interface{}, error)) {
+				s.s.{{ .Name }}(ctx, req, func(r *{{ .Reply }}, e error) {
+					cb(r,e)
+				})
+			}
+			temp, err := s.doer.AsyncDo(ctx, f)
+			if temp==nil {
+				return nil, err
+			}
+			return temp.(*{{ .Reply }}), err
+		}
+	{{- end }}
+{{- end }}
+
+{{- end }}
+
+
+
+{{ .Comment -}}
+type {{ $clientInterface }} interface {
+{{- range .Methods }}
+	{{- if eq .Publish false }}
+		{{ .Comment -}}
+		{{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error)
+	{{- else }}
+		{{ .Comment -}}
+		{{ .Name }}(notify *{{ .Request }}, opt ...natsrpc.CallOption) error
+	{{- end }}
+{{- end }}
+}
+
+type {{ $clientWrapperName }} struct {
+	c *natsrpc.Client
+}
+
+// New{{ $clientInterface }}
+func New{{ $clientInterface }}(enc *nats_go.EncodedConn, opts ...natsrpc.ClientOption) ({{ $clientInterface }}, error) {
+	c, err := natsrpc.NewClient(enc, "{{ $.GoPackageName }}.{{ $ServiceType }}", opts...)
+	if err != nil {
+		return nil, err
+	}
+	ret := &{{ $clientWrapperName }}{
+		c:c,
+	}
+	return ret, nil
+}
+
+
+{{- range .Methods }}
+	{{- if eq .Publish false }}
+		func (c *{{ $clientWrapperName }}) {{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error) {
+			rep := &{{ .Reply }}{}
+			err := c.c.Request(ctx, "{{ .Name }}", req, rep, opt...)
+			return rep, err 
+		}
+	{{- else }}
+		func (c *{{ $clientWrapperName }}) {{ .Name }}(notify *{{ .Request }}, opt ...natsrpc.CallOption) error {
+			return c.c.Publish("{{ .Name }}", notify, opt...)
+		}
+	{{- end }}
+{{- end }}
+
+
+
+{{- if eq $clientAsync true }}
+// Async
+// {{ $asyncClientInterface }}
+type {{ $asyncClientInterface }} interface {
+{{- range .Methods }}
+	{{- if eq .Publish false }}
+		{{ .Comment -}}
+		{{ .Name }}(ctx context.Context, req *{{ .Request }}, cb func(*{{ .Reply }}, error), opt ...natsrpc.CallOption)
+	{{- else }}
+		{{ .Comment -}}
+		{{ .Name }}(notify *{{ .Request }}, opt ...natsrpc.CallOption) error
+	{{- end }}
+{{- end }}
+}
+
+type {{ $asyncClientWrapperName }} struct {
+	c *natsrpc.Client
+	doer natsrpc.AsyncDoer
+}
+
+// New{{ $asyncClientInterface }}
+func New{{ $asyncClientInterface }}(enc *nats_go.EncodedConn,doer natsrpc.AsyncDoer, opts ...natsrpc.ClientOption) ({{ $asyncClientInterface }}, error) {
+	c, err := natsrpc.NewClient(enc, "{{ $.GoPackageName }}.{{ $ServiceType }}", opts...)
+	if err != nil {
+		return nil, err
+	}
+	ret := &{{ $asyncClientWrapperName }}{
+		c:c,
+		doer: doer,
+	}
+	return ret, nil
+}
+
+{{- range .Methods }}
+	{{- if eq .Publish false }}
+		{{ .Comment -}}
+		func (c *{{ $asyncClientWrapperName }}) {{ .Name }}(ctx context.Context, req *{{ .Request }}, cb func(*{{ .Reply }}, error), opt ...natsrpc.CallOption) {
+			reqClone := proto.Clone(req)
+			go func() {
+				rep := &{{ .Reply }}{}
+				err := c.c.Request(ctx, "{{ .Name }}", reqClone, rep, opt...)
+				newCb := func(_ func(interface{},error)) {
+					cb(rep, err)
+				}
+				c.doer.AsyncDo(ctx, newCb)
+			}()
+		}
+	{{- else }}
+		{{ .Comment -}}
+		func (c *{{ $asyncClientWrapperName }}) {{ .Name }}(notify *{{ .Request }}, opt ...natsrpc.CallOption) error {
+			return c.c.Publish("{{ .Name }}", notify, opt...)
+		}
+	{{- end }}
+{{- end }}
+
+{{- end }}
+
+{{- end }}

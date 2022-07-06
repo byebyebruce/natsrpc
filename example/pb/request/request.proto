@@ -6,7 +6,10 @@ option go_package = "github.com/byebyebruce/natsrpc/example/pb/request;request";
 import "testdata.proto";
 
 
+// 测试
 service Greeter {
+  // hello 接口
   rpc Hello (testdata.HelloRequest) returns (testdata.HelloReply) {}
+  // hello error 接口
   rpc HelloError (testdata.HelloRequest) returns (testdata.HelloReply) {}
 }
