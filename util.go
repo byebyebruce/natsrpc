@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/encoders/protobuf"
+	"google.golang.org/protobuf/proto"
 )
 
 // NewEnc 创建enc

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/byebyebruce/natsrpc/testdata"
-	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 )
 
 type testMarshaller struct {

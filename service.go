@@ -18,7 +18,7 @@ type service struct {
 	opt     serviceOptions     // 设置
 }
 
-// 名字
+// Name 名字
 func (s *service) Name() string {
 	return s.name
 }
@@ -71,7 +71,7 @@ func newService(name string, i interface{}, opts ...ServiceOption) (*service, er
 	return s, nil
 }
 
-func (s *service) handle(ctx context.Context, m *method, sub string, b []byte) ([]byte, error) {
+func (s *service) call(ctx context.Context, m *method, sub string, b []byte) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.opt.timeout)
 	defer cancel()
 
@@ -79,14 +79,14 @@ func (s *service) handle(ctx context.Context, m *method, sub string, b []byte) (
 
 	if len(b) > 0 {
 		rpcReq := &Request{}
-		if err := s.server.enc.Enc.Decode(sub, b, rpcReq); nil != err {
+		if err := s.server.Decode(b, rpcReq); nil != err {
 			return nil, err
 		}
 		if len(rpcReq.Header) > 0 {
 			ctx = withHeader(ctx, rpcReq.Header)
 		}
 		if len(rpcReq.Payload) > 0 {
-			if err := s.server.enc.Enc.Decode(sub, rpcReq.Payload, req); nil != err {
+			if err := s.server.Decode(rpcReq.Payload, req); nil != err {
 				return nil, err
 			}
 		}
@@ -110,5 +110,8 @@ func (s *service) handle(ctx context.Context, m *method, sub string, b []byte) (
 	if err != nil {
 		return nil, err
 	}
-	return s.server.enc.Enc.Encode(sub, resp)
+	if resp == nil { // 表示不回复
+		return nil, nil
+	}
+	return s.server.Encode(resp)
 }

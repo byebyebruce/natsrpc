@@ -141,6 +141,13 @@ func (s *Server) subscribeMethod(service *service) error {
 	return nil
 }
 
+func (s *Server) Encode(v interface{}) ([]byte, error) {
+	return s.enc.Enc.Encode("", v)
+}
+func (s *Server) Decode(data []byte, vPtr interface{}) error {
+	return s.enc.Enc.Decode("", data, vPtr)
+}
+
 func (s *Server) handle(ctx context.Context, service *service, m *method, msg *nats.Msg) error {
 	if s.opt.recoverHandler != nil {
 		defer func() {
@@ -150,8 +157,13 @@ func (s *Server) handle(ctx context.Context, service *service, m *method, msg *n
 		}()
 	}
 
-	reply, err := service.handle(ctx, m, msg.Subject, msg.Data)
+	reply, err := service.call(ctx, m, msg.Subject, msg.Data)
+	// publish 不需要回复
 	if len(msg.Reply) == 0 {
+		return nil
+	}
+	// 表示不返回消息
+	if err == nil && reply == nil {
 		return nil
 	}
 	if s.enc.Conn.IsClosed() {
