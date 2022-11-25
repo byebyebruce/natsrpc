@@ -96,8 +96,8 @@ func WithServiceGroup(group string) ServiceOption {
 	}
 }
 
-// WithServiceNoGroup 取消订阅组(所有有个service收到)
-func WithServiceNoGroup() ServiceOption {
+// WithBroadcast 广播(所有有个service收到)
+func WithBroadcast() ServiceOption {
 	return func(options *serviceOptions) {
 		options.group = ""
 	}
@@ -171,6 +171,7 @@ func WithCallTimeout(timeout time.Duration) CallOption {
 	}
 }
 
+/*
 // WithCallID call id
 func WithCallID(id interface{}) CallOption {
 	return func(options *CallOptions) {
@@ -178,17 +179,18 @@ func WithCallID(id interface{}) CallOption {
 	}
 }
 
-// WithCallHeader header
-func WithCallHeader(hd map[string]string) CallOption {
-	return func(options *CallOptions) {
-		options.header = hd
-	}
-}
-
 // WithCallNamespace 空间集群
 func WithCallNamespace(namespace string) CallOption {
 	return func(options *CallOptions) {
 		options.namespace = namespace
+	}
+}
+*/
+
+// WithCallHeader header
+func WithCallHeader(hd map[string]string) CallOption {
+	return func(options *CallOptions) {
+		options.header = hd
 	}
 }
 

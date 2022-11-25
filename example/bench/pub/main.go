@@ -40,7 +40,7 @@ func main() {
 
 	var serviceName = fmt.Sprintf("%d", time.Now().UnixNano())
 
-	op := []natsrpc.ServiceOption{natsrpc.WithServiceNoGroup()}
+	op := []natsrpc.ServiceOption{natsrpc.WithBroadcast()}
 
 	for i := 0; i < *sn; i++ {
 		enc, err := natsrpc.NewPBEnc(*url)

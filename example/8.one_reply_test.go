@@ -37,12 +37,12 @@ func (h *OneSvc) HelloError(ctx context.Context, req *testdata.HelloRequest) (*t
 
 func TestOneReply(t *testing.T) {
 	cms1 := &OneSvc{id: 1}
-	svc, err := request.RegisterGreeterNATSRPCServer(server, cms1, natsrpc.WithServiceNoGroup())
+	svc, err := request.RegisterGreeterNATSRPCServer(server, cms1, natsrpc.WithBroadcast())
 	assert.Nil(t, err)
 	defer svc.Close()
 
 	cms2 := &OneSvc{id: 2}
-	svc, err = request.RegisterGreeterNATSRPCServer(server, cms2, natsrpc.WithServiceNoGroup())
+	svc, err = request.RegisterGreeterNATSRPCServer(server, cms2, natsrpc.WithBroadcast())
 	assert.Nil(t, err)
 	defer svc.Close()
 

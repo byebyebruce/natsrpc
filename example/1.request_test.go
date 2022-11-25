@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/byebyebruce/natsrpc"
 	"github.com/byebyebruce/natsrpc/example/pb/request"
@@ -58,9 +57,12 @@ func TestRequest(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, haha, err.Error())
 
-	rep, err = cli.Hello(context.Background(), &testdata.HelloRequest{
-		Name: haha,
-	}, natsrpc.WithCallNamespace("errornamespace"),
-		natsrpc.WithCallTimeout(time.Millisecond*100))
-	assert.NotNil(t, err)
+	/*
+		rep, err = cli.Hello(context.Background(), &testdata.HelloRequest{
+			Name: haha,
+		}, natsrpc.WithCallNamespace("errornamespace"),
+			natsrpc.WithCallTimeout(time.Millisecond*100))
+		assert.NotNil(t, err)
+
+	*/
 }
