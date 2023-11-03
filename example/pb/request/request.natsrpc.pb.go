@@ -46,8 +46,8 @@ type _GreeterNATSRPCClient struct {
 }
 
 // NewGreeterNATSRPCClient
-func NewGreeterNATSRPCClient(enc *nats_go.EncodedConn, opts ...natsrpc.ClientOption) (GreeterNATSRPCClient, error) {
-	c, err := natsrpc.NewClient(enc, "github.com.byebyebruce.natsrpc.example.pb.request.Greeter", opts...)
+func NewGreeterNATSRPCClient(conn *nats_go.Conn, opts ...natsrpc.ClientOption) (GreeterNATSRPCClient, error) {
+	c, err := natsrpc.NewClient(conn, "github.com.byebyebruce.natsrpc.example.pb.request.Greeter", opts...)
 	if err != nil {
 		return nil, err
 	}

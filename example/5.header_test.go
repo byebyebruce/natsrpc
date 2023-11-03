@@ -17,8 +17,8 @@ type HeaderSvc struct {
 }
 
 func (h *HeaderSvc) Hello(ctx context.Context, req *testdata.HelloRequest) (*testdata.HelloReply, error) {
-	fmt.Println("Hello comes", req.Name, "header:", natsrpc.Header(ctx))
-	hd := natsrpc.Header(ctx)
+	fmt.Println("Hello comes", req.Name, "header:", natsrpc.GetHeader(ctx))
+	hd := natsrpc.GetHeader(ctx)
 	if h.header[haha] != hd[haha] {
 		panic("header error")
 	}
@@ -27,12 +27,13 @@ func (h *HeaderSvc) Hello(ctx context.Context, req *testdata.HelloRequest) (*tes
 	}, nil
 }
 
-func (h *HeaderSvc) HelloPublish(ctx context.Context, req *testdata.HelloRequest) {
-	fmt.Println("Hello comes", req.Name, "header:", natsrpc.Header(ctx))
-	hd := natsrpc.Header(ctx)
+func (h *HeaderSvc) HelloPublish(ctx context.Context, req *testdata.HelloRequest) (*testdata.Empty, error) {
+	fmt.Println("Hello comes", req.Name, "header:", natsrpc.GetHeader(ctx))
+	hd := natsrpc.GetHeader(ctx)
 	if h.header[haha] != hd[haha] {
 		panic("header error")
 	}
+	return &testdata.Empty{}, nil
 }
 
 func TestHeader(t *testing.T) {
@@ -43,7 +44,7 @@ func TestHeader(t *testing.T) {
 	defer svc.Close()
 	assert.Nil(t, err)
 
-	cli, err := header.NewGreeterNATSRPCClient(enc, natsrpc.WithClientNamespace("header"))
+	cli, err := header.NewGreeterNATSRPCClient(conn, natsrpc.WithClientNamespace("header"))
 	assert.Nil(t, err)
 
 	rep, err := cli.Hello(context.Background(), &testdata.HelloRequest{

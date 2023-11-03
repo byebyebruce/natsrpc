@@ -18,9 +18,11 @@ extend google.protobuf.MethodOptions {
 message Empty {}
 
 // Request 请求
+/*
 message Request {
-  bytes payload = 1; // 包体
-  map<string,string> header = 2; // 包头
+  string method = 1; // 方法名
+  map<string,string> header = 2; // header
+  bytes payload = 3; // 包体
 }
 
 // Reply 返回
@@ -28,4 +30,4 @@ message Reply {
   bytes payload = 1; // 包体
   string error = 2; // 错误
 }
-
+ */

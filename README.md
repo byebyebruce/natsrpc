@@ -84,3 +84,5 @@ type Greeter interface {
 - [x] 生成Client接口
 - [x] 支持中间件
 - [ ] 支持goroutine池
+- [ ] 默认一个service是一个线程，同时支持多线程
+- [ ] 取消广播

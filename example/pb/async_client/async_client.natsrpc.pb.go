@@ -22,7 +22,7 @@ var _ = nats_go.Version
 
 type GreeterNATSRPCServer interface {
 	Hello(ctx context.Context, req *testdata.HelloRequest) (*testdata.HelloReply, error)
-	HelloToAll(ctx context.Context, req *testdata.HelloRequest)
+	HelloToAll(ctx context.Context, req *testdata.HelloRequest) (*testdata.Empty, error)
 }
 
 // RegisterGreeterNATSRPCServer register Greeter service
@@ -40,8 +40,8 @@ type _GreeterNATSRPCClient struct {
 }
 
 // NewGreeterNATSRPCClient
-func NewGreeterNATSRPCClient(enc *nats_go.EncodedConn, opts ...natsrpc.ClientOption) (GreeterNATSRPCClient, error) {
-	c, err := natsrpc.NewClient(enc, "github.com.byebyebruce.natsrpc.example.pb.async_client.Greeter", opts...)
+func NewGreeterNATSRPCClient(conn *nats_go.Conn, opts ...natsrpc.ClientOption) (GreeterNATSRPCClient, error) {
+	c, err := natsrpc.NewClient(conn, "github.com.byebyebruce.natsrpc.example.pb.async_client.Greeter", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +72,8 @@ type _GreeterAsyncNATSRPCClient struct {
 }
 
 // NewGreeterAsyncClient
-func NewGreeterAsyncClient(enc *nats_go.EncodedConn, doer natsrpc.AsyncDoer, opts ...natsrpc.ClientOption) (GreeterAsyncClient, error) {
-	c, err := natsrpc.NewClient(enc, "github.com.byebyebruce.natsrpc.example.pb.async_client.Greeter", opts...)
+func NewGreeterAsyncClient(conn *nats_go.Conn, doer natsrpc.AsyncDoer, opts ...natsrpc.ClientOption) (GreeterAsyncClient, error) {
+	c, err := natsrpc.NewClient(conn, "github.com.byebyebruce.natsrpc.example.pb.async_client.Greeter", opts...)
 	if err != nil {
 		return nil, err
 	}

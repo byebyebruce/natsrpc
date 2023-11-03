@@ -7,38 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/encoders/protobuf"
 	"google.golang.org/protobuf/proto"
 )
-
-// NewEnc 创建enc
-func NewEnc(url string, encType string, option ...nats.Option) (*nats.EncodedConn, error) {
-	nc, err := nats.Connect(url, option...)
-	if err != nil {
-		return nil, err
-	}
-	enc, err1 := nats.NewEncodedConn(nc, encType)
-	if nil != err1 {
-		return nil, err1
-	}
-	return enc, nil
-}
-
-// NewPBEnc 创建 protobuf enc
-func NewPBEnc(url string, option ...nats.Option) (*nats.EncodedConn, error) {
-	return NewEnc(url, protobuf.PROTOBUF_ENCODER, option...)
-}
-
-// NewJSONEnc 创建 json enc
-func NewJSONEnc(url string, option ...nats.Option) (*nats.EncodedConn, error) {
-	return NewEnc(url, nats.JSON_ENCODER, option...)
-}
-
-// NewGobEnc 创建 json enc
-func NewGobEnc(url string, option ...nats.Option) (*nats.EncodedConn, error) {
-	return NewEnc(url, nats.GOB_ENCODER, option...)
-}
 
 var bufPool = sync.Pool{
 	New: func() interface{} {

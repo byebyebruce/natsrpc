@@ -7,13 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nats-io/nats.go"
 	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/example/nats_server"
+	"github.com/nats-io/nats.go"
 )
 
 var (
-	enc    *nats.EncodedConn
+	conn   *nats.Conn
 	server *natsrpc.Server
 )
 
@@ -21,15 +20,12 @@ const haha = "haha"
 
 func TestMain(m *testing.M) {
 	var err error
-
-	s := nats_server.Run(nil)
-	defer s.Shutdown()
-
-	enc, err = natsrpc.NewPBEnc(s.ClientURL())
+	//conn, err = natsrpc.NewPBEnc(s.ClientURL())
+	conn, err = nats.Connect("nats://127.0.0.1")
 	natsrpc.IfNotNilPanic(err)
-	defer enc.Close()
+	defer conn.Close()
 
-	server, err = natsrpc.NewServer(enc)
+	server, err = natsrpc.NewServer(conn)
 	natsrpc.IfNotNilPanic(err)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

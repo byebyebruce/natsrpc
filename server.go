@@ -10,18 +10,18 @@ import (
 
 // Server RPC server
 type Server struct {
-	wg       sync.WaitGroup                    // wait group
-	mu       sync.Mutex                        // lock
-	opt      serverOptions                     // options
-	enc      *nats.EncodedConn                 // NATS Encode Conn
-	services map[*service][]*nats.Subscription // 服务 name->service
+	wg       sync.WaitGroup                  // wait group
+	mu       sync.Mutex                      // lock
+	opt      serverOptions                   // options
+	conn     *nats.Conn                      // NATS Encode Conn
+	services map[*service]*nats.Subscription // 服务 name->service
 }
 
 var _ IServer = (*Server)(nil)
 
 // NewServer 构造器
-func NewServer(enc *nats.EncodedConn, option ...ServerOption) (*Server, error) {
-	if !enc.Conn.IsConnected() {
+func NewServer(conn *nats.Conn, option ...ServerOption) (*Server, error) {
+	if !conn.IsConnected() {
 		return nil, fmt.Errorf("enc is not connected")
 	}
 
@@ -32,8 +32,8 @@ func NewServer(enc *nats.EncodedConn, option ...ServerOption) (*Server, error) {
 
 	d := &Server{
 		opt:      options,
-		enc:      enc,
-		services: make(map[*service][]*nats.Subscription),
+		conn:     conn,
+		services: make(map[*service]*nats.Subscription),
 	}
 	return d, nil
 }
@@ -52,7 +52,7 @@ func (s *Server) Close(ctx context.Context) (err error) {
 		err = ctx.Err()
 	case <-over:
 	}
-	if err1 := s.enc.Flush(); err == nil && err1 != nil {
+	if err1 := s.conn.Flush(); err == nil && err1 != nil {
 		err = err1
 	}
 	return
@@ -78,77 +78,79 @@ func (s *Server) remove(service *service) bool {
 	defer s.mu.Unlock()
 	sub, ok := s.services[service]
 	if ok {
-		for _, v := range sub {
-			v.Unsubscribe()
-		}
+		sub.Unsubscribe()
 		delete(s.services, service)
 	}
 	return ok
 }
 
 // Register 注册服务
-func (s *Server) Register(name string, svc interface{}, opts ...ServiceOption) (IService, error) {
+func (s *Server) Register(name string, handler interface{}, opts ...ServiceOption) (IService, error) {
 	// new 一个服务
-	service, err := newService(name, svc, opts...)
+	svc, err := newService(name, handler, opts...)
 	if nil != err {
 		return nil, err
 	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// 检查是否重复
-	if _, ok := s.services[service]; ok {
-		return nil, fmt.Errorf("service [%s] duplicate", service.name)
-	}
-	/*
-		for k := range s.services {
-			if k.Name() == service.Name() {
-				return nil, fmt.Errorf("service [%s] duplicate", service.name)
-			}
+	for s := range s.services {
+		if s.sub == svc.sub && s.val == handler {
+			return nil, ErrDuplicateService
 		}
-	*/
+	}
 
-	service.server = s
+	svc.server = s
 
-	if err := s.subscribeMethod(service); nil != err {
+	if err := s.subscribeMethod(svc); nil != err {
 		return nil, err
 	}
-	return service, nil
+	return svc, nil
 }
 
 // subscribeMethod 订阅服务的方法
 func (s *Server) subscribeMethod(service *service) error {
-	// 订阅
-	for subject, v := range service.methods {
-		m := v
-		cb := func(msg *nats.Msg) {
-			s.wg.Add(1)
-			go func() {
-				defer s.wg.Done()
-				err := s.handle(context.Background(), service, m, msg)
-				if err != nil {
-					s.opt.errorHandler(err.Error())
-				}
-			}()
-		}
+	cb := func(msg *nats.Msg) {
+		s.wg.Add(1)
 
-		natsSub, subErr := s.enc.QueueSubscribe(subject, service.opt.group, cb)
-		if nil != subErr {
-			return subErr
+		call := func() {
+			defer s.wg.Done()
+
+			mName, header, err := decodeHeader(msg.Header)
+			if err != nil {
+				s.opt.errorHandler(err.Error())
+				return
+			}
+			ctx := context.Background()
+			if header != nil {
+				ctx = setHeader(ctx, header)
+			}
+
+			err = s.handle(ctx, service, mName, msg.Data, msg.Reply)
+			if err != nil {
+				s.opt.errorHandler(err.Error())
+			}
 		}
-		s.services[service] = append(s.services[service], natsSub)
+		if service.opt.concurrent {
+			go call()
+		} else {
+			call()
+		}
 	}
+
+	natsSub, subErr := s.conn.QueueSubscribe(service.sub, defaultSubQueue, cb)
+	if nil != subErr {
+		return subErr
+	}
+	s.services[service] = natsSub
+	// TODO flush
+	s.conn.Flush()
+
 	return nil
 }
 
-func (s *Server) Encode(v interface{}) ([]byte, error) {
-	return s.enc.Enc.Encode("", v)
-}
-func (s *Server) Decode(data []byte, vPtr interface{}) error {
-	return s.enc.Enc.Decode("", data, vPtr)
-}
-
-func (s *Server) handle(ctx context.Context, service *service, m *method, msg *nats.Msg) error {
+func (s *Server) handle(ctx context.Context, svc *service, method string, payload []byte, replySub string) error {
 	if s.opt.recoverHandler != nil {
 		defer func() {
 			if e := recover(); e != nil {
@@ -157,32 +159,17 @@ func (s *Server) handle(ctx context.Context, service *service, m *method, msg *n
 		}()
 	}
 
-	reply, err := service.call(ctx, m, msg.Subject, msg.Data)
+	b, err := svc.call(ctx, method, payload)
 	// publish 不需要回复
-	if len(msg.Reply) == 0 {
+	if len(replySub) == 0 {
 		return nil
-	}
-	// 表示不返回消息
-	if err == nil && reply == nil {
-		return nil
-	}
-	if s.enc.Conn.IsClosed() {
-		return fmt.Errorf("conn colsed")
-	}
-	rp := &Reply{
-		Payload: reply,
-	}
-	if err != nil {
-		rp.Error = err.Error()
-	}
-	b, e := s.enc.Enc.Encode(msg.Subject, rp)
-	if e != nil {
-		return e
-	}
-	respMsg := &nats.Msg{
-		Subject: msg.Reply,
-		Data:    b,
 	}
 
-	return s.enc.Conn.PublishMsg(respMsg)
+	respMsg := &nats.Msg{
+		Subject: replySub,
+		Data:    b,
+		Header:  makeErrorHeader(err),
+	}
+
+	return s.conn.PublishMsg(respMsg)
 }

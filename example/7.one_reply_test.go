@@ -46,7 +46,7 @@ func TestOneReply(t *testing.T) {
 	assert.Nil(t, err)
 	defer svc.Close()
 
-	cli, err := request.NewGreeterNATSRPCClient(enc)
+	cli, err := request.NewGreeterNATSRPCClient(conn)
 	assert.Nil(t, err)
 
 	resp, err := cli.Hello(context.Background(), &testdata.HelloRequest{

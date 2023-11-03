@@ -10,6 +10,7 @@ import (
 
 	"github.com/byebyebruce/natsrpc"
 	"github.com/byebyebruce/natsrpc/testdata"
+	"github.com/nats-io/nats.go"
 )
 
 var (
@@ -31,22 +32,21 @@ func (a *BenchReqService) Request(ctx context.Context, req *testdata.Empty) (*te
 func main() {
 	flag.Parse()
 
-	groupOpt := natsrpc.WithServiceGroup("mygroup")
-
 	var serviceName = "bench"
-	serverEnc, err := natsrpc.NewPBEnc(*natsURL)
+
+	conn, err := nats.Connect(*natsURL)
 	if err != nil {
 		panic(err)
 	}
 
-	server, err := natsrpc.NewServer(serverEnc)
+	server, err := natsrpc.NewServer(conn)
 	if nil != err {
 		panic(err)
 	}
 	defer server.Close(context.Background())
 
 	bs := &BenchReqService{}
-	_, err = server.Register(serviceName, bs, groupOpt)
+	_, err = server.Register(serviceName, bs)
 	if nil != err {
 		panic(err)
 	}
@@ -61,11 +61,11 @@ func main() {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			enc, err := natsrpc.NewPBEnc(*natsURL)
+			connClient, err := nats.Connect(*natsURL)
 			if err != nil {
 				panic(err)
 			}
-			client, err := natsrpc.NewClient(enc, serviceName)
+			client, err := natsrpc.NewClient(connClient, serviceName)
 			if nil != err {
 				panic(err)
 			}

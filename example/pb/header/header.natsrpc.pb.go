@@ -22,7 +22,7 @@ var _ = nats_go.Version
 
 type GreeterNATSRPCServer interface {
 	Hello(ctx context.Context, req *testdata.HelloRequest) (*testdata.HelloReply, error)
-	HelloPublish(ctx context.Context, req *testdata.HelloRequest)
+	HelloPublish(ctx context.Context, req *testdata.HelloRequest) (*testdata.Empty, error)
 }
 
 // RegisterGreeterNATSRPCServer register Greeter service
@@ -40,8 +40,8 @@ type _GreeterNATSRPCClient struct {
 }
 
 // NewGreeterNATSRPCClient
-func NewGreeterNATSRPCClient(enc *nats_go.EncodedConn, opts ...natsrpc.ClientOption) (GreeterNATSRPCClient, error) {
-	c, err := natsrpc.NewClient(enc, "github.com.byebyebruce.natsrpc.example.pb.header.Greeter", opts...)
+func NewGreeterNATSRPCClient(conn *nats_go.Conn, opts ...natsrpc.ClientOption) (GreeterNATSRPCClient, error) {
+	c, err := natsrpc.NewClient(conn, "github.com.byebyebruce.natsrpc.example.pb.header.Greeter", opts...)
 	if err != nil {
 		return nil, err
 	}

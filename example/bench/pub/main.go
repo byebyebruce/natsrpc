@@ -11,6 +11,7 @@ import (
 
 	"github.com/byebyebruce/natsrpc"
 	"github.com/byebyebruce/natsrpc/testdata"
+	"github.com/nats-io/nats.go"
 )
 
 var (
@@ -43,11 +44,14 @@ func main() {
 	op := []natsrpc.ServiceOption{natsrpc.WithBroadcast()}
 
 	for i := 0; i < *sn; i++ {
-		enc, err := natsrpc.NewPBEnc(*url)
+		conn, err := nats.Connect(*url)
+		if err != nil {
+			panic(err)
+		}
 		natsrpc.IfNotNilPanic(err)
-		defer enc.Close()
+		defer conn.Close()
 
-		server, err := natsrpc.NewServer(enc)
+		server, err := natsrpc.NewServer(conn)
 		natsrpc.IfNotNilPanic(err)
 		defer server.Close(context.Background())
 
@@ -69,11 +73,14 @@ func main() {
 		go func(idx int) {
 			defer wg.Done()
 
-			enc, err := natsrpc.NewPBEnc(*url)
+			conn, err := nats.Connect(*url)
+			if err != nil {
+				panic(err)
+			}
 			natsrpc.IfNotNilPanic(err)
-			defer enc.Close()
+			defer conn.Close()
 
-			client, err := natsrpc.NewClient(enc, serviceName)
+			client, err := natsrpc.NewClient(conn, serviceName)
 			natsrpc.IfNotNilPanic(err)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*totalTime)*time.Second)
 			defer cancel()

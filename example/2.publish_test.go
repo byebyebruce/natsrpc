@@ -16,9 +16,10 @@ type PublishSvc struct {
 	name string
 }
 
-func (h *PublishSvc) HelloToAll(ctx context.Context, req *testdata.HelloRequest) {
+func (h *PublishSvc) HelloToAll(ctx context.Context, req *testdata.HelloRequest) (*testdata.Empty, error) {
 	fmt.Println("Hello to all", req.Name)
 	h.name = req.Name
+	return &testdata.Empty{}, nil
 }
 func TestPublish(t *testing.T) {
 	ps := &PublishSvc{}
@@ -26,7 +27,7 @@ func TestPublish(t *testing.T) {
 	assert.Nil(t, err)
 	defer svc.Close()
 
-	cli, err := publish.NewGreeterNATSRPCClient(enc)
+	cli, err := publish.NewGreeterNATSRPCClient(conn)
 	assert.Nil(t, err)
 
 	err = cli.HelloToAll(&testdata.HelloRequest{

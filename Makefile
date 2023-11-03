@@ -1,4 +1,4 @@
-all: generate protoc-gen-natsrpc test example
+all: generate protoc-gen-natsrpc  example test
 
 generate:
 	go generate ./...

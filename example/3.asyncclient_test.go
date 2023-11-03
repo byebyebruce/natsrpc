@@ -21,8 +21,9 @@ func (h AsyncClientSvc) Hello(ctx context.Context, req *testdata.HelloRequest) (
 	}
 	return rp, nil
 }
-func (h AsyncClientSvc) HelloToAll(ctx context.Context, req *testdata.HelloRequest) {
+func (h AsyncClientSvc) HelloToAll(ctx context.Context, req *testdata.HelloRequest) (*testdata.Empty, error) {
 	fmt.Println("HelloToAll", req.Name)
+	return &testdata.Empty{}, nil
 }
 
 func TestAsyncClient(t *testing.T) {
@@ -39,7 +40,7 @@ func TestAsyncClient(t *testing.T) {
 	assert.Nil(t, err)
 	defer svc.Close()
 
-	cli, err := async_client.NewGreeterAsyncClient(enc, d)
+	cli, err := async_client.NewGreeterAsyncClient(conn, d)
 	assert.Nil(t, err)
 
 	over := make(chan struct{})

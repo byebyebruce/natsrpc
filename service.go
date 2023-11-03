@@ -11,7 +11,8 @@ var _ IService = (*service)(nil)
 
 // service 服务
 type service struct {
-	name    string             // 名字
+	name    string // 名字
+	sub     string
 	val     interface{}        // 值
 	server  *Server            // rpc
 	methods map[string]*method // 方法集合
@@ -48,7 +49,8 @@ func newService(name string, i interface{}, opts ...ServiceOption) (*service, er
 	s := &service{
 		opt:     opt,
 		methods: map[string]*method{},
-		name:    CombineSubject(opt.namespace, name, opt.id), // name = namespace.package.service.id
+		name:    name,
+		sub:     CombineSubject(opt.namespace, name, opt.id), // name = namespace.package.service.id
 		val:     i,
 	}
 
@@ -64,33 +66,34 @@ func newService(name string, i interface{}, opts ...ServiceOption) (*service, er
 		if _, ok := s.methods[v.name]; ok {
 			return nil, fmt.Errorf("service [%s] duplicate method [%s]", name, v.name)
 		}
-		// subject = namespace.package.service.id.method
-		subject := CombineSubject(s.name, v.name)
-		s.methods[subject] = v
+		s.methods[v.name] = v
 	}
 	return s, nil
 }
 
-func (s *service) call(ctx context.Context, m *method, sub string, b []byte) ([]byte, error) {
+func (s *service) call(ctx context.Context, methodName string, b []byte) ([]byte, error) {
+	m, ok := s.methods[methodName]
+	if !ok {
+		return nil, ErrNoMethod
+	}
+	req := m.newRequest()
+	if err := s.opt.encoder.Decode(b, req); err != nil {
+		return nil, err
+	}
+	resp, err := s._call(ctx, m, req)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil {
+		b, err := s.opt.encoder.Encode(resp)
+		return b, err
+	}
+	return nil, err
+}
+
+func (s *service) _call(ctx context.Context, m *method, req interface{}) (interface{}, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.opt.timeout)
 	defer cancel()
-
-	req := m.newRequest()
-
-	if len(b) > 0 {
-		rpcReq := &Request{}
-		if err := s.server.Decode(b, rpcReq); nil != err {
-			return nil, err
-		}
-		if len(rpcReq.Header) > 0 {
-			ctx = withHeader(ctx, rpcReq.Header)
-		}
-		if len(rpcReq.Payload) > 0 {
-			if err := s.server.Decode(rpcReq.Payload, req); nil != err {
-				return nil, err
-			}
-		}
-	}
 
 	var (
 		resp interface{}
@@ -107,11 +110,5 @@ func (s *service) call(ctx context.Context, m *method, sub string, b []byte) ([]
 		resp, err = m.handle(s.val, ctx, req)
 	}
 
-	if err != nil {
-		return nil, err
-	}
-	if resp == nil { // 表示不回复
-		return nil, nil
-	}
-	return s.server.Encode(resp)
+	return resp, err
 }

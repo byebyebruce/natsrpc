@@ -22,8 +22,9 @@ func (h AsyncServiceSvc) Hello(ctx context.Context, req *testdata.HelloRequest, 
 	cb(rp, nil)
 	cb(rp, nil) // is ok
 }
-func (h AsyncServiceSvc) HelloToAll(ctx context.Context, req *testdata.HelloRequest) {
+func (h AsyncServiceSvc) HelloToAll(ctx context.Context, req *testdata.HelloRequest) (*testdata.Empty, error) {
 	fmt.Println("HelloToAll", req.Name)
+	return &testdata.Empty{}, nil
 }
 
 func TestAsyncService(t *testing.T) {
@@ -40,7 +41,7 @@ func TestAsyncService(t *testing.T) {
 	assert.Nil(t, err)
 	defer svc.Close()
 
-	cli, err := async_service.NewGreeterNATSRPCClient(enc)
+	cli, err := async_service.NewGreeterNATSRPCClient(conn)
 	assert.Nil(t, err)
 
 	reply, err := cli.Hello(context.Background(), &testdata.HelloRequest{Name: haha})
