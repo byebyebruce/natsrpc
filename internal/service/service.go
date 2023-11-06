@@ -7,10 +7,10 @@ import (
 	"reflect"
 )
 
-var _ IService = (*service)(nil)
+var _ IService = (*Service)(nil)
 
-// service 服务
-type service struct {
+// Service 服务
+type Service struct {
 	name    string // 名字
 	sub     string
 	val     interface{}        // 值
@@ -20,18 +20,18 @@ type service struct {
 }
 
 // Name 名字
-func (s *service) Name() string {
+func (s *Service) Name() string {
 	return s.name
 }
 
 // Close 关闭
 // 会取消所有订阅
-func (s *service) Close() bool {
+func (s *Service) Close() bool {
 	return s.server.remove(s)
 }
 
 // newService 创建服务
-func newService(name string, i interface{}, opts ...ServiceOption) (*service, error) {
+func newService(name string, i interface{}, opts ...ServiceOption) (*Service, error) {
 	opt := defaultServiceOptions
 	for _, v := range opts {
 		v(&opt)
@@ -39,18 +39,18 @@ func newService(name string, i interface{}, opts ...ServiceOption) (*service, er
 
 	val := reflect.ValueOf(i)
 	if val.Kind() != reflect.Ptr {
-		return nil, fmt.Errorf("service must be a pointer")
+		return nil, fmt.Errorf("Service must be a pointer")
 	}
 	typ := reflect.Indirect(val).Type()
 	if !ast.IsExported(typ.Name()) {
-		return nil, fmt.Errorf("service [%s] must be exported", name)
+		return nil, fmt.Errorf("Service [%s] must be exported", name)
 	}
 
-	s := &service{
+	s := &Service{
 		opt:     opt,
 		methods: map[string]*method{},
 		name:    name,
-		sub:     CombineSubject(opt.namespace, name, opt.id), // name = namespace.package.service.id
+		sub:     CombineSubject(opt.namespace, name, opt.id), // name = namespace.package.Service.id
 		val:     i,
 	}
 
@@ -59,19 +59,19 @@ func newService(name string, i interface{}, opts ...ServiceOption) (*service, er
 		return nil, err
 	}
 	if len(ms) == 0 {
-		return nil, fmt.Errorf("service [%s] has no exported method", name)
+		return nil, fmt.Errorf("Service [%s] has no exported method", name)
 	}
 
 	for _, v := range ms {
 		if _, ok := s.methods[v.name]; ok {
-			return nil, fmt.Errorf("service [%s] duplicate method [%s]", name, v.name)
+			return nil, fmt.Errorf("Service [%s] duplicate method [%s]", name, v.name)
 		}
 		s.methods[v.name] = v
 	}
 	return s, nil
 }
 
-func (s *service) call(ctx context.Context, methodName string, b []byte) ([]byte, error) {
+func (s *Service) call(ctx context.Context, methodName string, b []byte) ([]byte, error) {
 	m, ok := s.methods[methodName]
 	if !ok {
 		return nil, ErrNoMethod
@@ -91,7 +91,7 @@ func (s *service) call(ctx context.Context, methodName string, b []byte) ([]byte
 	return nil, err
 }
 
-func (s *service) _call(ctx context.Context, m *method, req interface{}) (interface{}, error) {
+func (s *Service) _call(ctx context.Context, m *method, req interface{}) (interface{}, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.opt.timeout)
 	defer cancel()
 
