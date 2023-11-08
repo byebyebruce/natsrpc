@@ -1,11 +1,10 @@
-package natsrpc
+package service
 
 import (
 	"context"
 	"testing"
 
 	"github.com/byebyebruce/natsrpc/testdata"
-	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -50,24 +49,24 @@ func Test_Parse(t *testing.T) {
 		t.Error("name error")
 	}
 	_, err = parseMethod(&MethodErrorTest{})
-	assert.NotNil(t, err)
+	require.NotNil(t, err)
 }
 
 func TestMethod_Handle(t *testing.T) {
 	s := &MethodTest{}
 	ret, err := parseMethod(s)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	a := &testdata.Empty{}
 	b, _ := pbMarshaller.Marshal(a)
 
 	m, ok := ret["Request"]
-	assert.Equal(t, true, ok)
+	require.Equal(t, true, ok)
 
 	req := m.newRequest()
 	pbMarshaller.Unmarshal(b, req)
 	_, err = m.handle(s, context.Background(), req)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 }
 
 func BenchmarkMethod_Handle(b *testing.B) {

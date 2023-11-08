@@ -8,24 +8,31 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Server RPC server
-type Server struct {
-	wg       sync.WaitGroup                  // wait group
-	mu       sync.Mutex                      // lock
-	opt      serverOptions                   // options
-	conn     *nats.Conn                      // NATS Encode Conn
-	services map[*service]*nats.Subscription // 服务 name->service
+type serviceWrapper struct {
+	*Service
+	subscriptions []*nats.Subscription
+	ServiceOptions
 }
 
-var _ IServer = (*Server)(nil)
+var _ ServiceRegistrar = (*Server)(nil)
+
+// Server RPC server
+type Server struct {
+	wg       sync.WaitGroup             // wait group
+	mu       sync.Mutex                 // lock
+	opt      ServerOptions              // options
+	conn     *nats.Conn                 // NATS Encode Conn
+	services map[string]*serviceWrapper // 服务 name->Service
+	Encoder
+}
 
 // NewServer 构造器
 func NewServer(conn *nats.Conn, option ...ServerOption) (*Server, error) {
 	if !conn.IsConnected() {
-		return nil, fmt.Errorf("enc is not connected")
+		return nil, fmt.Errorf("conn is not connected")
 	}
 
-	options := defaultServerOptions
+	options := DefaultServerOptions
 	for _, v := range option {
 		v(&options)
 	}
@@ -33,14 +40,15 @@ func NewServer(conn *nats.Conn, option ...ServerOption) (*Server, error) {
 	d := &Server{
 		opt:      options,
 		conn:     conn,
-		services: make(map[*service]*nats.Subscription),
+		services: map[string]*serviceWrapper{},
+		Encoder:  options.encoder,
 	}
 	return d, nil
 }
 
 // Close 关闭
 func (s *Server) Close(ctx context.Context) (err error) {
-	s.ClearAllSubscription()
+	s.UnSubscribeAll()
 
 	over := make(chan struct{})
 	go func() {
@@ -52,105 +60,127 @@ func (s *Server) Close(ctx context.Context) (err error) {
 		err = ctx.Err()
 	case <-over:
 	}
-	if err1 := s.conn.Flush(); err == nil && err1 != nil {
-		err = err1
-	}
-	return
+	return s.conn.FlushWithContext(ctx)
 }
 
-// ClearAllSubscription 取消所有订阅
-func (s *Server) ClearAllSubscription() {
+// UnSubscribeAll 取消所有订阅
+func (s *Server) UnSubscribeAll() error {
+	unsubs := make([]*nats.Subscription, 0, len(s.services))
 	s.mu.Lock()
-	ss := make([]*service, 0, len(s.services))
-	for s := range s.services {
-		ss = append(ss, s)
+	for _, svc := range s.services {
+		unsubs = append(unsubs, svc.subscriptions...)
+		svc.subscriptions = nil
 	}
 	s.mu.Unlock()
-
-	for _, v := range ss {
-		s.remove(v)
+	for _, v := range unsubs {
+		v.Unsubscribe()
 	}
+	return s.conn.Flush()
 }
 
-// Unregister 反注册
-func (s *Server) remove(service *service) bool {
+// Remove 反注册
+func (s *Server) Remove(name string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	sub, ok := s.services[service]
+	svc, ok := s.services[name]
 	if ok {
-		sub.Unsubscribe()
-		delete(s.services, service)
+		if len(svc.subscriptions) > 0 {
+			for _, subscription := range svc.subscriptions {
+				subscription.Unsubscribe()
+			}
+			s.conn.Flush()
+		}
+		delete(s.services, name)
 	}
 	return ok
 }
 
 // Register 注册服务
-func (s *Server) Register(name string, handler interface{}, opts ...ServiceOption) (IService, error) {
+func (s *Server) Register(sd ServiceDesc, val interface{}, opts ...ServiceOption) (IService, error) {
+	opt := DefaultServiceOptions
+	for _, v := range opts {
+		v(&opt)
+	}
+
+	sd.ServiceName = JoinSubject(opt.namespace, sd.ServiceName, opt.id)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.services[sd.ServiceName]; ok {
+		return nil, ErrDuplicateService
+	}
 	// new 一个服务
-	svc, err := newService(name, handler, opts...)
+	svc, err := NewService(s, sd, val)
 	if nil != err {
 		return nil, err
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	for s := range s.services {
-		if s.sub == svc.sub && s.val == handler {
-			return nil, ErrDuplicateService
-		}
+	sw := &serviceWrapper{
+		Service:        svc,
+		ServiceOptions: opt,
 	}
-
-	svc.server = s
-
-	if err := s.subscribeMethod(svc); nil != err {
+	if err := s.subscribeMethod(sw); nil != err {
 		return nil, err
 	}
+
+	s.services[sd.ServiceName] = sw
+	// TODO flush
+	s.conn.Flush()
+
 	return svc, nil
 }
 
 // subscribeMethod 订阅服务的方法
-func (s *Server) subscribeMethod(service *service) error {
+func (s *Server) subscribeMethod(sw *serviceWrapper) error {
 	cb := func(msg *nats.Msg) {
 		s.wg.Add(1)
-
 		call := func() {
 			defer s.wg.Done()
 
-			mName, header, err := decodeHeader(msg.Header)
+			method, header, err := decodeHeader(msg.Header)
 			if err != nil {
 				s.opt.errorHandler(err.Error())
 				return
 			}
 			ctx := context.Background()
+			if sw.ServiceOptions.timeout > 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, sw.ServiceOptions.timeout)
+				defer cancel()
+			}
 			if header != nil {
 				ctx = setHeader(ctx, header)
 			}
 
-			err = s.handle(ctx, service, mName, msg.Data, msg.Reply)
+			err = s.handle(ctx, sw, method, msg.Data, msg.Reply)
 			if err != nil {
 				s.opt.errorHandler(err.Error())
 			}
 		}
-		if service.opt.concurrent {
+		if sw.concurrent {
 			go call()
 		} else {
 			call()
 		}
 	}
 
-	natsSub, subErr := s.conn.QueueSubscribe(service.sub, defaultSubQueue, cb)
+	sub := sw.Name()
+	reqSub, subErr := s.conn.QueueSubscribe(sub, defaultSubQueue, cb)
 	if nil != subErr {
 		return subErr
 	}
-	s.services[service] = natsSub
-	// TODO flush
-	s.conn.Flush()
-
+	sw.subscriptions = append(sw.subscriptions, reqSub)
+	if len(sw.Service.sd.PublishMethods()) > 0 {
+		pubSub, pubErr := s.conn.QueueSubscribe(publishSuffix(sub), "", cb)
+		if pubErr != nil {
+			go reqSub.Unsubscribe()
+			return pubErr
+		}
+		sw.subscriptions = append(sw.subscriptions, pubSub)
+	}
 	return nil
 }
 
-func (s *Server) handle(ctx context.Context, svc *service, method string, payload []byte, replySub string) error {
+func (s *Server) handle(ctx context.Context, sw *serviceWrapper, method string, payload []byte, replySub string) error {
 	if s.opt.recoverHandler != nil {
 		defer func() {
 			if e := recover(); e != nil {
@@ -159,7 +189,7 @@ func (s *Server) handle(ctx context.Context, svc *service, method string, payloa
 		}()
 	}
 
-	b, err := svc.call(ctx, method, payload)
+	b, err := sw.Call(ctx, method, payload, sw.ServiceOptions.interceptor)
 	// publish 不需要回复
 	if len(replySub) == 0 {
 		return nil

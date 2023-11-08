@@ -80,7 +80,7 @@ func main() {
 			natsrpc.IfNotNilPanic(err)
 			defer conn.Close()
 
-			client, err := natsrpc.NewClient(conn, serviceName)
+			client := natsrpc.NewClient(conn, serviceName)
 			natsrpc.IfNotNilPanic(err)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*totalTime)*time.Second)
 			defer cancel()

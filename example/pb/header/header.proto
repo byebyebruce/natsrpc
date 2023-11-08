@@ -4,7 +4,7 @@ package header;
 option go_package = "github.com/byebyebruce/natsrpc/example/pb/header;header";
 
 import "testdata.proto";
-import "natsrpc.proto";
+import "types.proto";
 
 
 service Greeter {

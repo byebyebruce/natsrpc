@@ -1,6 +1,6 @@
 module github.com/byebyebruce/natsrpc
 
-go 1.17
+go 1.18
 
 require (
 	github.com/nats-io/nats.go v1.31.0

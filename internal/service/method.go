@@ -1,4 +1,4 @@
-package natsrpc
+package service
 
 import (
 	"context"
@@ -8,8 +8,7 @@ import (
 
 var (
 	errorFuncType = errors.New(`method must like:
-func (s *MyService)Notify(ctx context.Context,req *proto.Request)
-func (s *MyService)Request(ctx context.Context,req *proto.Request)(*proto.Reply, error))`)
+func (s *MyService)Request(ctx context.Context,req *proto.Request)(*proto.Reply, error)`)
 )
 
 type handler func(svc interface{}, ctx context.Context, req interface{}) (interface{}, error)
@@ -59,13 +58,13 @@ func genMethod(m reflect.Method) (*method, error) {
 	numRets := mType.NumOut()
 
 	// 第1个参数必须是context
-	if !IsContextType(mType.In(1)) {
+	if !isContextType(mType.In(1)) {
 		return nil, errorFuncType
 	}
 
 	// 第2个参数是pb类型
 	reqType = mType.In(2)
-	if !IsProtoPtrType(reqType) {
+	if !isProtoPtrType(reqType) {
 		return nil, errorFuncType
 	}
 
@@ -81,10 +80,10 @@ func genMethod(m reflect.Method) (*method, error) {
 		if numArgs > paraNum {
 			return nil, errorFuncType
 		}
-		if !IsProtoPtrType(mType.Out(0)) {
+		if !isProtoPtrType(mType.Out(0)) {
 			return nil, errorFuncType
 		}
-		if !IsErrorType(mType.Out(1)) {
+		if !isErrorType(mType.Out(1)) {
 			return nil, errorFuncType
 		}
 	default:

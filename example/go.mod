@@ -1,12 +1,11 @@
 module github.com/byebyebruce/natsrpc/example
 
-go 1.17
+go 1.18
 
 require (
 	github.com/byebyebruce/natsrpc v0.5.5
 	github.com/nats-io/nats.go v1.31.0
 	github.com/stretchr/testify v1.7.0
-	google.golang.org/protobuf v1.26.0
 )
 
 require (

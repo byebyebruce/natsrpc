@@ -1,5 +1,6 @@
 github.com/byebyebruce/natsrpc v0.5.4/go.mod h1:w61gLVOQWr/Tq/1wxSOMLxDPbH66rEo8jEHMh7j3qjo=
-github.com/byebyebruce/natsrpc v0.5.5/go.mod h1:w61gLVOQWr/Tq/1wxSOMLxDPbH66rEo8jEHMh7j3qjo=
+github.com/golang/protobuf v1.5.2 h1:ROPKBNFfQgOUMifHyP+KYbvpjbdoFNs+aK7DXlji0Tw=
+github.com/nats-io/nats-server/v2 v2.5.0 h1:wsnVaaXH9VRSg+A2MVg5Q727/CqxnmPLGFQ3YZYKTQg=
 github.com/stretchr/objx v0.1.0 h1:4G4v2dO3VZwixGIRoQ5Lfboy6nUhCyYzaqnIAPPhYs4=
 golang.org/x/net v0.10.0 h1:X2//UzNDwYmtCLn7To6G58Wr6f5ahEAQgKNzv9Y951M=
 golang.org/x/term v0.13.0 h1:bb+I9cTfFazGW51MZqBVmZy7+JEJMouUHTUSKVQLBek=

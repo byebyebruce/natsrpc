@@ -65,7 +65,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			client, err := natsrpc.NewClient(connClient, serviceName)
+			client := natsrpc.NewClient(connClient, serviceName)
 			if nil != err {
 				panic(err)
 			}

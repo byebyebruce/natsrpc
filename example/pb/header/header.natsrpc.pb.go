@@ -7,27 +7,55 @@ package header
 
 import (
 	context "context"
-	fmt "fmt"
 	natsrpc "github.com/byebyebruce/natsrpc"
 	testdata "github.com/byebyebruce/natsrpc/testdata"
 	nats_go "github.com/nats-io/nats.go"
-	proto "google.golang.org/protobuf/proto"
+	reflect "reflect"
 )
 
-var _ = new(context.Context)
-var _ = proto.Marshal
-var _ = fmt.Errorf
+var _ context.Context
 var _ = natsrpc.Version
 var _ = nats_go.Version
+var _ reflect.Value
+
+const (
+	_GreeterNATSRPCServiceName = "github.com/byebyebruce/natsrpc/example/pb/header|header.Greeter"
+)
+
+var _Greeter_Desc = natsrpc.ServiceDesc{
+	ServiceName: _GreeterNATSRPCServiceName,
+	Methods: []natsrpc.MethodDesc{
+		{
+			MethodName:  "Hello",
+			Handler:     _Greeter_Hello,
+			RequestType: reflect.TypeOf(testdata.HelloRequest{}),
+			IsPublish:   false,
+		},
+		{
+			MethodName:  "HelloPublish",
+			Handler:     _Greeter_HelloPublish,
+			RequestType: reflect.TypeOf(testdata.HelloRequest{}),
+			IsPublish:   true,
+		},
+	},
+	Metadata: "header.proto",
+}
 
 type GreeterNATSRPCServer interface {
 	Hello(ctx context.Context, req *testdata.HelloRequest) (*testdata.HelloReply, error)
 	HelloPublish(ctx context.Context, req *testdata.HelloRequest) (*testdata.Empty, error)
 }
 
+func _Greeter_Hello(svc interface{}, ctx context.Context, req any) (any, error) {
+	return svc.(GreeterNATSRPCServer).Hello(ctx, req.(*testdata.HelloRequest))
+}
+func _Greeter_HelloPublish(svc interface{}, ctx context.Context, req any) (any, error) {
+	return svc.(GreeterNATSRPCServer).HelloPublish(ctx, req.(*testdata.HelloRequest))
+}
+
 // RegisterGreeterNATSRPCServer register Greeter service
-func RegisterGreeterNATSRPCServer(server *natsrpc.Server, s GreeterNATSRPCServer, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
-	return server.Register("github.com.byebyebruce.natsrpc.example.pb.header.Greeter", s, opts...)
+func RegisterGreeterNATSRPCServer(register natsrpc.ServiceRegistrar, s GreeterNATSRPCServer, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+	return register.Register(_Greeter_Desc, s, opts...)
 }
 
 type GreeterNATSRPCClient interface {
@@ -40,15 +68,12 @@ type _GreeterNATSRPCClient struct {
 }
 
 // NewGreeterNATSRPCClient
-func NewGreeterNATSRPCClient(conn *nats_go.Conn, opts ...natsrpc.ClientOption) (GreeterNATSRPCClient, error) {
-	c, err := natsrpc.NewClient(conn, "github.com.byebyebruce.natsrpc.example.pb.header.Greeter", opts...)
-	if err != nil {
-		return nil, err
-	}
+func NewGreeterNATSRPCClient(conn *nats_go.Conn, opts ...natsrpc.ClientOption) GreeterNATSRPCClient {
+	c := natsrpc.NewClient(conn, _GreeterNATSRPCServiceName, opts...)
 	ret := &_GreeterNATSRPCClient{
 		c: c,
 	}
-	return ret, nil
+	return ret
 }
 func (c *_GreeterNATSRPCClient) Hello(ctx context.Context, req *testdata.HelloRequest, opt ...natsrpc.CallOption) (*testdata.HelloReply, error) {
 	rep := &testdata.HelloReply{}

@@ -1,4 +1,4 @@
-//go:generate protoc --proto_path=. --go_out=paths=source_relative:. natsrpc.proto
+//go:generate protoc --proto_path=. --go_out=paths=source_relative:. types.proto
 //go:generate protoc --proto_path=./testdata --go_out=paths=source_relative:./testdata testdata.proto
 package natsrpc
 
@@ -14,25 +14,25 @@ import (
 
 var (
 	ErrHeaderFormat     = errors.New("header format error")
-	ErrDuplicateService = errors.New("duplicate service")
+	ErrDuplicateService = errors.New("duplicate Service")
 	ErrNoMethod         = errors.New("no method")
 )
 
 const (
-	defaultSubQueue = "_nrq" // 默认组
+	defaultSubQueue = "_ns_q" // 默认组
 
-	headerNATSRPC = "_natsrpc_" // header method
-	headerError   = "_error"    // header error
+	headerMethod = "_ns_method" // header method
+	headerUser   = "_ns_user"   // header method
+	headerError  = "_ns_error"  // header error
 )
 
-type IServer interface {
-	ClearAllSubscription()
-	Close(ctx context.Context) (err error)
+type ServiceRegistrar interface {
+	Register(sd ServiceDesc, svc any, opt ...ServiceOption) (IService, error)
 }
 
 type IClient interface {
-	Publish(subject string, req interface{}) error
-	Request(subject string, req interface{}, rep interface{}, opt ...CallOption) error
+	Publish(method string, req interface{}, opt ...CallOption) error
+	Request(ctx context.Context, method string, req interface{}, rep interface{}, opt ...CallOption) error
 }
 
 // IService 服务
@@ -46,47 +46,30 @@ type Encoder interface {
 	Decode(data []byte, vPtr interface{}) error
 }
 
-var defaultServerOptions = serverOptions{
+var DefaultServerOptions = ServerOptions{
 	errorHandler: func(i interface{}) {
 		fmt.Fprintf(os.Stderr, "error:%v\n", i)
 	},
 	recoverHandler: func(i interface{}) {
 		fmt.Fprintf(os.Stderr, "server panic:%v\n", i)
 	},
+	encoder: pb.Encoder{},
 }
 
-var defaultServiceOptions = serviceOptions{
-	namespace:  "default",
-	id:         "",
+var DefaultServiceOptions = ServiceOptions{
 	queue:      defaultSubQueue, // 默认default组，同组内只有一个service收到
 	timeout:    time.Duration(3) * time.Second,
-	encoder:    pb.Encoder{},
 	concurrent: true,
+	id:         "",
 }
 
-var defaultClientOptions = clientOptions{
-	namespace: "default",
+var DefaultClientOptions = ClientOptions{
+	namespace: "",
 	id:        "",
 	//timeout:   time.Duration(3) * time.Second,
 	encoder: pb.Encoder{},
 }
 
-type headerKey struct{}
-
-// setHeader 填充Header
-func setHeader(ctx context.Context, header map[string]string) context.Context {
-	newCtx := context.WithValue(ctx, headerKey{}, header)
-	return newCtx
-}
-
-// GetHeader 获得Header
-func GetHeader(ctx context.Context) map[string]string {
-	if ctx == nil {
-		return nil
-	}
-	val := ctx.Value(headerKey{})
-	if val != nil {
-		return val.(map[string]string)
-	}
-	return nil
+func publishSuffix(sub string) string {
+	return sub + "_pub"
 }

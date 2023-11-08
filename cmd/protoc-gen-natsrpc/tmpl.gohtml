@@ -1,5 +1,6 @@
 {{- range .Services}}
 {{$ServiceType := .ServiceType}}
+{{$ServiceNameVar := print "_" .ServiceType "NATSRPCServiceName" }}
 {{$serviceInterface := print .ServiceType "NATSRPCServer"}}
 {{$serviceAsync := .ServiceAsync}}
 {{$serviceWrapperName := print .ServiceType "Wrapper"}}
@@ -8,6 +9,25 @@
 {{$clientWrapperName := print "_" .ServiceType "NATSRPCClient"}}
 {{$asyncClientInterface := print .ServiceType "AsyncClient"}}
 {{$asyncClientWrapperName := print "_" .ServiceType "AsyncNATSRPCClient"}}
+
+const (
+	{{ $ServiceNameVar }} = "{{ $.GoPackageName }}|{{ .ServiceName }}"
+)
+var _{{ $ServiceType }}_Desc = natsrpc.ServiceDesc {
+	ServiceName: {{ $ServiceNameVar }},
+	Methods: []natsrpc.MethodDesc{
+		{{- range .Methods }}
+			{
+				MethodName: "{{ .Name }}",
+				Handler: _{{ $ServiceType }}_{{ .Name }},
+				RequestType: reflect.TypeOf({{ .Request }}{}),
+				IsPublish: {{ .Publish }},
+			},
+		{{- end }}
+	},
+	Metadata: "{{ .Metadata }}",
+}
+
 
 {{ .Comment -}}
 type {{ $serviceInterface }} interface {
@@ -27,19 +47,27 @@ type {{ $serviceInterface }} interface {
 {{- end }}
 }
 
+{{- range .Methods }}
+func _{{ $ServiceType }}_{{ .Name }}(svc interface{}, ctx context.Context, req any) (any, error) {
+	return svc.({{ $serviceInterface }}).{{ .Name }}(ctx, req.(*{{ .Request }}))
+}
+{{- end }}
+
 // Register{{ $serviceInterface }} register {{ $ServiceType }} service
 {{- if eq $serviceAsync false }}
-func Register{{ $serviceInterface }}(server *natsrpc.Server, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
-	return server.Register("{{ $.GoPackageName }}.{{ $ServiceType }}", s, opts...)
+func Register{{ $serviceInterface }}(register natsrpc.ServiceRegistrar, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+	return register.Register(_{{ $ServiceType }}_Desc, s,  opts...)
 }
 {{- else }}
-func RegisterAsync{{ $ServiceType }}(server *natsrpc.Server, doer natsrpc.AsyncDoer, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+func RegisterAsync{{ $ServiceType }}(register natsrpc.ServiceRegistrar, doer natsrpc.AsyncDoer, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
 	ss := &{{ $serviceWrapperName }}{
 		doer: doer,
 		s:    s,
 	}
-	return server.Register("{{ $.GoPackageName }}.{{ $ServiceType }}", ss, opts...)
+	return register.Register(_{{ $ServiceType }}_Desc, ss, opts...)
 }
+
+
 
 // {{ $serviceWrapperName }} DO NOT USE
 type {{ $serviceWrapperName }} struct {
@@ -92,15 +120,12 @@ type {{ $clientWrapperName }} struct {
 }
 
 // New{{ $clientInterface }}
-func New{{ $clientInterface }}(conn *nats_go.Conn, opts ...natsrpc.ClientOption) ({{ $clientInterface }}, error) {
-	c, err := natsrpc.NewClient(conn, "{{ $.GoPackageName }}.{{ $ServiceType }}", opts...)
-	if err != nil {
-		return nil, err
-	}
+func New{{ $clientInterface }}(conn *nats_go.Conn, opts ...natsrpc.ClientOption) {{ $clientInterface }} {
+	c := natsrpc.NewClient(conn, {{ $ServiceNameVar }}, opts...)
 	ret := &{{ $clientWrapperName }}{
 		c:c,
 	}
-	return ret, nil
+	return ret
 }
 
 
@@ -141,16 +166,13 @@ type {{ $asyncClientWrapperName }} struct {
 }
 
 // New{{ $asyncClientInterface }}
-func New{{ $asyncClientInterface }}(conn *nats_go.Conn,doer natsrpc.AsyncDoer, opts ...natsrpc.ClientOption) ({{ $asyncClientInterface }}, error) {
-	c, err := natsrpc.NewClient(conn, "{{ $.GoPackageName }}.{{ $ServiceType }}", opts...)
-	if err != nil {
-		return nil, err
-	}
+func New{{ $asyncClientInterface }}(conn *nats_go.Conn,doer natsrpc.AsyncDoer, opts ...natsrpc.ClientOption) {{ $asyncClientInterface }} {
+	c := natsrpc.NewClient(conn, {{ $ServiceNameVar }}, opts...)
 	ret := &{{ $asyncClientWrapperName }}{
 		c:c,
 		doer: doer,
 	}
-	return ret, nil
+	return ret
 }
 
 {{- range .Methods }}

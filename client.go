@@ -7,28 +7,28 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+var _ IClient = (*Client)(nil)
+
 // Client RPC client
 type Client struct {
-	sub  string        // 名字
 	name string        // 服务名
-	opt  clientOptions // 选项
+	opt  ClientOptions // 选项
 	conn *nats.Conn
 }
 
 // NewClient 构造器
-func NewClient(conn *nats.Conn, serviceName string, opts ...ClientOption) (*Client, error) {
-	opt := defaultClientOptions
+func NewClient(conn *nats.Conn, serviceName string, opts ...ClientOption) *Client {
+	opt := DefaultClientOptions
 	for _, v := range opts {
 		v(&opt)
 	}
 	c := &Client{
 		conn: conn,
-		name: serviceName,
-		sub:  CombineSubject(opt.namespace, serviceName),
+		name: JoinSubject(opt.namespace, serviceName, opt.id),
 		opt:  opt,
 	}
 
-	return c, nil
+	return c
 }
 
 // Name 名字
@@ -48,9 +48,7 @@ func (c *Client) Request(ctx context.Context, method string, req interface{}, re
 
 func (c *Client) call(ctx context.Context, method string, req interface{}, rep interface{}, opt ...CallOption) error {
 	// opt
-	callOpt := CallOptions{
-		id: c.opt.id,
-	}
+	callOpt := CallOptions{}
 	for _, v := range opt {
 		v(&callOpt)
 	}
@@ -64,7 +62,15 @@ func (c *Client) call(ctx context.Context, method string, req interface{}, rep i
 		return err
 	}
 	// subject
-	subject := CombineSubject(c.sub, callOpt.id)
+	subject := c.name
+	if len(callOpt.id) > 0 {
+		subject = JoinSubject(subject, callOpt.id)
+	}
+
+	isPublish := rep == nil
+	if isPublish {
+		subject = publishSuffix(subject)
+	}
 
 	msg := &nats.Msg{
 		Subject: subject,
@@ -72,7 +78,7 @@ func (c *Client) call(ctx context.Context, method string, req interface{}, rep i
 		Data:    b,
 	}
 
-	if rep == nil {
+	if isPublish {
 		// publish
 		return c.conn.PublishMsg(msg)
 	}

@@ -19,6 +19,7 @@ const (
 	natsPackage    = protogen.GoImportPath("github.com/nats-io/nats.go")
 	protoPackage   = protogen.GoImportPath("google.golang.org/protobuf/proto")
 	fmtPackage     = protogen.GoImportPath("fmt")
+	reflectPackage = protogen.GoImportPath("reflect")
 )
 
 // generateFile generates .natsrpc.pb.go file
@@ -49,16 +50,22 @@ func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.
 	if len(file.Services) == 0 {
 		return
 	}
-	g.P("var _ = new(", contextPackage.Ident("Context"), ")")
-	g.P("var _ = ", protoPackage.Ident("Marshal"))
-	g.P("var _ = ", fmtPackage.Ident("Errorf"))
+	g.P("var _ ", contextPackage.Ident("Context"))
+	//g.P("var _ = ", protoPackage.Ident("Marshal"))
+	//g.P("var _ = ", fmtPackage.Ident("Errorf"))
 	g.P("var _ = ", natsrpcPackage.Ident("Version"))
 	g.P("var _ = ", natsPackage.Ident("Version"))
+	g.P("var _ ", reflectPackage.Ident("Value"))
+
 	g.P()
 
+	const (
+		replaceComma = "|"
+	)
 	goPkg := file.Proto.GetOptions().GetGoPackage()
 	if len(goPkg) > 0 {
-		goPkg = strings.Replace(strings.Split(goPkg, ";")[0], "/", ".", -1)
+		goPkg = strings.Split(goPkg, ";")[0]
+		//goPkg = strings.Replace(goPkg, "/", replaceComma, -1)
 	} else {
 		goPkg = file.Desc.Path()
 	}
@@ -84,12 +91,15 @@ func genService(gen *protogen.Plugin, file *protogen.File, g *protogen.Generated
 		Comment:     service.Comments.Leading.String(),
 		Metadata:    file.Desc.Path(),
 	}
-	if v, ok := proto.GetExtension(service.Desc.Options(), natsrpc.E_ServiceAsync).(bool); ok {
-		sd.ServiceAsync = v
-	}
-	if v, ok := proto.GetExtension(service.Desc.Options(), natsrpc.E_ClientAsync).(bool); ok {
-		sd.ClientAsync = v
-	}
+	/*
+		if v, ok := proto.GetExtension(service.Desc.Options(), natsrpc.E_ServiceAsync).(bool); ok {
+			sd.ServiceAsync = v
+		}
+		if v, ok := proto.GetExtension(service.Desc.Options(), natsrpc.E_ClientAsync).(bool); ok {
+			sd.ClientAsync = v
+		}
+
+	*/
 	for _, method := range service.Methods {
 		sd.Methods = append(sd.Methods, buildMethodDesc(g, method, "", ""))
 	}

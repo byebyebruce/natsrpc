@@ -6,28 +6,31 @@ import (
 	"time"
 )
 
-// serverOptions server 选项
-type serverOptions struct {
+// ServerOptions server 选项
+type ServerOptions struct {
 	errorHandler   func(interface{}) // error handler
 	recoverHandler func(interface{}) // recover handler
+	encoder        Encoder           // 编码器
 }
 
-type serviceMiddleware func(ctx context.Context, method string, req interface{}, next func(ctx context.Context, req interface{})) error
-type callMiddleware func(ctx context.Context, method string, req interface{}, next func(ctx context.Context, req interface{}))
+type Handler func(svc interface{}, ctx context.Context, req interface{}) (interface{}, error)
 
-// serviceOptions service 选项
-type serviceOptions struct {
-	namespace  string            // 空间(划分隔离)
-	queue      string            // sub组。默认只有一个sub会被通知到。空表示所有的sub都会收到
-	id         string            // id
-	timeout    time.Duration     // 请求/handle的超时
-	mw         serviceMiddleware // middleware
-	concurrent bool              // 是否多线程
-	encoder    Encoder           // 编码器
+type Invoker func(ctx context.Context, req interface{}) (interface{}, error)
+
+type Interceptor func(ctx context.Context, method string, req interface{}, i Invoker) (interface{}, error)
+
+// ServiceOptions Service 选项
+type ServiceOptions struct {
+	namespace   string        // 空间(划分隔离)
+	queue       string        // sub组。默认只有一个sub会被通知到。空表示所有的sub都会收到
+	id          string        // id
+	timeout     time.Duration // 请求/handle的超时
+	interceptor Interceptor   // middleware
+	concurrent  bool          // 是否多线程
 }
 
-// clientOptions client 选项
-type clientOptions struct {
+// ClientOptions client 选项
+type ClientOptions struct {
 	namespace string // 空间(划分隔离)
 	id        string // id
 	//timeout   time.Duration  // 请求handle的超时
@@ -43,85 +46,85 @@ type CallOptions struct {
 }
 
 // ServerOption server option
-type ServerOption func(options *serverOptions)
+type ServerOption func(options *ServerOptions)
 
 // WithErrorHandler error handler
 func WithErrorHandler(h func(interface{})) ServerOption {
-	return func(options *serverOptions) {
+	return func(options *ServerOptions) {
 		options.errorHandler = h
 	}
 }
 
 // WithServerRecovery recover handler
 func WithServerRecovery(h func(interface{})) ServerOption {
-	return func(options *serverOptions) {
+	return func(options *ServerOptions) {
 		options.recoverHandler = h
 	}
 }
 
-// ServiceOption service option
-type ServiceOption func(options *serviceOptions)
+// ServiceOption Service option
+type ServiceOption func(options *ServiceOptions)
 
 // WithServiceNamespace 空间集群
 func WithServiceNamespace(namespace string) ServiceOption {
-	return func(options *serviceOptions) {
+	return func(options *ServiceOptions) {
 		options.namespace = namespace
 	}
 }
 
-// WithServiceEncoder 编码
-func WithServiceEncoder(encoder Encoder) ServiceOption {
-	return func(options *serviceOptions) {
+// WithServerEncoder 编码
+func WithServerEncoder(encoder Encoder) ServerOption {
+	return func(options *ServerOptions) {
 		options.encoder = encoder
 	}
 }
 
 // WithServiceID id
 func WithServiceID(id interface{}) ServiceOption {
-	return func(options *serviceOptions) {
+	return func(options *ServiceOptions) {
 		options.id = fmt.Sprintf("%v", id)
 	}
 }
 
 func WithBroadcast() ServiceOption {
-	return func(options *serviceOptions) {
+	return func(options *ServiceOptions) {
 		options.queue = ""
 	}
 }
 
 // WithServiceTimeout 超时时间
 func WithServiceTimeout(timeout time.Duration) ServiceOption {
-	return func(options *serviceOptions) {
+	return func(options *ServiceOptions) {
 		options.timeout = timeout
 	}
 }
 
 // WithServiceMiddleware 超时时间
-func WithServiceMiddleware(mw serviceMiddleware) ServiceOption {
-	return func(options *serviceOptions) {
-		options.mw = mw
+func WithServiceMiddleware(mw Interceptor) ServiceOption {
+	return func(options *ServiceOptions) {
+		options.interceptor = mw
 	}
 }
 
-type ClientOption func(options *clientOptions)
+type ClientOption func(options *ClientOptions)
 
 // WithClientNamespace 空间集群
 func WithClientNamespace(namespace string) ClientOption {
-	return func(options *clientOptions) {
+	return func(options *ClientOptions) {
 		options.namespace = namespace
 	}
 }
 
 // WithClientID id
-func WithClientID(id interface{}) ClientOption {
-	return func(options *clientOptions) {
+func WithClientID(id string) ClientOption {
+	return func(options *ClientOptions) {
 		options.id = fmt.Sprintf("%v", id)
 	}
 }
 
 // WithClientEncoder 编码
 func WithClientEncoder(encoder Encoder) ClientOption {
-	return func(options *clientOptions) {
+	return func(options *ClientOptions) {
 		options.encoder = encoder
 	}
 }
@@ -129,7 +132,7 @@ func WithClientEncoder(encoder Encoder) ClientOption {
 // WithClientTimeout 默认call超时时间
 /*
 func WithClientTimeout(timeout time.Duration) ClientOption {
-	return func(options *clientOptions) {
+	return func(options *ClientOptions) {
 		options.timeout = timeout
 	}
 }
@@ -138,21 +141,12 @@ func WithClientTimeout(timeout time.Duration) ClientOption {
 // CallOption call option
 type CallOption func(options *CallOptions)
 
-/*
 // WithCallID call id
 func WithCallID(id interface{}) CallOption {
 	return func(options *CallOptions) {
 		options.id = fmt.Sprint(id)
 	}
 }
-
-// WithCallNamespace 空间集群
-func WithCallNamespace(namespace string) CallOption {
-	return func(options *CallOptions) {
-		options.namespace = namespace
-	}
-}
-*/
 
 // WithCallHeader header
 func WithCallHeader(hd map[string]string) CallOption {

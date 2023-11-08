@@ -8,8 +8,7 @@ import (
 	"github.com/byebyebruce/natsrpc"
 	"github.com/byebyebruce/natsrpc/example/pb/header"
 	"github.com/byebyebruce/natsrpc/testdata"
-
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type HeaderSvc struct {
@@ -42,19 +41,19 @@ func TestHeader(t *testing.T) {
 	}
 	svc, err := header.RegisterGreeterNATSRPCServer(server, hs, natsrpc.WithServiceNamespace("header"))
 	defer svc.Close()
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
-	cli, err := header.NewGreeterNATSRPCClient(conn, natsrpc.WithClientNamespace("header"))
-	assert.Nil(t, err)
+	cli := header.NewGreeterNATSRPCClient(conn, natsrpc.WithClientNamespace("header"))
+	require.Nil(t, err)
 
 	rep, err := cli.Hello(context.Background(), &testdata.HelloRequest{
 		Name: haha,
 	}, natsrpc.WithCallHeader(hs.header))
-	assert.Nil(t, err)
-	assert.Equal(t, haha, rep.GetMessage())
+	require.Nil(t, err)
+	require.Equal(t, haha, rep.GetMessage())
 
 	err = cli.HelloPublish(&testdata.HelloRequest{
 		Name: haha,
 	}, natsrpc.WithCallHeader(hs.header))
-	assert.Nil(t, err)
+	require.Nil(t, err)
 }
