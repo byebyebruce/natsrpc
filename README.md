@@ -18,6 +18,10 @@ NATS收发消息需要手动定义subject，request，reply，handler等繁琐�
 * 支持空间隔离
 * 支持定向发送也支持负载均衡(nats的同组内随机)
 * 支持Header和返回Error
+* 支持多种线程模型
+* 支持中间件
+* 支持延迟回复
+* 支持自定义编码器
 
 ## 安装工具
 * protoc(v3.17.3) [Linux](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-linux-x86_64.zip)/[MacOS](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-osx-x86_64.zip)/[Windows](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-win64.zip)
@@ -64,18 +68,13 @@ type Greeter interface {
 	Hello(ctx context.Context, req *natsrpc_test.HelloRequest) (*natsrpc_test.HelloReply, error)
 }
 ```
-6. [main.go](example/0.main_test.go) 启动server和client
-## 更多示例
-1. [请求](example/1.request_test.go)
-2. [广播](example/2.publish_test.go)
-3. [异步请求](example/3.asyncclient_test.go)
-4. [异步回复](example/4.asyncservice_test.go)
-5. [请求头](example/5.header_test.go)
+ 
+## 更多示例[Example](example)
 
 ## 压测工具
-1. 广播 `go run example/bench/pub/main.go -url=nats://127.0.0.1:4222`
+1. 广播 `go run ./example/tool/request_bench -url=nats://127.0.0.1:4222`
 
-2. 请求 `go run example/bench/req/main.go -url=nats://127.0.0.1:4222`
+2. 请求 `go run ./example/tool/publish_bench -url=nats://127.0.0.1:4222`
 
 ## TODO
 - [x] service 定义文件改成gRPC标准
@@ -84,5 +83,5 @@ type Greeter interface {
 - [x] 生成Client接口
 - [x] 支持中间件
 - [ ] 支持goroutine池
-- [ ] 默认一个service是一个线程，同时支持多线程
+- [x] 默认多线程，同时支持单一个线程
 - [ ] 取消广播

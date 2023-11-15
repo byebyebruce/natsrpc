@@ -2,6 +2,7 @@ package natsrpc
 
 import (
 	"context"
+	"sync"
 
 	"github.com/nats-io/nats.go"
 )
@@ -30,7 +31,14 @@ func Reply(ctx context.Context, rep interface{}, repErr error) error {
 	return meta.server.conn.PublishMsg(respMsg)
 }
 
-// ReplyWithType 用手动回复消息，一般用于延迟回复
-func ReplyWithType[T any](ctx context.Context, rep T, repErr error) error {
-	return Reply(ctx, rep, repErr)
+// MakeReplyFunc 用手动回复消息，一般用于延迟回复
+func MakeReplyFunc[T any](ctx context.Context) func(T, error) error {
+	once := sync.Once{}
+	return func(rep T, errRep error) error {
+		var err error
+		once.Do(func() {
+			err = Reply(ctx, errRep, err)
+		})
+		return err
+	}
 }
