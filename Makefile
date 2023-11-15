@@ -1,7 +1,9 @@
-all: generate protoc-gen-natsrpc  example test
+all: types protoc-gen-natsrpc  example test
 
-generate:
-	go generate ./...
+types:
+	protoc --proto_path=.:./third_party \
+	--go_out=paths=source_relative:. \
+	natsrpc.proto
 
 protoc-gen-natsrpc:
 	go install ./cmd/protoc-gen-natsrpc

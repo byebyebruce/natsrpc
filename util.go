@@ -1,7 +1,6 @@
 package natsrpc
 
 import (
-	"context"
 	"strings"
 	"sync"
 )
@@ -12,10 +11,18 @@ var bufPool = sync.Pool{
 	},
 }
 
-// JoinSubject 组合字符串成subject
-func JoinSubject(s ...string) string {
+// joinSubject 组合字符串成subject
+func joinSubject(s ...string) string {
 	if len(s) == 0 {
 		return ""
+	} else if len(s) == 1 {
+		return s[0]
+	} else if len(s) == 2 {
+		if s[0] == "" {
+			return s[1]
+		} else if s[1] == "" {
+			return s[0]
+		}
 	}
 	bf := bufPool.Get().(*strings.Builder)
 	defer func() {
@@ -34,17 +41,6 @@ func JoinSubject(s ...string) string {
 		}
 		bf.WriteString(v)
 	}
-	subject := bf.String()
 
-	return subject
-}
-
-func IfNotNilPanic(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-type AsyncDoer interface {
-	AsyncDo(context.Context, func(func(interface{}, error))) (interface{}, error)
+	return bf.String()
 }

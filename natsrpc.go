@@ -1,5 +1,3 @@
-//go:generate protoc --proto_path=. --go_out=paths=source_relative:. types.proto
-//go:generate protoc --proto_path=./testdata --go_out=paths=source_relative:./testdata testdata.proto
 package natsrpc
 
 import (
@@ -16,14 +14,19 @@ var (
 	ErrHeaderFormat     = errors.New("header format error")
 	ErrDuplicateService = errors.New("duplicate Service")
 	ErrNoMethod         = errors.New("no method")
+	ErrNoMeta           = errors.New("no meta, or is not a natsrpc context")
+	ErrEmptyReply       = errors.New("reply is empty")
+
+	ErrReplyLater = errors.New("reply later") // It's not an error, when you want to reply message later, then return this.
 )
 
 const (
-	defaultSubQueue = "_ns_q" // 默认组
+	defaultSubQueue = "_ns_q" // default queue group
 
-	headerMethod = "_ns_method" // header method
-	headerUser   = "_ns_user"   // header method
-	headerError  = "_ns_error"  // header error
+	headerMethod = "_ns_method" // method
+	headerUser   = "_ns_user"   // user header
+	headerError  = "_ns_error"  // reply error
+	pubSuffix    = "_pub"       // publish subject suffix
 )
 
 type ServiceRegistrar interface {
@@ -57,19 +60,13 @@ var DefaultServerOptions = ServerOptions{
 }
 
 var DefaultServiceOptions = ServiceOptions{
-	queue:      defaultSubQueue, // 默认default组，同组内只有一个service收到
-	timeout:    time.Duration(3) * time.Second,
-	concurrent: true,
-	id:         "",
+	timeout:         time.Duration(3) * time.Second,
+	singleGoroutine: false,
+	id:              "",
 }
 
 var DefaultClientOptions = ClientOptions{
 	namespace: "",
 	id:        "",
-	//timeout:   time.Duration(3) * time.Second,
-	encoder: pb.Encoder{},
-}
-
-func publishSuffix(sub string) string {
-	return sub + "_pub"
+	encoder:   pb.Encoder{},
 }

@@ -1,5 +1,10 @@
-test:
-	sh pb/request/gen.sh
-	sh pb/publish/gen.sh
-	sh pb/header/gen.sh
-	go test ./...
+pb:
+	protoc \
+    --proto_path=. \
+    --proto_path=.. \
+    --go_out=paths=source_relative:. \
+    --natsrpc_out=paths=source_relative:. \
+    *.proto
+
+run:
+	go run ./...

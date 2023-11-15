@@ -64,8 +64,8 @@ func (s *Service) Call(ctx context.Context, methodName string, b []byte, interce
 		return nil, err
 	}
 	if resp != nil {
-		b, err := s.server.Encode(resp)
-		return b, err
+		b1, err1 := s.server.Encode(resp)
+		return b1, err1
 	}
 	return nil, err
 }

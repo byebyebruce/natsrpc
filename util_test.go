@@ -3,8 +3,9 @@ package natsrpc
 import "testing"
 
 func Benchmark_CombineSubsets(b *testing.B) {
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		_ = JoinSubject("a", "b", "c")
+		_ = joinSubject("a", "b", "c", "d", "1", "2", "3", "4")
 	}
 }
 
@@ -25,8 +26,8 @@ func TestJoinSubject(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := JoinSubject(tt.args.s...); got != tt.want {
-				t.Errorf("JoinSubject() = %v, want %v", got, tt.want)
+			if got := joinSubject(tt.args.s...); got != tt.want {
+				t.Errorf("joinSubject() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -10,24 +10,25 @@ import (
 	"time"
 
 	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/testdata"
+	"github.com/byebyebruce/natsrpc/example"
 	"github.com/nats-io/nats.go"
 )
 
 var (
 	url       = flag.String("url", "nats://127.0.0.1:4222", "nats url")
 	sn        = flag.Int("s", 0, "natsURL count,0:cpu num")
-	cn        = flag.Int("c", 1, "client count,0:cpu num")
+	cn        = flag.Int("c", 10, "client count,0:cpu num")
 	totalTime = flag.Int("t", 10, "total time")
 )
 
 var n int32
 
-type BenchNotifyService struct {
+type BenchService struct {
 }
 
-func (a *BenchNotifyService) Notify(ctx context.Context, req *testdata.Empty) {
+func (a *BenchService) HelloToAll(ctx context.Context, req *example.HelloRequest) (*example.Empty, error) {
 	atomic.AddInt32(&n, 1)
+	return nil, nil
 }
 
 func main() {
@@ -39,26 +40,20 @@ func main() {
 		*cn = runtime.NumCPU()
 	}
 
-	var serviceName = fmt.Sprintf("%d", time.Now().UnixNano())
-
-	op := []natsrpc.ServiceOption{natsrpc.WithBroadcast()}
-
 	for i := 0; i < *sn; i++ {
 		conn, err := nats.Connect(*url)
 		if err != nil {
 			panic(err)
 		}
-		natsrpc.IfNotNilPanic(err)
+		example.IfNotNilPanic(err)
 		defer conn.Close()
 
 		server, err := natsrpc.NewServer(conn)
-		natsrpc.IfNotNilPanic(err)
+		example.IfNotNilPanic(err)
 		defer server.Close(context.Background())
 
-		_, err = server.Register(serviceName, &BenchNotifyService{}, op...)
-		if nil != err {
-			panic(err)
-		}
+		_, err = example.RegisterGreetingToAllNATSRPCServer(server, &BenchService{})
+		example.IfNotNilPanic(err)
 	}
 
 	var totalFailed uint32
@@ -66,7 +61,6 @@ func main() {
 
 	fmt.Println("start...")
 	wg := sync.WaitGroup{}
-	req := &testdata.Empty{}
 
 	for i := 0; i <= *cn; i++ {
 		wg.Add(1)
@@ -77,20 +71,23 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			natsrpc.IfNotNilPanic(err)
+			example.IfNotNilPanic(err)
 			defer conn.Close()
 
-			client := natsrpc.NewClient(conn, serviceName)
-			natsrpc.IfNotNilPanic(err)
+			client := example.NewGreetingToAllNATSRPCClient(conn)
+			example.IfNotNilPanic(err)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*totalTime)*time.Second)
 			defer cancel()
+
+			req := &example.HelloRequest{}
+
 			for {
 				select {
 				case <-ctx.Done():
 					return
 				default:
 				}
-				if err := client.Publish("Notify", req); nil != err {
+				if err := client.HelloToAll(req); nil != err {
 					atomic.AddUint32(&totalFailed, 1)
 					continue
 				}
@@ -101,5 +98,9 @@ func main() {
 	}
 
 	wg.Wait()
-	fmt.Println("elapse:", *totalTime, "suber", *sn, "pub", totalSuccess, "pub failed", totalFailed, "receive", n, "/", uint32(*sn)*totalSuccess)
+	fmt.Println("elapse:", *totalTime,
+		"suber", *sn,
+		"pub", totalSuccess,
+		"pub failed", totalFailed,
+		"receive", n)
 }

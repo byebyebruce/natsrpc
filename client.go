@@ -24,7 +24,7 @@ func NewClient(conn *nats.Conn, serviceName string, opts ...ClientOption) *Clien
 	}
 	c := &Client{
 		conn: conn,
-		name: JoinSubject(opt.namespace, serviceName, opt.id),
+		name: joinSubject(opt.namespace, serviceName, opt.id),
 		opt:  opt,
 	}
 
@@ -61,15 +61,14 @@ func (c *Client) call(ctx context.Context, method string, req interface{}, rep i
 	if err != nil {
 		return err
 	}
-	// subject
-	subject := c.name
-	if len(callOpt.id) > 0 {
-		subject = JoinSubject(subject, callOpt.id)
-	}
-
-	isPublish := rep == nil
+	var (
+		subject   = ""
+		isPublish = rep == nil
+	)
 	if isPublish {
-		subject = publishSuffix(subject)
+		subject = joinSubject(c.name, callOpt.id, pubSuffix)
+	} else {
+		subject = joinSubject(c.name, callOpt.id)
 	}
 
 	msg := &nats.Msg{
@@ -87,14 +86,16 @@ func (c *Client) call(ctx context.Context, method string, req interface{}, rep i
 	if err != nil {
 		return err
 	}
+
+	if errStr := getErrorHeader(reply.Header); errStr != "" {
+		return errors.New(errStr)
+	}
+
 	if len(reply.Data) > 0 {
 		err = c.opt.encoder.Decode(reply.Data, rep)
 		if err != nil {
 			return err
 		}
-	}
-	if errStr := getErrorHeader(reply.Header); errStr != "" {
-		return errors.New(errStr)
 	}
 	return nil
 }

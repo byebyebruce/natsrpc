@@ -6,24 +6,37 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-type headerKey struct{}
+type metaKey struct{}
+type metaValue struct {
+	header map[string]string
+	reply  string
+	server *Server
+}
 
-// setHeader 填充Header
-func setHeader(ctx context.Context, header map[string]string) context.Context {
-	newCtx := context.WithValue(ctx, headerKey{}, header)
+func withMeta(ctx context.Context, meta *metaValue) context.Context {
+	newCtx := context.WithValue(ctx, metaKey{}, meta)
 	return newCtx
 }
 
-// GetHeader 获得Header
-func GetHeader(ctx context.Context) map[string]string {
+func getMeta(ctx context.Context) *metaValue {
 	if ctx == nil {
 		return nil
 	}
-	val := ctx.Value(headerKey{})
-	if val != nil {
-		return val.(map[string]string)
+	val := ctx.Value(metaKey{})
+	if val == nil {
+		return nil
 	}
-	return nil
+	meta, _ := val.(*metaValue)
+	return meta
+}
+
+// CallHeader 获得call Header
+func CallHeader(ctx context.Context) map[string]string {
+	meta := getMeta(ctx)
+	if meta == nil {
+		return nil
+	}
+	return meta.header
 }
 
 func encodeHeader(method string, header map[string]string) (nats.Header, error) {

@@ -2,6 +2,7 @@ package natsrpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -102,7 +103,7 @@ func (s *Server) Register(sd ServiceDesc, val interface{}, opts ...ServiceOption
 		v(&opt)
 	}
 
-	sd.ServiceName = JoinSubject(opt.namespace, sd.ServiceName, opt.id)
+	sd.ServiceName = joinSubject(opt.namespace, sd.ServiceName, opt.id)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.services[sd.ServiceName]; ok {
@@ -123,8 +124,11 @@ func (s *Server) Register(sd ServiceDesc, val interface{}, opts ...ServiceOption
 	}
 
 	s.services[sd.ServiceName] = sw
+
 	// TODO flush
-	s.conn.Flush()
+	if err := s.conn.Flush(); err != nil {
+		return nil, err
+	}
 
 	return svc, nil
 }
@@ -147,19 +151,22 @@ func (s *Server) subscribeMethod(sw *serviceWrapper) error {
 				ctx, cancel = context.WithTimeout(ctx, sw.ServiceOptions.timeout)
 				defer cancel()
 			}
-			if header != nil {
-				ctx = setHeader(ctx, header)
+			meta := &metaValue{
+				header: header,
+				reply:  msg.Reply,
+				server: s,
 			}
+			ctx = withMeta(ctx, meta)
 
 			err = s.handle(ctx, sw, method, msg.Data, msg.Reply)
 			if err != nil {
 				s.opt.errorHandler(err.Error())
 			}
 		}
-		if sw.concurrent {
-			go call()
-		} else {
+		if sw.singleGoroutine {
 			call()
+		} else {
+			go call()
 		}
 	}
 
@@ -170,7 +177,7 @@ func (s *Server) subscribeMethod(sw *serviceWrapper) error {
 	}
 	sw.subscriptions = append(sw.subscriptions, reqSub)
 	if len(sw.Service.sd.PublishMethods()) > 0 {
-		pubSub, pubErr := s.conn.QueueSubscribe(publishSuffix(sub), "", cb)
+		pubSub, pubErr := s.conn.QueueSubscribe(joinSubject(sub, pubSuffix), "", cb)
 		if pubErr != nil {
 			go reqSub.Unsubscribe()
 			return pubErr
@@ -190,6 +197,11 @@ func (s *Server) handle(ctx context.Context, sw *serviceWrapper, method string, 
 	}
 
 	b, err := sw.Call(ctx, method, payload, sw.ServiceOptions.interceptor)
+	if errors.Is(err, ErrReplyLater) {
+		// reply later
+		// 用户自己回复消息
+		return nil
+	}
 	// publish 不需要回复
 	if len(replySub) == 0 {
 		return nil

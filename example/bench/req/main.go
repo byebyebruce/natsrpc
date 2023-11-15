@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/byebyebruce/natsrpc"
-	"github.com/byebyebruce/natsrpc/testdata"
+	"github.com/byebyebruce/natsrpc/example"
 	"github.com/nats-io/nats.go"
 )
 
@@ -19,20 +19,17 @@ var (
 	totalTime = flag.Int("t", 10, "total time")
 )
 
-type BenchReqService struct {
+type BenchService struct {
 	total int32
 }
 
-func (a *BenchReqService) Request(ctx context.Context, req *testdata.Empty) (*testdata.Empty, error) {
+func (a *BenchService) Hello(ctx context.Context, req *example.HelloRequest) (*example.HelloReply, error) {
 	atomic.AddInt32(&a.total, 1)
-	repl := &testdata.Empty{}
-	return repl, nil
+	return &example.HelloReply{}, nil
 }
 
 func main() {
 	flag.Parse()
-
-	var serviceName = "bench"
 
 	conn, err := nats.Connect(*natsURL)
 	if err != nil {
@@ -45,18 +42,17 @@ func main() {
 	}
 	defer server.Close(context.Background())
 
-	bs := &BenchReqService{}
-	_, err = server.Register(serviceName, bs)
-	if nil != err {
-		panic(err)
-	}
+	bs := &BenchService{}
+	svc, err := example.RegisterGreetingNATSRPCServer(server, bs)
+	example.IfNotNilPanic(err)
+	defer svc.Close()
 
 	var totalSuccess uint32
 	var totalFailed uint32
 
 	fmt.Println("start...")
 	wg := sync.WaitGroup{}
-	req := &testdata.Empty{}
+	req := &example.HelloRequest{}
 	for i := 0; i <= *cn; i++ {
 		wg.Add(1)
 		go func(idx int) {
@@ -65,7 +61,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			client := natsrpc.NewClient(connClient, serviceName)
+			client := example.NewGreetingNATSRPCClient(connClient)
 			if nil != err {
 				panic(err)
 			}
@@ -77,8 +73,7 @@ func main() {
 					return
 				default:
 				}
-				resp := &testdata.Empty{}
-				if err := client.Request(context.Background(), "Request", req, resp); nil != err {
+				if _, err := client.Hello(context.Background(), req); nil != err {
 					atomic.AddUint32(&totalFailed, 1)
 					continue
 				}
@@ -89,6 +84,10 @@ func main() {
 	}
 
 	wg.Wait()
-	fmt.Println("elapse:", *totalTime, "qps", totalSuccess/uint32(*totalTime), "req", totalSuccess+totalFailed, "success", totalSuccess, "reply", bs.total,
+	fmt.Println("elapse:", *totalTime,
+		"qps", totalSuccess/uint32(*totalTime),
+		"req", totalSuccess+totalFailed,
+		"success", totalSuccess,
+		"reply", bs.total,
 		"failed", totalFailed)
 }

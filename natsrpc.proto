@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package natsrpc;
+option go_package = "github.com/byebyebruce/natsrpc;natsrpc";
+
+import "google/protobuf/descriptor.proto";
+
+
+extend google.protobuf.MethodOptions {
+  bool publish = 2360; // true表示广播(不需要返回值), false表示request(需要返回值)
+}
