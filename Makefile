@@ -1,4 +1,4 @@
-all: types protoc-gen-natsrpc  example test
+all: types protoc-gen-natsrpc test
 
 types:
 	protoc --proto_path=. \

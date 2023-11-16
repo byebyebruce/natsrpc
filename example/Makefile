@@ -1,6 +1,7 @@
 EXAMPLES := 1_request 2_publish 3_header 4_namespace 5_id \
 	6_handle_error 7_recovery 8_middleware 9_loadbalance 10_reply_later \
 	11_encoder 12_single_goroutine
+all: pb run
 
 pb:
 	protoc \
