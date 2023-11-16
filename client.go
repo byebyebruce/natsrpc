@@ -13,7 +13,7 @@ var _ IClient = (*Client)(nil)
 type Client struct {
 	name string        // 服务名
 	opt  ClientOptions // 选项
-	conn *nats.Conn
+	conn *nats.Conn    // nats conn
 }
 
 // NewClient 构造器
@@ -47,17 +47,16 @@ func (c *Client) Request(ctx context.Context, method string, req interface{}, re
 }
 
 func (c *Client) call(ctx context.Context, method string, req interface{}, rep interface{}, opt ...CallOption) error {
-	// opt
-	callOpt := CallOptions{}
+	callOpt := &CallOptions{}
 	for _, v := range opt {
-		v(&callOpt)
+		v(callOpt)
 	}
 
-	b, err := c.opt.encoder.Encode(req)
+	payload, err := c.opt.encoder.Encode(req)
 	if err != nil {
 		return err
 	}
-	h, err := encodeHeader(method, callOpt.header)
+	header, err := encodeHeader(method, callOpt.header)
 	if err != nil {
 		return err
 	}
@@ -73,8 +72,8 @@ func (c *Client) call(ctx context.Context, method string, req interface{}, rep i
 
 	msg := &nats.Msg{
 		Subject: subject,
-		Header:  h,
-		Data:    b,
+		Header:  header,
+		Data:    payload,
 	}
 
 	if isPublish {

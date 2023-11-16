@@ -72,14 +72,17 @@ func (s *Server) UnSubscribeAll() error {
 		unsubs = append(unsubs, svc.subscriptions...)
 		svc.subscriptions = nil
 	}
-	s.mu.Unlock()
 	for _, v := range unsubs {
 		v.Unsubscribe()
 	}
-	return s.conn.Flush()
+	s.mu.Unlock()
+	if len(unsubs) > 0 {
+		return s.conn.Flush()
+	}
+	return nil
 }
 
-// Remove 反注册
+// Remove 移除一个服务
 func (s *Server) Remove(name string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -103,15 +106,18 @@ func (s *Server) Register(sd ServiceDesc, val interface{}, opts ...ServiceOption
 		v(&opt)
 	}
 
-	sd.ServiceName = joinSubject(opt.namespace, sd.ServiceName, opt.id)
+	name := joinSubject(opt.namespace, sd.ServiceName, opt.id)
+
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	if _, ok := s.services[sd.ServiceName]; ok {
+	if _, ok := s.services[name]; ok {
+		s.mu.Unlock()
 		return nil, ErrDuplicateService
 	}
+	sd.ServiceName = name
 	// new 一个服务
 	svc, err := NewService(s, sd, val)
 	if nil != err {
+		s.mu.Unlock()
 		return nil, err
 	}
 
@@ -120,10 +126,12 @@ func (s *Server) Register(sd ServiceDesc, val interface{}, opts ...ServiceOption
 		ServiceOptions: opt,
 	}
 	if err := s.subscribeMethod(sw); nil != err {
+		s.mu.Unlock()
 		return nil, err
 	}
 
 	s.services[sd.ServiceName] = sw
+	s.mu.Unlock()
 
 	// TODO flush
 	if err := s.conn.Flush(); err != nil {
@@ -145,12 +153,7 @@ func (s *Server) subscribeMethod(sw *serviceWrapper) error {
 				s.opt.errorHandler(err.Error())
 				return
 			}
-			ctx := context.Background()
-			if sw.ServiceOptions.timeout > 0 {
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithTimeout(ctx, sw.ServiceOptions.timeout)
-				defer cancel()
-			}
+			ctx, cancel := context.WithTimeout(context.Background(), sw.ServiceOptions.timeout)
 			meta := &metaValue{
 				header: header,
 				reply:  msg.Reply,
@@ -160,13 +163,21 @@ func (s *Server) subscribeMethod(sw *serviceWrapper) error {
 
 			err = s.handle(ctx, sw, method, msg.Data, msg.Reply)
 			if err != nil {
+				if errors.Is(err, ErrReplyLater) {
+					// reply later
+					// 用户自己回复消息
+					return
+				}
 				s.opt.errorHandler(err.Error())
 			}
+			// 不能defer，因为有ErrReplyLater的情况
+			cancel()
 		}
-		if sw.singleGoroutine {
-			call()
-		} else {
+		if sw.multiGoroutine {
+			// TODO 自定义携程池
 			go call()
+		} else {
+			call()
 		}
 	}
 
@@ -176,7 +187,7 @@ func (s *Server) subscribeMethod(sw *serviceWrapper) error {
 		return subErr
 	}
 	sw.subscriptions = append(sw.subscriptions, reqSub)
-	if len(sw.Service.sd.PublishMethods()) > 0 {
+	if sw.Service.sd.hasPublishMethod() {
 		pubSub, pubErr := s.conn.QueueSubscribe(joinSubject(sub, pubSuffix), "", cb)
 		if pubErr != nil {
 			go reqSub.Unsubscribe()
@@ -197,11 +208,10 @@ func (s *Server) handle(ctx context.Context, sw *serviceWrapper, method string, 
 	}
 
 	b, err := sw.Call(ctx, method, payload, sw.ServiceOptions.interceptor)
-	if errors.Is(err, ErrReplyLater) {
-		// reply later
-		// 用户自己回复消息
-		return nil
+	if err != nil {
+		return err
 	}
+
 	// publish 不需要回复
 	if len(replySub) == 0 {
 		return nil

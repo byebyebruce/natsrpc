@@ -10,71 +10,96 @@
 ```
 > NATSRPC 是一个基于[NATS](https://nats.io/)作为消息通信，使用[gRPC](https://www.grpc.io/)的方式来定义接口的RPC框架
 ## Why NATSRPC  
-NATS收发消息需要手动定义subject，request，reply，handler等繁琐且易出错的代码。gRPC需要用服务发现到endpoint才能发送请求。NATRPC的目的就是要像gRPC一样定义接口，像NATS一样不关心具体网络位置，只需要监听和发送就能完成RPC调用。
+NATS收发消息需要手动定义subject，request，reply，handler等繁琐且易出错的代码。
+gRPC需要用服务发现到endpoint才能发送请求。
+NATRPC的目的就是要像gRPC一样定义接口，像NATS一样不关心具体网络位置，只需要监听和发送就能完成RPC调用。
+
 ## Feature
-* 使用简单，不需要服务发现
-* 使用gRPC接口定义方式，接口定义清晰，学习成本低
-* 代码生成器一键生成
-* 支持空间隔离
-* 支持定向发送也支持负载均衡(nats的同组内随机)
+* 使用gRPC接口定义方式，使用简单，一键生成代码
+* 支持空间隔离,也可以指定id发送
+* 多服务可以负载均衡(nats的同组内随机)
 * 支持Header和返回Error
-* 支持多种线程模型
+* 支持单协程和多协程handle
 * 支持中间件
-* 支持延迟回复
+* 支持延迟回复消息
 * 支持自定义编码器
 
-## 安装工具
-* protoc(v3.17.3) [Linux](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-linux-x86_64.zip)/[MacOS](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-osx-x86_64.zip)/[Windows](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-win64.zip)
+## Design
+上层通过Server、Service、Client对nats.Conn和Subscription进行封装。  
+底层通过nats的request和publish来传输消息。一个Service会创建一个以service name为subject的Subscription，如果有publish方法会在创建一个用于接收publish的sub。  
+Client发请求时会的subject是service 的name，并且nats msg的header传递method name。  
+Service收到消息后取出method name，然后调用对应的handler，handler返回的结果会通过nats msg的reply subject返回给Client。
 
-* protoc插件
+## Install Tools
+1. protoc(v3.17.3) [Linux](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-linux-x86_64.zip)/[MacOS](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-osx-x86_64.zip)/[Windows](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-win64.zip)
+2. protoc-gen-go `go install github.com/golang/protobuf/protoc-gen-go@latest`
+3. protoc-gen-natsrpc `go install github.com/byebyebruce/natsrpc/cmd/protoc-gen-natsrpc@latest`
+
+## Quick Start
+* [nats-server](https://github.com/nats-io/nats-server/releases)>=2.2.0
+1. 引用包 `go get github.com/byebyebruce/natsrpc`
+2. 定义服务接口
+    ```
+    syntax = "proto3";
+
+    package example;
+    option go_package = "github.com/byebyebruce/natsrpc/example;example";
+
+    message HelloRequest {
+      string name = 1;
+    }
+
+    message HelloReply {
+      string message = 1;
+    }
+
+    service Greeter {
+      rpc Hello (HelloRequest) returns (HelloReply) {}
+    }
+    ```
+   
+3. 生成客户端和服务端代码
+    ```shell
+    protoc --proto_path=. --go_out=paths=source_relative:. --natsrpc_out=paths=source_relative:. *.proto
+    ```
+#### Server端实现接口并创建服务
 ```
-go install github.com/golang/protobuf/protoc-gen-go@v1.5.2
-go install github.com/byebyebruce/natsrpc/cmd/protoc-gen-natsrpc@latest
-```
-
-## 快速使用
-* 启动nats-server(没有部署好的nats-server可以`go run example/cmd/simple_natsserver/main.go`)
-1. 创建工程
-`go mod init natsrpc_test`
-2. 引用包 `go get github.com/byebyebruce/natsrpc`
-3. 定义服务接口
-```
-syntax = "proto3";
-
-package natsrpc_test;
-option go_package = "github.com/byebyebruce/natsrpc/example/natsrpc_test;natsrpc_test";
-
-message HelloRequest {
-  string name = 1;
+type HelloSvc struct {
 }
 
-message HelloReply {
-  string message = 1;
+func (s *HelloSvc) Hello(ctx context.Context, req *example.HelloRequest) (*example.HelloReply, error) {
+	return &example.HelloReply{
+		Message: "hello " + req.Name,
+	}, nil
 }
 
-service Greeter {
-  rpc Hello (HelloRequest) returns (HelloReply) {}
-}
-```
+func main() {
+    conn, err := nats.Connect(*nats_url)
+    defer conn.Close()
 
-4. 生成客户端和服务端代码
-```shell
-protoc --proto_path=. --go_out=paths=source_relative:. --natsrpc_out=paths=source_relative:. *.proto
-```
-5. 实现接口
-```
-type Greeter interface {
-	// Hello
-	Hello(ctx context.Context, req *natsrpc_test.HelloRequest) (*natsrpc_test.HelloReply, error)
+    server, err := natsrpc.NewServer(conn)
+    defer server.Close(context.Background())
+
+    svc, err := example.RegisterGreetingNATSRPCServer(server, &HelloSvc{})
+    defer svc.Close()
+    
+    select{
+    }
 }
+
+```
+#### Client 调用 rpc
+```
+cli := example.NewGreeterNATSRPCClient(conn)
+rsp,err:=cli.Hello(context.Background(), &example.HelloRequest{Name: "natsrpc"})
 ```
  
-## 更多示例[Example](example)
+## More Examples
+[Example](example)
 
-## 压测工具
-1. 广播 `go run ./example/tool/request_bench -url=nats://127.0.0.1:4222`
-
-2. 请求 `go run ./example/tool/publish_bench -url=nats://127.0.0.1:4222`
+## Bench Tool
+1. 请求 `go run ./example/tool/request_bench -url=nats://127.0.0.1:4222`
+2. 广播 `go run ./example/tool/publish_bench -url=nats://127.0.0.1:4222`
 
 ## TODO
 - [x] service 定义文件改成gRPC标准
@@ -82,6 +107,6 @@ type Greeter interface {
 - [x] 支持Header
 - [x] 生成Client接口
 - [x] 支持中间件
-- [ ] 支持goroutine池
 - [x] 默认多线程，同时支持单一个线程
-- [ ] 取消广播
+- [ ] 支持goroutine池
+- [ ] 支持字节池

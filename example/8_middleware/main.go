@@ -26,7 +26,7 @@ func main() {
 	defer server.Close(context.Background())
 
 	svc, err := example.RegisterGreetingNATSRPCServer(server, &HelloSvc{},
-		natsrpc.WithServiceMiddleware(func(ctx context.Context, method string, req interface{}, next natsrpc.Invoker) (interface{}, error) {
+		natsrpc.WithServiceInterceptor(func(ctx context.Context, method string, req interface{}, next natsrpc.Invoker) (interface{}, error) {
 			fmt.Println("middle before", method)
 			defer fmt.Println("middle after", method)
 			fmt.Println("method", method)

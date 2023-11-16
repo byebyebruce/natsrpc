@@ -59,7 +59,7 @@ func (s *Service) Call(ctx context.Context, methodName string, b []byte, interce
 	if err := s.server.Decode(b, req); err != nil {
 		return nil, err
 	}
-	resp, err := s._call(ctx, m, req, interceptor)
+	resp, err := s.call(ctx, m, req, interceptor)
 	if err != nil {
 		return nil, err
 	}
@@ -70,13 +70,13 @@ func (s *Service) Call(ctx context.Context, methodName string, b []byte, interce
 	return nil, err
 }
 
-func (s *Service) _call(ctx context.Context, m MethodDesc, req interface{}, interceptor Interceptor) (interface{}, error) {
-	if interceptor != nil {
-		handler := func(ctx1 context.Context, req1 interface{}) (interface{}, error) {
+func (s *Service) call(ctx context.Context, m MethodDesc, req interface{}, interceptor Interceptor) (interface{}, error) {
+	if interceptor == nil {
+		return m.Handler(s.val, ctx, req)
+	} else {
+		invoker := func(ctx1 context.Context, req1 interface{}) (interface{}, error) {
 			return m.Handler(s.val, ctx1, req1)
 		}
-		return interceptor(ctx, m.MethodName, req, handler)
-	} else {
-		return m.Handler(s.val, ctx, req)
+		return interceptor(ctx, m.MethodName, req, invoker)
 	}
 }

@@ -7,8 +7,25 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Reply 用手动回复消息，一般用于延迟回复
+// Reply 用手动回复消息. 当用户要延迟返回结果时，
+// 可以在当前handle函数 return nil, ErrReplyLater. 然后在其他地方调用Reply函数
+//
+// 例如：
+//
+//	func XXHandle(ctx context.Context, req *XXReq) (*XXRep, error) {
+//		go func() {
+//			time.Sleep(time.Second)
+//			Reply(ctx, &XXRep{}, nil)
+//		}
+//		return nil, ErrReplyLater
+//	}
 func Reply(ctx context.Context, rep interface{}, repErr error) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	meta := getMeta(ctx)
 	if meta == nil {
 		return ErrNoMeta
@@ -31,14 +48,15 @@ func Reply(ctx context.Context, rep interface{}, repErr error) error {
 	return meta.server.conn.PublishMsg(respMsg)
 }
 
-// MakeReplyFunc 用手动回复消息，一般用于延迟回复
-func MakeReplyFunc[T any](ctx context.Context) func(T, error) error {
+// MakeReplyFunc 构造一个延迟返回函数
+func MakeReplyFunc[T any](ctx context.Context) (replay func(T, error) error) {
 	once := sync.Once{}
-	return func(rep T, errRep error) error {
+	replay = func(rep T, errRep error) error {
 		var err error
 		once.Do(func() {
 			err = Reply(ctx, errRep, err)
 		})
 		return err
 	}
+	return
 }

@@ -13,17 +13,19 @@ var bufPool = sync.Pool{
 
 // joinSubject 组合字符串成subject
 func joinSubject(s ...string) string {
-	if len(s) == 0 {
+	switch len(s) {
+	case 0:
 		return ""
-	} else if len(s) == 1 {
+	case 1:
 		return s[0]
-	} else if len(s) == 2 {
+	case 2:
 		if s[0] == "" {
 			return s[1]
 		} else if s[1] == "" {
 			return s[0]
 		}
 	}
+
 	bf := bufPool.Get().(*strings.Builder)
 	defer func() {
 		bf.Reset()

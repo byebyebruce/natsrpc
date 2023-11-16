@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"time"
 
 	"github.com/byebyebruce/natsrpc"
@@ -36,8 +37,17 @@ func main() {
 		Name: "bruce",
 	})
 	example.IfNotNilPanic(err)
-
 	println(reply.Message)
+
+	// unsub
+	svc.Close()
+
+	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	_, err = cli.Hello(ctx, &example.HelloRequest{
+		Name: "bruce",
+	})
+	fmt.Print(err.Error())
 }
 
 type HelloSvc struct {

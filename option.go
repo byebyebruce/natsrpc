@@ -13,32 +13,34 @@ type ServerOptions struct {
 	encoder        Encoder           // 编码器
 }
 
-type Handler func(svc interface{}, ctx context.Context, req interface{}) (interface{}, error)
+type (
+	Handler func(svc interface{}, ctx context.Context, req interface{}) (interface{}, error)
 
-type Invoker func(ctx context.Context, req interface{}) (interface{}, error)
+	Invoker func(ctx context.Context, req interface{}) (interface{}, error)
 
-type Interceptor func(ctx context.Context, method string, req interface{}, next Invoker) (interface{}, error)
+	Interceptor func(ctx context.Context, method string, req interface{}, invoker Invoker) (interface{}, error)
+)
 
 // ServiceOptions Service 选项
 type ServiceOptions struct {
-	namespace       string        // 空间(划分隔离)
-	id              string        // id
-	timeout         time.Duration // 请求/handle的超时
-	interceptor     Interceptor   // middleware
-	singleGoroutine bool          // 单协程，给那种需要按顺序处理的场景用
+	namespace      string        // 空间(划分隔离)
+	id             string        // id
+	timeout        time.Duration // handle的超时,必须要大于0
+	interceptor    Interceptor   // handler's interceptor
+	multiGoroutine bool          // 是否多协程
 }
 
 // ClientOptions client 选项
 type ClientOptions struct {
-	namespace string // 空间(划分隔离)
-	id        string // id
+	namespace string  // 空间(划分隔离)
+	id        string  // id
+	encoder   Encoder // 编码器
 	//cm        callMiddleware // 调用中间件
-	encoder Encoder // 编码器
 }
 
 // CallOptions 调用选项
 type CallOptions struct {
-	id     string            // id 会覆盖clientOptions.id
+	id     string            // id (不会覆盖clientOptions.id，只是用来标识这次调用)
 	header map[string]string // header
 }
 
@@ -69,10 +71,10 @@ func WithServiceNamespace(namespace string) ServiceOption {
 	}
 }
 
-// WithServiceSingleGoroutine 单协程，不并发handle，给那种需要按顺序处理的场景用
+// WithServiceSingleGoroutine 单协程,不并发handle，给那种消息需要顺序处理的情况
 func WithServiceSingleGoroutine() ServiceOption {
 	return func(options *ServiceOptions) {
-		options.singleGoroutine = true
+		options.multiGoroutine = false
 	}
 }
 
@@ -97,10 +99,10 @@ func WithServiceTimeout(timeout time.Duration) ServiceOption {
 	}
 }
 
-// WithServiceMiddleware 超时时间
-func WithServiceMiddleware(mw Interceptor) ServiceOption {
+// WithServiceInterceptor handler 拦截器
+func WithServiceInterceptor(i Interceptor) ServiceOption {
 	return func(options *ServiceOptions) {
-		options.interceptor = mw
+		options.interceptor = i
 	}
 }
 
@@ -130,7 +132,7 @@ func WithClientEncoder(encoder Encoder) ClientOption {
 // CallOption call option
 type CallOption func(options *CallOptions)
 
-// WithCallID call id
+// WithCallID call id(不会覆盖clientOptions.id，只是用来标识这次调用)
 func WithCallID(id interface{}) CallOption {
 	return func(options *CallOptions) {
 		options.id = fmt.Sprint(id)
