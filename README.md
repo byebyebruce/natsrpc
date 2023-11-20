@@ -37,7 +37,7 @@ Service收到消息后取出method name，然后调用对应的handler，handler
 ## Install Tools
 1. protoc(v3.17.3) [Linux](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-linux-x86_64.zip)/[MacOS](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-osx-x86_64.zip)/[Windows](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-win64.zip)
 2. protoc-gen-go `go install github.com/golang/protobuf/protoc-gen-go@latest`
-3. protoc-gen-natsrpc `go install github.com/byebyebruce/natsrpc/cmd/protoc-gen-natsrpc@latest`
+3. protoc-gen-natsrpc `go install github.com/byebyebruce/natsrpc/cmd/protoc-gen-natsrpc@v0.6.0`
 
 ## Quick Start
 * [nats-server](https://github.com/nats-io/nats-server/releases)>=2.2.0
