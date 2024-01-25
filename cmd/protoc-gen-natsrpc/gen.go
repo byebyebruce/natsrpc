@@ -53,9 +53,9 @@ func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.
 	g.P("var _ ", contextPackage.Ident("Context"))
 	//g.P("var _ = ", protoPackage.Ident("Marshal"))
 	//g.P("var _ = ", fmtPackage.Ident("Errorf"))
-	g.P("var _ = ", natsrpcPackage.Ident("Version"))
-	//g.P("var _ = ", natsPackage.Ident("Version"))
 	g.P("var _ ", reflectPackage.Ident("Value"))
+	g.P("var _ = ", natsrpcPackage.Ident("SupportVersion_0_7_0"))
+	//g.P("var _ = ", natsPackage.Ident("Version"))
 
 	g.P()
 

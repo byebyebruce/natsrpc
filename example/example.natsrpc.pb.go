@@ -12,8 +12,8 @@ import (
 )
 
 var _ context.Context
-var _ = natsrpc.Version
 var _ reflect.Value
+var _ = natsrpc.SupportVersion_0_7_0
 
 const (
 	Greeting_NRServiceName = "natsrpc.example.Greeting"
@@ -37,10 +37,13 @@ func NewGreetingNRClient(c natsrpc.ClientInterface) GreetingNRClient {
 func (c *_GreetingNRClientImpl) Hello(ctx context.Context, req *HelloRequest, opt ...natsrpc.CallOption) (*HelloReply, error) {
 	rep := &HelloReply{}
 	err := c.c.Request(ctx, Greeting_NRServiceName, "Hello", req, rep, opt...)
+	if err != nil {
+		return nil, err
+	}
 	return rep, err
 }
 
-var _Greeting_Desc = natsrpc.ServiceDesc{
+var Greeting_NRServiceDesc = natsrpc.ServiceDesc{
 	ServiceName: Greeting_NRServiceName,
 	Methods: []natsrpc.MethodDesc{
 		{
@@ -62,7 +65,7 @@ func _Greeting_Hello_NRHandler(svc interface{}, ctx context.Context, req any) (a
 }
 
 func RegisterGreetingNRServer(register natsrpc.ServiceRegistrar, s GreetingNRServer, opts ...natsrpc.ServiceOption) (natsrpc.ServiceInterface, error) {
-	return register.Register(_Greeting_Desc, s, opts...)
+	return register.Register(Greeting_NRServiceDesc, s, opts...)
 }
 
 const (
@@ -88,7 +91,7 @@ func (c *_GreetingToAllNRClientImpl) HelloToAll(notify *HelloRequest, opt ...nat
 	return c.c.Publish(GreetingToAll_NRServiceName, "HelloToAll", notify, opt...)
 }
 
-var _GreetingToAll_Desc = natsrpc.ServiceDesc{
+var GreetingToAll_NRServiceDesc = natsrpc.ServiceDesc{
 	ServiceName: GreetingToAll_NRServiceName,
 	Methods: []natsrpc.MethodDesc{
 		{
@@ -110,5 +113,5 @@ func _GreetingToAll_HelloToAll_NRHandler(svc interface{}, ctx context.Context, r
 }
 
 func RegisterGreetingToAllNRServer(register natsrpc.ServiceRegistrar, s GreetingToAllNRServer, opts ...natsrpc.ServiceOption) (natsrpc.ServiceInterface, error) {
-	return register.Register(_GreetingToAll_Desc, s, opts...)
+	return register.Register(GreetingToAll_NRServiceDesc, s, opts...)
 }

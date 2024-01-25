@@ -42,6 +42,9 @@ func New{{ $clientInterface }}(c natsrpc.ClientInterface) {{ $clientInterface }}
 		func (c *{{ $clientWrapperName }}) {{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error) {
 		rep := &{{ .Reply }}{}
 		err := c.c.Request(ctx, {{ $ServiceNameVar }}, "{{ .Name }}", req, rep, opt...)
+			if err != nil {
+				return nil, err
+			}
 		return rep, err
 		}
 	{{- else }}
@@ -51,7 +54,7 @@ func New{{ $clientInterface }}(c natsrpc.ClientInterface) {{ $clientInterface }}
 	{{- end }}
 {{- end }}
 
-var _{{ $ServiceType }}_Desc = natsrpc.ServiceDesc {
+var {{ $ServiceType }}_NRServiceDesc = natsrpc.ServiceDesc {
 	ServiceName: {{ $ServiceNameVar }},
 	Methods: []natsrpc.MethodDesc{
 		{{- range .Methods }}
@@ -91,7 +94,7 @@ func _{{ $ServiceType }}_{{ .Name }}_NRHandler(svc interface{}, ctx context.Cont
 {{- end }}
 
 func Register{{ $serviceInterface }}(register natsrpc.ServiceRegistrar, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.ServiceInterface, error) {
-	return register.Register(_{{ $ServiceType }}_Desc, s,  opts...)
+	return register.Register({{ $ServiceType }}_NRServiceDesc, s,  opts...)
 }
 
 
