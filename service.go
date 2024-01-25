@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-var _ IService = (*Service)(nil)
+var _ ServiceInterface = (*Service)(nil)
 
 type IServer interface {
 	Encoder

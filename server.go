@@ -100,7 +100,7 @@ func (s *Server) Remove(name string) bool {
 }
 
 // Register 注册服务
-func (s *Server) Register(sd ServiceDesc, val interface{}, opts ...ServiceOption) (IService, error) {
+func (s *Server) Register(sd ServiceDesc, val interface{}, opts ...ServiceOption) (ServiceInterface, error) {
 	opt := DefaultServiceOptions
 	for _, v := range opts {
 		v(&opt)

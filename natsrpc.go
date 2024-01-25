@@ -34,20 +34,20 @@ const (
 // ServiceRegistrar 注册服务
 type ServiceRegistrar interface {
 	// Register 注册
-	Register(sd ServiceDesc, svc any, opt ...ServiceOption) (IService, error)
+	Register(sd ServiceDesc, svc any, opt ...ServiceOption) (ServiceInterface, error)
 }
 
-// IClient 客户端接口
-type IClient interface {
+// ClientInterface 客户端接口
+type ClientInterface interface {
 	// Publish 发布
-	Publish(method string, req interface{}, opt ...CallOption) error
+	Publish(service, method string, req interface{}, opt ...CallOption) error
 
 	// Request 请求
-	Request(ctx context.Context, method string, req interface{}, rep interface{}, opt ...CallOption) error
+	Request(ctx context.Context, service, method string, req interface{}, rep interface{}, opt ...CallOption) error
 }
 
-// IService 服务
-type IService interface {
+// ServiceInterface 服务
+type ServiceInterface interface {
 	// Name 名字
 	Name() string
 
@@ -85,6 +85,5 @@ var DefaultServiceOptions = ServiceOptions{
 // DefaultClientOptions 默认client选项
 var DefaultClientOptions = ClientOptions{
 	namespace: "",
-	id:        "",
 	encoder:   pb.Encoder{},
 }

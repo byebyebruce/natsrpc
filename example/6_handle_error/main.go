@@ -21,16 +21,18 @@ func main() {
 	example.IfNotNilPanic(err)
 	defer conn.Close()
 
-	server, err := natsrpc.NewServer(conn)
+	server, err := natsrpc.NewServer(conn, natsrpc.WithErrorHandler(func(err interface{}) {
+		fmt.Println("server got error: ", err)
+	}))
 	example.IfNotNilPanic(err)
-
 	defer server.Close(context.Background())
+	client := natsrpc.NewClient(conn)
 
-	svc, err := example.RegisterGreetingNATSRPCServer(server, &HelloSvc{})
+	svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{})
 	example.IfNotNilPanic(err)
 	defer svc.Close()
 
-	cli := example.NewGreetingNATSRPCClient(conn)
+	cli := example.NewGreetingNRClient(client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

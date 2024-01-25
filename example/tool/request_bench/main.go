@@ -43,7 +43,7 @@ func main() {
 	defer server.Close(context.Background())
 
 	bs := &BenchService{}
-	svc, err := example.RegisterGreetingNATSRPCServer(server, bs)
+	svc, err := example.RegisterGreetingNRServer(server, bs)
 	example.IfNotNilPanic(err)
 	defer svc.Close()
 
@@ -61,7 +61,8 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			client := example.NewGreetingNATSRPCClient(connClient)
+			client := natsrpc.NewClient(connClient)
+			greetingNRClient := example.NewGreetingNRClient(client)
 			if nil != err {
 				panic(err)
 			}
@@ -73,7 +74,7 @@ func main() {
 					return
 				default:
 				}
-				if _, err := client.Hello(context.Background(), req); nil != err {
+				if _, err := greetingNRClient.Hello(context.Background(), req); nil != err {
 					atomic.AddUint32(&totalFailed, 1)
 					continue
 				}

@@ -7,46 +7,39 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-var _ IClient = (*Client)(nil)
+var _ ClientInterface = (*Client)(nil)
 
 // Client RPC client
 type Client struct {
-	name string        // 服务名
 	opt  ClientOptions // 选项
 	conn *nats.Conn    // nats conn
 }
 
 // NewClient 构造器
-func NewClient(conn *nats.Conn, serviceName string, opts ...ClientOption) *Client {
+func NewClient(conn *nats.Conn, opts ...ClientOption) *Client {
 	opt := DefaultClientOptions
 	for _, v := range opts {
 		v(&opt)
 	}
 	c := &Client{
 		conn: conn,
-		name: joinSubject(opt.namespace, serviceName, opt.id),
 		opt:  opt,
 	}
 
 	return c
 }
 
-// Name 名字
-func (c *Client) Name() string {
-	return c.name
-}
-
 // Publish 发布
-func (c *Client) Publish(method string, req interface{}, opt ...CallOption) error {
-	return c.call(nil, method, req, nil, opt...)
+func (c *Client) Publish(service, method string, req interface{}, opt ...CallOption) error {
+	return c.call(nil, service, method, req, nil, opt...)
 }
 
 // Request 请求
-func (c *Client) Request(ctx context.Context, method string, req interface{}, rep interface{}, opt ...CallOption) error {
-	return c.call(ctx, method, req, rep, opt...)
+func (c *Client) Request(ctx context.Context, service, method string, req interface{}, rep interface{}, opt ...CallOption) error {
+	return c.call(ctx, service, method, req, rep, opt...)
 }
 
-func (c *Client) call(ctx context.Context, method string, req interface{}, rep interface{}, opt ...CallOption) error {
+func (c *Client) call(ctx context.Context, service, method string, req interface{}, rep interface{}, opt ...CallOption) error {
 	callOpt := &CallOptions{}
 	for _, v := range opt {
 		v(callOpt)
@@ -65,9 +58,9 @@ func (c *Client) call(ctx context.Context, method string, req interface{}, rep i
 		isPublish = rep == nil
 	)
 	if isPublish {
-		subject = joinSubject(c.name, callOpt.id, pubSuffix)
+		subject = joinSubject(c.opt.namespace, service, callOpt.id, pubSuffix)
 	} else {
-		subject = joinSubject(c.name, callOpt.id)
+		subject = joinSubject(c.opt.namespace, service, callOpt.id)
 	}
 
 	msg := &nats.Msg{

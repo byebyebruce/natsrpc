@@ -27,14 +27,15 @@ func main() {
 		server, err := natsrpc.NewServer(conn)
 		example.IfNotNilPanic(err)
 		defer server.Close(context.Background())
-		svc, err := example.RegisterGreetingToAllNATSRPCServer(server, &HelloSvc{
+		svc, err := example.RegisterGreetingToAllNRServer(server, &HelloSvc{
 			name: "svc" + fmt.Sprint(i),
 		})
 		example.IfNotNilPanic(err)
 		defer svc.Close()
 	}
 
-	cli := example.NewGreetingToAllNATSRPCClient(conn)
+	client := natsrpc.NewClient(conn)
+	cli := example.NewGreetingToAllNRClient(client)
 
 	err = cli.HelloToAll(&example.HelloRequest{
 		Name: "bruce",

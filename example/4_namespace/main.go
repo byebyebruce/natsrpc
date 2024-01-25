@@ -27,28 +27,29 @@ func main() {
 
 	const namespace = "example"
 
-	svc, err := example.RegisterGreetingNATSRPCServer(server, &HelloSvc{namespace: namespace},
+	svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{namespace: namespace},
 		natsrpc.WithServiceNamespace(namespace))
 	example.IfNotNilPanic(err)
 	defer svc.Close()
 
-	cli := example.NewGreetingNATSRPCClient(conn)
+	client := natsrpc.NewClient(conn, natsrpc.WithClientNamespace(namespace))
+
+	cli := example.NewGreetingNRClient(client)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	_, err = cli.Hello(ctx, &example.HelloRequest{
 		Name: "bruce",
 	})
-	fmt.Println(err.Error())
+	example.IfNotNilPanic(err)
 
-	cli1 := example.NewGreetingNATSRPCClient(conn,
-		natsrpc.WithClientNamespace(namespace))
+	client = natsrpc.NewClient(conn, natsrpc.WithClientNamespace("wrong_namespace"))
+	cli1 := example.NewGreetingNRClient(client)
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	rep, err := cli1.Hello(ctx, &example.HelloRequest{
+	_, err = cli1.Hello(ctx, &example.HelloRequest{
 		Name: "bruce",
 	})
-	example.IfNotNilPanic(err)
-	fmt.Println(rep.Message)
+	fmt.Println("should be error", err.Error())
 }
 
 type HelloSvc struct {

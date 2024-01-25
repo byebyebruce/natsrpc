@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package example;
+package natsrpc.example;
 option go_package = "github.com/byebyebruce/natsrpc/example;example";
 
 import "natsrpc.proto";

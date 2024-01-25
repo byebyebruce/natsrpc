@@ -52,7 +52,7 @@ func main() {
 		example.IfNotNilPanic(err)
 		defer server.Close(context.Background())
 
-		_, err = example.RegisterGreetingToAllNATSRPCServer(server, &BenchService{})
+		_, err = example.RegisterGreetingToAllNRServer(server, &BenchService{})
 		example.IfNotNilPanic(err)
 	}
 
@@ -74,7 +74,9 @@ func main() {
 			example.IfNotNilPanic(err)
 			defer conn.Close()
 
-			client := example.NewGreetingToAllNATSRPCClient(conn)
+			client := natsrpc.NewClient(conn)
+			exampleClient := example.NewGreetingToAllNRClient(client)
+
 			example.IfNotNilPanic(err)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*totalTime)*time.Second)
 			defer cancel()
@@ -87,7 +89,7 @@ func main() {
 					return
 				default:
 				}
-				if err := client.HelloToAll(req); nil != err {
+				if err := exampleClient.HelloToAll(req); nil != err {
 					atomic.AddUint32(&totalFailed, 1)
 					continue
 				}

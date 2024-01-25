@@ -22,10 +22,10 @@ func main() {
 
 	server, err := natsrpc.NewServer(conn)
 	example.IfNotNilPanic(err)
-
 	defer server.Close(context.Background())
+	client := natsrpc.NewClient(conn)
 
-	svc, err := example.RegisterGreetingNATSRPCServer(server, &HelloSvc{},
+	svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{},
 		natsrpc.WithServiceInterceptor(func(ctx context.Context, method string, req interface{}, next natsrpc.Invoker) (interface{}, error) {
 			fmt.Println("middle before", method)
 			defer fmt.Println("middle after", method)
@@ -39,7 +39,7 @@ func main() {
 	example.IfNotNilPanic(err)
 	defer svc.Close()
 
-	cli := example.NewGreetingNATSRPCClient(conn)
+	cli := example.NewGreetingNRClient(client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

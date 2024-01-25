@@ -33,7 +33,6 @@ type ServiceOptions struct {
 // ClientOptions client 选项
 type ClientOptions struct {
 	namespace string  // 空间(划分隔离)
-	id        string  // id
 	encoder   Encoder // 编码器
 	//cm        callMiddleware // 调用中间件
 }
@@ -112,13 +111,6 @@ type ClientOption func(options *ClientOptions)
 func WithClientNamespace(namespace string) ClientOption {
 	return func(options *ClientOptions) {
 		options.namespace = namespace
-	}
-}
-
-// WithClientID id
-func WithClientID(id string) ClientOption {
-	return func(options *ClientOptions) {
-		options.id = fmt.Sprintf("%v", id)
 	}
 }
 

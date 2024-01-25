@@ -37,7 +37,7 @@ Service收到消息后取出method name，然后调用对应的handler，handler
 ## Install Tools
 1. protoc(v3.17.3) [Linux](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-linux-x86_64.zip)/[MacOS](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-osx-x86_64.zip)/[Windows](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-win64.zip)
 2. protoc-gen-go `go install github.com/golang/protobuf/protoc-gen-go@latest`
-3. protoc-gen-natsrpc `go install github.com/byebyebruce/natsrpc/cmd/protoc-gen-natsrpc@v0.6.0`
+3. protoc-gen-natsrpc `go install github.com/byebyebruce/natsrpc/cmd/protoc-gen-natsrpc@v0.7.0`
 
 ## Quick Start
 * [nats-server](https://github.com/nats-io/nats-server/releases)>=2.2.0
@@ -87,7 +87,7 @@ Service收到消息后取出method name，然后调用对应的handler，handler
        server, err := natsrpc.NewServer(conn)
        defer server.Close(context.Background())
 
-       svc, err := example.RegisterGreetingNATSRPCServer(server, &HelloSvc{})
+       svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{})
        defer svc.Close()
        
        select{
@@ -98,7 +98,9 @@ Service收到消息后取出method name，然后调用对应的handler，handler
    
 5. Client 调用 rpc
    ```
-   cli := example.NewGreeterNATSRPCClient(conn)
+   client:=natsrpc.NewClient(conn)
+   
+   cli := example.NewGreeterNRClient(client)
    rsp,err:=cli.Hello(context.Background(), &example.HelloRequest{Name: "natsrpc"})
    ```
  

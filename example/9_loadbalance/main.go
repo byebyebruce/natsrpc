@@ -21,6 +21,7 @@ func main() {
 	conn, err := nats.Connect(*nats_url)
 	example.IfNotNilPanic(err)
 	defer conn.Close()
+	client := natsrpc.NewClient(conn)
 
 	for i := 0; i < 3; i++ {
 		server, err := natsrpc.NewServer(conn)
@@ -28,14 +29,14 @@ func main() {
 
 		defer server.Close(context.Background())
 
-		svc, err := example.RegisterGreetingNATSRPCServer(server, &HelloSvc{
+		svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{
 			name: "svc" + strconv.Itoa(i),
 		})
 		example.IfNotNilPanic(err)
 		defer svc.Close()
 	}
 
-	cli := example.NewGreetingNATSRPCClient(conn)
+	cli := example.NewGreetingNRClient(client)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(10)

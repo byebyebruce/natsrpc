@@ -22,8 +22,8 @@ func main() {
 
 	server, err := natsrpc.NewServer(conn)
 	example.IfNotNilPanic(err)
-
 	defer server.Close(context.Background())
+	client := natsrpc.NewClient(conn)
 
 	const n = 10
 
@@ -32,13 +32,13 @@ func main() {
 		example.IfNotNilPanic(err)
 		defer server.Close(context.Background())
 		s := &HelloSvc{id: "svc" + fmt.Sprint(i)}
-		svc, err := example.RegisterGreetingNATSRPCServer(server, s,
+		svc, err := example.RegisterGreetingNRServer(server, s,
 			natsrpc.WithServiceID(fmt.Sprint(i)))
 		example.IfNotNilPanic(err)
 		defer svc.Close()
 	}
 
-	cli := example.NewGreetingNATSRPCClient(conn)
+	cli := example.NewGreetingNRClient(client)
 	for i := 0; i < n; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
@@ -50,12 +50,12 @@ func main() {
 	}
 
 	for i := 0; i < n; i++ {
-		cli := example.NewGreetingNATSRPCClient(conn, natsrpc.WithClientID(fmt.Sprint(i)))
+		cli := example.NewGreetingNRClient(client)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		rep, err := cli.Hello(ctx, &example.HelloRequest{
 			Name: "bruce",
-		})
+		}, natsrpc.WithCallID(fmt.Sprint(i)))
 		example.IfNotNilPanic(err)
 		fmt.Println("client", i, rep.Message)
 	}

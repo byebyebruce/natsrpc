@@ -16,7 +16,7 @@ import (
 const (
 	contextPackage = protogen.GoImportPath("context")
 	natsrpcPackage = protogen.GoImportPath("github.com/byebyebruce/natsrpc")
-	natsPackage    = protogen.GoImportPath("github.com/nats-io/nats.go")
+	//natsPackage    = protogen.GoImportPath("github.com/nats-io/nats.go")
 	protoPackage   = protogen.GoImportPath("google.golang.org/protobuf/proto")
 	fmtPackage     = protogen.GoImportPath("fmt")
 	reflectPackage = protogen.GoImportPath("reflect")
@@ -54,7 +54,7 @@ func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.
 	//g.P("var _ = ", protoPackage.Ident("Marshal"))
 	//g.P("var _ = ", fmtPackage.Ident("Errorf"))
 	g.P("var _ = ", natsrpcPackage.Ident("Version"))
-	g.P("var _ = ", natsPackage.Ident("Version"))
+	//g.P("var _ = ", natsPackage.Ident("Version"))
 	g.P("var _ ", reflectPackage.Ident("Value"))
 
 	g.P()

@@ -37,14 +37,15 @@ func main() {
 
 	server, err := natsrpc.NewServer(conn, natsrpc.WithServerEncoder(Encoder{"server"}))
 	example.IfNotNilPanic(err)
-
 	defer server.Close(context.Background())
 
-	svc, err := example.RegisterGreetingNATSRPCServer(server, &HelloSvc{})
+	client := natsrpc.NewClient(conn, natsrpc.WithClientEncoder(Encoder{"client"}))
+
+	svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{})
 	example.IfNotNilPanic(err)
 	defer svc.Close()
 
-	cli := example.NewGreetingNATSRPCClient(conn, natsrpc.WithClientEncoder(Encoder{"client"}))
+	cli := example.NewGreetingNRClient(client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

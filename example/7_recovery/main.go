@@ -26,14 +26,15 @@ func main() {
 		}),
 	)
 	example.IfNotNilPanic(err)
+	client := natsrpc.NewClient(conn)
 
 	defer server.Close(context.Background())
 
-	svc, err := example.RegisterGreetingNATSRPCServer(server, &HelloSvc{})
+	svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{})
 	example.IfNotNilPanic(err)
 	defer svc.Close()
 
-	cli := example.NewGreetingNATSRPCClient(conn)
+	cli := example.NewGreetingNRClient(client)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

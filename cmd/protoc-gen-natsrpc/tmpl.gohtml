@@ -1,25 +1,63 @@
 {{- range .Services}}
 {{$ServiceType := .ServiceType}}
-{{$ServiceNameVar := print "_" .ServiceType "NATSRPCServiceName" }}
-{{$serviceInterface := print .ServiceType "NATSRPCServer"}}
+{{$ServiceNameVar := print .ServiceType "_NRServiceName" }}
+{{$serviceInterface := print .ServiceType "NRServer"}}
 {{$serviceAsync := .ServiceAsync}}
 {{$serviceWrapperName := print .ServiceType "Wrapper"}}
 {{$clientAsync := .ClientAsync}}
-{{$clientInterface := print .ServiceType "NATSRPCClient"}}
-{{$clientWrapperName := print "_" .ServiceType "NATSRPCClient"}}
-{{$asyncClientInterface := print .ServiceType "AsyncClient"}}
-{{$asyncClientWrapperName := print "_" .ServiceType "AsyncNATSRPCClient"}}
+{{$clientInterface := print .ServiceType "NRClient"}}
+{{$clientWrapperName := print "_" .ServiceType "NRClientImpl"}}
 
 const (
-	{{ $ServiceNameVar }} = "{{ $.GoPackageName }}|{{ .ServiceName }}"
+	{{ $ServiceNameVar }} = "{{ .ServiceName }}"
 )
+
+type {{ $clientInterface }} interface {
+{{- range .Methods }}
+	{{- if eq .Publish false }}
+		{{ .Comment -}}
+		{{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error)
+	{{- else }}
+		{{ .Comment -}}
+		{{ .Name }}(notify *{{ .Request }}, opt ...natsrpc.CallOption) error
+	{{- end }}
+{{- end }}
+}
+
+type {{ $clientWrapperName }} struct {
+	c natsrpc.ClientInterface
+}
+
+// New{{ $clientInterface }}
+func New{{ $clientInterface }}(c natsrpc.ClientInterface) {{ $clientInterface }} {
+	ret := &{{ $clientWrapperName }}{
+		c:c,
+	}
+	return ret
+}
+
+
+{{- range .Methods }}
+	{{- if eq .Publish false }}
+		func (c *{{ $clientWrapperName }}) {{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error) {
+		rep := &{{ .Reply }}{}
+		err := c.c.Request(ctx, {{ $ServiceNameVar }}, "{{ .Name }}", req, rep, opt...)
+		return rep, err
+		}
+	{{- else }}
+		func (c *{{ $clientWrapperName }}) {{ .Name }}(notify *{{ .Request }}, opt ...natsrpc.CallOption) error {
+		return c.c.Publish({{ $ServiceNameVar }}, "{{ .Name }}", notify, opt...)
+		}
+	{{- end }}
+{{- end }}
+
 var _{{ $ServiceType }}_Desc = natsrpc.ServiceDesc {
 	ServiceName: {{ $ServiceNameVar }},
 	Methods: []natsrpc.MethodDesc{
 		{{- range .Methods }}
 			{
 				MethodName: "{{ .Name }}",
-				Handler: _{{ $ServiceType }}_{{ .Name }},
+				Handler: _{{ $ServiceType }}_{{ .Name }}_NRHandler,
 				RequestType: reflect.TypeOf({{ .Request }}{}),
 				IsPublish: {{ .Publish }},
 			},
@@ -29,7 +67,6 @@ var _{{ $ServiceType }}_Desc = natsrpc.ServiceDesc {
 }
 
 
-{{ .Comment -}}
 type {{ $serviceInterface }} interface {
 {{- range .Methods }}
 	{{- if eq .Publish false }}
@@ -48,155 +85,21 @@ type {{ $serviceInterface }} interface {
 }
 
 {{- range .Methods }}
-func _{{ $ServiceType }}_{{ .Name }}(svc interface{}, ctx context.Context, req any) (any, error) {
+func _{{ $ServiceType }}_{{ .Name }}_NRHandler(svc interface{}, ctx context.Context, req any) (any, error) {
 	return svc.({{ $serviceInterface }}).{{ .Name }}(ctx, req.(*{{ .Request }}))
 }
 {{- end }}
 
-// Register{{ $serviceInterface }} register {{ $ServiceType }} service
-{{- if eq $serviceAsync false }}
-func Register{{ $serviceInterface }}(register natsrpc.ServiceRegistrar, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
+func Register{{ $serviceInterface }}(register natsrpc.ServiceRegistrar, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.ServiceInterface, error) {
 	return register.Register(_{{ $ServiceType }}_Desc, s,  opts...)
 }
-{{- else }}
-func RegisterAsync{{ $ServiceType }}(register natsrpc.ServiceRegistrar, doer natsrpc.AsyncDoer, s {{ $serviceInterface }}, opts ...natsrpc.ServiceOption) (natsrpc.IService, error) {
-	ss := &{{ $serviceWrapperName }}{
-		doer: doer,
-		s:    s,
-	}
-	return register.Register(_{{ $ServiceType }}_Desc, ss, opts...)
-}
 
 
 
-// {{ $serviceWrapperName }} DO NOT USE
-type {{ $serviceWrapperName }} struct {
-	doer natsrpc.AsyncDoer
-	s    {{ $serviceInterface }}
-}
-{{- range .Methods }}
-// {{ .Name }} DO NOT USE
-	{{- if eq .Publish true }}
-		func (s *{{ $serviceWrapperName }}){{ .Name }}(ctx context.Context, req *{{ .Request }}) {
-			s.doer.AsyncDo(ctx, func(_ func(interface{}, error)) {
-				s.s.{{ .Name }}(ctx , req)
-			})
-		}
-	{{- else }}
-		func (s *{{ $serviceWrapperName }}){{ .Name }}(ctx context.Context, req *{{ .Request }})(*{{ .Reply }}, error) {
-			f := func(cb func(interface{}, error)) {
-				s.s.{{ .Name }}(ctx, req, func(r *{{ .Reply }}, e error) {
-					cb(r,e)
-				})
-			}
-			temp, err := s.doer.AsyncDo(ctx, f)
-			if temp==nil {
-				return nil, err
-			}
-			return temp.(*{{ .Reply }}), err
-		}
-	{{- end }}
-{{- end }}
-
-{{- end }}
 
 
 
-{{ .Comment -}}
-type {{ $clientInterface }} interface {
-{{- range .Methods }}
-	{{- if eq .Publish false }}
-		{{ .Comment -}}
-		{{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error)
-	{{- else }}
-		{{ .Comment -}}
-		{{ .Name }}(notify *{{ .Request }}, opt ...natsrpc.CallOption) error
-	{{- end }}
-{{- end }}
-}
-
-type {{ $clientWrapperName }} struct {
-	c *natsrpc.Client
-}
-
-// New{{ $clientInterface }}
-func New{{ $clientInterface }}(conn *nats_go.Conn, opts ...natsrpc.ClientOption) {{ $clientInterface }} {
-	c := natsrpc.NewClient(conn, {{ $ServiceNameVar }}, opts...)
-	ret := &{{ $clientWrapperName }}{
-		c:c,
-	}
-	return ret
-}
 
 
-{{- range .Methods }}
-	{{- if eq .Publish false }}
-		func (c *{{ $clientWrapperName }}) {{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error) {
-			rep := &{{ .Reply }}{}
-			err := c.c.Request(ctx, "{{ .Name }}", req, rep, opt...)
-			return rep, err 
-		}
-	{{- else }}
-		func (c *{{ $clientWrapperName }}) {{ .Name }}(notify *{{ .Request }}, opt ...natsrpc.CallOption) error {
-			return c.c.Publish("{{ .Name }}", notify, opt...)
-		}
-	{{- end }}
-{{- end }}
-
-
-
-{{- if eq $clientAsync true }}
-// Async
-// {{ $asyncClientInterface }}
-type {{ $asyncClientInterface }} interface {
-{{- range .Methods }}
-	{{- if eq .Publish false }}
-		{{ .Comment -}}
-		{{ .Name }}(ctx context.Context, req *{{ .Request }}, cb func(*{{ .Reply }}, error), opt ...natsrpc.CallOption)
-	{{- else }}
-		{{ .Comment -}}
-		{{ .Name }}(notify *{{ .Request }}, opt ...natsrpc.CallOption) error
-	{{- end }}
-{{- end }}
-}
-
-type {{ $asyncClientWrapperName }} struct {
-	c *natsrpc.Client
-	doer natsrpc.AsyncDoer
-}
-
-// New{{ $asyncClientInterface }}
-func New{{ $asyncClientInterface }}(conn *nats_go.Conn,doer natsrpc.AsyncDoer, opts ...natsrpc.ClientOption) {{ $asyncClientInterface }} {
-	c := natsrpc.NewClient(conn, {{ $ServiceNameVar }}, opts...)
-	ret := &{{ $asyncClientWrapperName }}{
-		c:c,
-		doer: doer,
-	}
-	return ret
-}
-
-{{- range .Methods }}
-	{{- if eq .Publish false }}
-		{{ .Comment -}}
-		func (c *{{ $asyncClientWrapperName }}) {{ .Name }}(ctx context.Context, req *{{ .Request }}, cb func(*{{ .Reply }}, error), opt ...natsrpc.CallOption) {
-			reqClone := proto.Clone(req)
-			go func() {
-				rep := &{{ .Reply }}{}
-				err := c.c.Request(ctx, "{{ .Name }}", reqClone, rep, opt...)
-				newCb := func(_ func(interface{},error)) {
-					cb(rep, err)
-				}
-				c.doer.AsyncDo(ctx, newCb)
-			}()
-		}
-	{{- else }}
-		{{ .Comment -}}
-		func (c *{{ $asyncClientWrapperName }}) {{ .Name }}(notify *{{ .Request }}, opt ...natsrpc.CallOption) error {
-			return c.c.Publish("{{ .Name }}", notify, opt...)
-		}
-	{{- end }}
-{{- end }}
-
-{{- end }}
 
 {{- end }}
