@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/byebyebruce/natsrpc/encode/pb"
+	"github.com/byebyebruce/natsrpc/encode/gogopb"
 )
 
 var (
@@ -23,12 +23,7 @@ var (
 )
 
 const (
-	defaultSubQueue = "_ns_q" // default queue group
-
-	headerMethod = "_ns_method" // method
-	headerUser   = "_ns_user"   // user header
-	headerError  = "_ns_error"  // reply error
-	pubSuffix    = "_pub"       // publish subject suffix
+	pubSuffix = "_nr_pub" // publish subject suffix
 )
 
 // ServiceRegistrar 注册服务
@@ -64,6 +59,8 @@ type Encoder interface {
 	Decode(data []byte, vPtr interface{}) error
 }
 
+var defaultEncoder = gogopb.Encoder{}
+
 // DefaultServerOptions 默认server选项
 var DefaultServerOptions = ServerOptions{
 	errorHandler: func(i interface{}) {
@@ -72,7 +69,7 @@ var DefaultServerOptions = ServerOptions{
 	recoverHandler: func(i interface{}) {
 		fmt.Fprintf(os.Stderr, "server panic:%v\n", i)
 	},
-	encoder: pb.Encoder{},
+	encoder: defaultEncoder,
 }
 
 // DefaultServiceOptions 默认service选项
@@ -85,5 +82,5 @@ var DefaultServiceOptions = ServiceOptions{
 // DefaultClientOptions 默认client选项
 var DefaultClientOptions = ClientOptions{
 	namespace: "",
-	encoder:   pb.Encoder{},
+	encoder:   defaultEncoder,
 }

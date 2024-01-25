@@ -74,10 +74,12 @@ func main() {
 					return
 				default:
 				}
-				if _, err := greetingNRClient.Hello(context.Background(), req); nil != err {
+				_, reqErr := greetingNRClient.Hello(context.Background(), req)
+				if reqErr != nil {
 					atomic.AddUint32(&totalFailed, 1)
 					continue
 				}
+
 				atomic.AddUint32(&totalSuccess, 1)
 			}
 

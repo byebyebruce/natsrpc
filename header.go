@@ -6,6 +6,12 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+const (
+	headerMethod = "_ns_method" // method
+	headerUser   = "_ns_user"   // user header
+	headerError  = "_ns_error"  // reply error
+)
+
 type metaKey struct{}
 type metaValue struct {
 	header map[string]string

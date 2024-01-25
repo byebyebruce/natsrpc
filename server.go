@@ -12,7 +12,6 @@ import (
 type serviceWrapper struct {
 	*Service
 	subscriptions []*nats.Subscription
-	ServiceOptions
 }
 
 var _ ServiceRegistrar = (*Server)(nil)
@@ -106,24 +105,21 @@ func (s *Server) Register(sd ServiceDesc, val interface{}, opts ...ServiceOption
 		v(&opt)
 	}
 
-	name := joinSubject(opt.namespace, sd.ServiceName, opt.id)
+	// new 一个服务
+	svc, err := NewService(s, sd, val, opt)
+	if nil != err {
+		return nil, err
+	}
 
+	name := svc.Name()
 	s.mu.Lock()
 	if _, ok := s.services[name]; ok {
 		s.mu.Unlock()
 		return nil, ErrDuplicateService
 	}
-	sd.ServiceName = name
-	// new 一个服务
-	svc, err := NewService(s, sd, val)
-	if nil != err {
-		s.mu.Unlock()
-		return nil, err
-	}
 
 	sw := &serviceWrapper{
-		Service:        svc,
-		ServiceOptions: opt,
+		Service: svc,
 	}
 	if err := s.subscribeMethod(sw); nil != err {
 		s.mu.Unlock()
@@ -153,7 +149,7 @@ func (s *Server) subscribeMethod(sw *serviceWrapper) error {
 				s.opt.errorHandler(err.Error())
 				return
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), sw.ServiceOptions.timeout)
+			ctx, cancel := context.WithTimeout(context.Background(), sw.opt.timeout)
 			meta := &metaValue{
 				header: header,
 				reply:  msg.Reply,
@@ -173,7 +169,7 @@ func (s *Server) subscribeMethod(sw *serviceWrapper) error {
 			// 不能defer，因为有ErrReplyLater的情况
 			cancel()
 		}
-		if sw.multiGoroutine {
+		if sw.opt.multiGoroutine {
 			// TODO 自定义携程池
 			go call()
 		} else {
@@ -182,13 +178,13 @@ func (s *Server) subscribeMethod(sw *serviceWrapper) error {
 	}
 
 	sub := sw.Name()
-	reqSub, subErr := s.conn.QueueSubscribe(sub, defaultSubQueue, cb)
+	reqSub, subErr := s.conn.Subscribe(sub, cb)
 	if nil != subErr {
 		return subErr
 	}
 	sw.subscriptions = append(sw.subscriptions, reqSub)
 	if sw.Service.sd.hasPublishMethod() {
-		pubSub, pubErr := s.conn.QueueSubscribe(joinSubject(sub, pubSuffix), "", cb)
+		pubSub, pubErr := s.conn.Subscribe(joinSubject(sub, pubSuffix), cb)
 		if pubErr != nil {
 			go reqSub.Unsubscribe()
 			return pubErr
@@ -207,7 +203,7 @@ func (s *Server) handle(ctx context.Context, sw *serviceWrapper, method string, 
 		}()
 	}
 
-	b, err := sw.Call(ctx, method, payload, sw.ServiceOptions.interceptor)
+	b, err := sw.Call(ctx, method, payload, sw.opt.interceptor)
 	if err != nil {
 		return err
 	}

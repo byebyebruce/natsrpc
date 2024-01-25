@@ -58,9 +58,9 @@ func (c *Client) call(ctx context.Context, service, method string, req interface
 		isPublish = rep == nil
 	)
 	if isPublish {
-		subject = joinSubject(c.opt.namespace, service, callOpt.id, pubSuffix)
+		subject = joinSubject(c.opt.namespace, service, c.opt.id, pubSuffix)
 	} else {
-		subject = joinSubject(c.opt.namespace, service, callOpt.id)
+		subject = joinSubject(c.opt.namespace, service, c.opt.id)
 	}
 
 	msg := &nats.Msg{

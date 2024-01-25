@@ -3,6 +3,7 @@ module github.com/byebyebruce/natsrpc
 go 1.18
 
 require (
+	github.com/gogo/protobuf v1.3.2
 	github.com/nats-io/nats.go v1.31.0
 	google.golang.org/protobuf v1.31.0
 )

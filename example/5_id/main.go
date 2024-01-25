@@ -23,7 +23,6 @@ func main() {
 	server, err := natsrpc.NewServer(conn)
 	example.IfNotNilPanic(err)
 	defer server.Close(context.Background())
-	client := natsrpc.NewClient(conn)
 
 	const n = 10
 
@@ -38,24 +37,27 @@ func main() {
 		defer svc.Close()
 	}
 
-	cli := example.NewGreetingNRClient(client)
 	for i := 0; i < n; i++ {
+		client := natsrpc.NewClient(conn, natsrpc.WithClientID(fmt.Sprint(i)))
+		cli := example.NewGreetingNRClient(client)
+
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		rep, err := cli.Hello(ctx, &example.HelloRequest{
 			Name: "bruce",
-		}, natsrpc.WithCallID(fmt.Sprint(i)))
+		})
 		example.IfNotNilPanic(err)
 		fmt.Println("call", i, rep.Message)
 	}
 
 	for i := 0; i < n; i++ {
+		client := natsrpc.NewClient(conn, natsrpc.WithClientID(fmt.Sprint(i)))
 		cli := example.NewGreetingNRClient(client)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		rep, err := cli.Hello(ctx, &example.HelloRequest{
 			Name: "bruce",
-		}, natsrpc.WithCallID(fmt.Sprint(i)))
+		})
 		example.IfNotNilPanic(err)
 		fmt.Println("client", i, rep.Message)
 	}

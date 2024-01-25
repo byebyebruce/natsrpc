@@ -7,7 +7,7 @@ import (
 
 var _ ServiceInterface = (*Service)(nil)
 
-type IServer interface {
+type ServerInterface interface {
 	Encoder
 	Remove(string) bool
 }
@@ -16,13 +16,14 @@ type IServer interface {
 type Service struct {
 	sd      ServiceDesc           // 描述
 	val     interface{}           // 值
-	server  IServer               // rpc
+	server  ServerInterface       // rpc
 	methods map[string]MethodDesc // 方法集合
+	opt     ServiceOptions
 }
 
 // Name 名字
 func (s *Service) Name() string {
-	return s.sd.ServiceName
+	return joinSubject(s.opt.namespace, s.sd.ServiceName, s.opt.id)
 }
 
 // Close 关闭
@@ -32,7 +33,7 @@ func (s *Service) Close() bool {
 }
 
 // NewService 创建服务
-func NewService(server IServer, sd ServiceDesc, i interface{}) (*Service, error) {
+func NewService(server ServerInterface, sd ServiceDesc, i interface{}, options ServiceOptions) (*Service, error) {
 	methods := map[string]MethodDesc{}
 	for _, md := range sd.Methods {
 		if _, ok := methods[md.MethodName]; ok {
@@ -45,6 +46,7 @@ func NewService(server IServer, sd ServiceDesc, i interface{}) (*Service, error)
 		sd:      sd,
 		val:     i,
 		server:  server,
+		opt:     options,
 	}
 
 	return s, nil

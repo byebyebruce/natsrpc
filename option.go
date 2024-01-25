@@ -2,7 +2,6 @@ package natsrpc
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -34,12 +33,12 @@ type ServiceOptions struct {
 type ClientOptions struct {
 	namespace string  // 空间(划分隔离)
 	encoder   Encoder // 编码器
+	id        string  // id (不会覆盖clientOptions.id，只是用来标识这次调用)
 	//cm        callMiddleware // 调用中间件
 }
 
 // CallOptions 调用选项
 type CallOptions struct {
-	id     string            // id (不会覆盖clientOptions.id，只是用来标识这次调用)
 	header map[string]string // header
 }
 
@@ -121,15 +120,15 @@ func WithClientEncoder(encoder Encoder) ClientOption {
 	}
 }
 
-// CallOption call option
-type CallOption func(options *CallOptions)
-
-// WithCallID call id(不会覆盖clientOptions.id，只是用来标识这次调用)
-func WithCallID(id interface{}) CallOption {
-	return func(options *CallOptions) {
-		options.id = fmt.Sprint(id)
+// WithClientID call id(不会覆盖clientOptions.id，只是用来标识这次调用)
+func WithClientID(id string) ClientOption {
+	return func(options *ClientOptions) {
+		options.id = id
 	}
 }
+
+// CallOption call option
+type CallOption func(options *CallOptions)
 
 // WithCallHeader header
 func WithCallHeader(hd map[string]string) CallOption {

@@ -13,6 +13,13 @@ var bufPool = sync.Pool{
 
 // joinSubject 组合字符串成subject
 func joinSubject(s ...string) string {
+	for i, v := range s {
+		if v == "" {
+			s = s[i:]
+		} else {
+			break
+		}
+	}
 	switch len(s) {
 	case 0:
 		return ""

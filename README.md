@@ -36,7 +36,7 @@ Service收到消息后取出method name，然后调用对应的handler，handler
 
 ## Install Tools
 1. protoc(v3.17.3) [Linux](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-linux-x86_64.zip)/[MacOS](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-osx-x86_64.zip)/[Windows](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-win64.zip)
-2. protoc-gen-go `go install github.com/golang/protobuf/protoc-gen-go@latest`
+2. protoc-gen-gogo `go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2`
 3. protoc-gen-natsrpc `go install github.com/byebyebruce/natsrpc/cmd/protoc-gen-natsrpc@v0.7.0`
 
 ## Quick Start
@@ -67,7 +67,10 @@ Service收到消息后取出method name，然后调用对应的handler，handler
    
 3. 生成客户端和服务端代码
     ```shell
-    protoc --proto_path=. --go_out=paths=source_relative:. --natsrpc_out=paths=source_relative:. *.proto
+    protoc --proto_path=. \
+    --gogo_out=paths=source_relative:. \
+    --natsrpc_out=paths=source_relative:. \
+    *.proto
     ```
 4. Server端实现接口并创建服务
    ```
