@@ -63,11 +63,13 @@ func (s *Service) Call(ctx context.Context, methodName string, b []byte, interce
 	if err != nil {
 		return nil, err
 	}
-	if resp != nil {
-		b1, err1 := s.server.Encode(resp)
-		return b1, err1
+	if !m.IsPublish {
+		if resp == nil {
+			return nil, nil
+		}
+		return s.server.Encode(resp)
 	}
-	return nil, err
+	return nil, nil
 }
 
 func (s *Service) call(ctx context.Context, m MethodDesc, req interface{}, interceptor Interceptor) (interface{}, error) {
