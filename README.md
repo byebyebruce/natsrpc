@@ -35,9 +35,19 @@ Client发请求时会的subject是service 的name，并且nats msg的header传�
 Service收到消息后取出method name，然后调用对应的handler，handler返回的结果会通过nats msg的reply subject返回给Client。
 
 ## Install Tools
-1. protoc(v3.17.3) [Linux](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-linux-x86_64.zip)/[MacOS](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-osx-x86_64.zip)/[Windows](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-win64.zip)
-2. protoc-gen-gogo `go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2`
-3. protoc-gen-natsrpc `go install github.com/byebyebruce/natsrpc/cmd/protoc-gen-natsrpc@v0.7.0`
+1. protoc(v3.17.3) 
+   - [Linux](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-linux-x86_64.zip)
+   - [MacOS](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-osx-x86_64.zip)
+   - [Windows](https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-win64.zip)
+   
+2. protoc-gen-gogo 
+   ```shell
+   go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2
+   ```
+3. protoc-gen-natsrpc 
+   ```shell
+   go install github.com/byebyebruce/natsrpc/cmd/protoc-gen-natsrpc@v0.7.0
+   ```
 
 ## Quick Start
 * [nats-server](https://github.com/nats-io/nats-server/releases)>=2.2.0
