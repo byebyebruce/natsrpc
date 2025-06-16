@@ -19,7 +19,7 @@ type {{ $clientInterface }} interface {
 		{{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error)
 	{{- else }}
 		{{ .Comment -}}
-		{{ .Name }}(notify *{{ .Request }}, opt ...natsrpc.CallOption) error
+		{{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error)
 	{{- end }}
 {{- end }}
 }
@@ -38,36 +38,24 @@ func New{{ $clientInterface }}(c natsrpc.ClientInterface) {{ $clientInterface }}
 
 
 {{- range .Methods }}
+	func (c *{{ $clientWrapperName }}) {{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error) {
 	{{- if eq .Publish false }}
-		func (c *{{ $clientWrapperName }}) {{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error) {
 		rep := &{{ .Reply }}{}
-		err := c.c.Request(ctx, {{ $ServiceNameVar }}, "{{ .Name }}", req, rep, opt...)
-			if err != nil {
-				return nil, err
-			}
+		err := c.c.Invoke(ctx, {{ $ServiceNameVar }}, "{{ .Name }}", req, rep, opt...)
+		if err != nil {
+			return nil, err
+		}
 		return rep, err
-		}
 	{{- else }}
-		func (c *{{ $clientWrapperName }}) {{ .Name }}(notify *{{ .Request }}, opt ...natsrpc.CallOption) error {
-		return c.c.Publish({{ $ServiceNameVar }}, "{{ .Name }}", notify, opt...)
+		err := c.c.Invoke(ctx, {{ $ServiceNameVar }}, "{{ .Name }}", req, nil, opt...)
+		if err != nil {
+			return nil, err
 		}
+		return nil, err
 	{{- end }}
+	}
 {{- end }}
 
-var {{ $ServiceType }}_NRServiceDesc = natsrpc.ServiceDesc {
-	ServiceName: {{ $ServiceNameVar }},
-	Methods: []natsrpc.MethodDesc{
-		{{- range .Methods }}
-			{
-				MethodName: "{{ .Name }}",
-				Handler: _{{ $ServiceType }}_{{ .Name }}_NRHandler,
-				RequestType: reflect.TypeOf({{ .Request }}{}),
-				IsPublish: {{ .Publish }},
-			},
-		{{- end }}
-	},
-	Metadata: "{{ .Metadata }}",
-}
 
 
 type {{ $serviceInterface }} interface {
@@ -88,8 +76,13 @@ type {{ $serviceInterface }} interface {
 }
 
 {{- range .Methods }}
-func _{{ $ServiceType }}_{{ .Name }}_NRHandler(svc interface{}, ctx context.Context, req any) (any, error) {
-	return svc.({{ $serviceInterface }}).{{ .Name }}(ctx, req.(*{{ .Request }}))
+func _{{ $ServiceType }}_{{ .Name }}_NRHandler(svc interface{}, ctx context.Context, dec func(interface{}) error) (any, error) {
+	req:= &{{ .Request }}{}
+	if err := dec(req); err != nil {
+		return nil, err
+	}
+
+	return svc.({{ $serviceInterface }}).{{ .Name }}(ctx, req)
 }
 {{- end }}
 
@@ -98,10 +91,19 @@ func Register{{ $serviceInterface }}(register natsrpc.ServiceRegistrar, s {{ $se
 }
 
 
-
-
-
-
+var {{ $ServiceType }}_NRServiceDesc = natsrpc.ServiceDesc {
+	ServiceName: {{ $ServiceNameVar }},
+	Methods: []natsrpc.MethodDesc{
+		{{- range .Methods }}
+			{
+				MethodName: "{{ .Name }}",
+				Handler: _{{ $ServiceType }}_{{ .Name }}_NRHandler,
+				IsPublish: {{ .Publish }},
+			},
+		{{- end }}
+	},
+	Metadata: "{{ .Metadata }}",
+}
 
 
 

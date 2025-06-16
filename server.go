@@ -9,7 +9,11 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-type serviceWrapper struct {
+const ()
+
+type ServiceInfo struct {
+	val     interface{}           // 值
+	methods map[string]MethodDesc // 方法集合
 	*Service
 	subscriptions []*nats.Subscription
 }
@@ -18,11 +22,11 @@ var _ ServiceRegistrar = (*Server)(nil)
 
 // Server RPC server
 type Server struct {
-	wg       sync.WaitGroup             // wait group
-	mu       sync.Mutex                 // lock
-	opt      ServerOptions              // options
-	conn     *nats.Conn                 // NATS Encode Conn
-	services map[string]*serviceWrapper // 服务 name->Service
+	wg       sync.WaitGroup          // wait group
+	mu       sync.Mutex              // lock
+	opt      ServerOptions           // options
+	conn     *nats.Conn              // NATS Encode Conn
+	services map[string]*ServiceInfo // 服务 name->Service
 	Encoder
 }
 
@@ -40,7 +44,7 @@ func NewServer(conn *nats.Conn, option ...ServerOption) (*Server, error) {
 	d := &Server{
 		opt:      options,
 		conn:     conn,
-		services: map[string]*serviceWrapper{},
+		services: map[string]*ServiceInfo{},
 		Encoder:  options.encoder,
 	}
 	return d, nil
@@ -118,7 +122,7 @@ func (s *Server) Register(sd ServiceDesc, val interface{}, opts ...ServiceOption
 		return nil, ErrDuplicateService
 	}
 
-	sw := &serviceWrapper{
+	sw := &ServiceInfo{
 		Service: svc,
 	}
 	if err := s.subscribeMethod(sw); nil != err {
@@ -138,7 +142,7 @@ func (s *Server) Register(sd ServiceDesc, val interface{}, opts ...ServiceOption
 }
 
 // subscribeMethod 订阅服务的方法
-func (s *Server) subscribeMethod(sw *serviceWrapper) error {
+func (s *Server) subscribeMethod(sw *ServiceInfo) error {
 	cb := func(msg *nats.Msg) {
 		s.wg.Add(1)
 		call := func() {
@@ -178,7 +182,8 @@ func (s *Server) subscribeMethod(sw *serviceWrapper) error {
 	}
 
 	sub := sw.Name()
-	reqSub, subErr := s.conn.Subscribe(sub, cb)
+	queue := defaultQueue
+	reqSub, subErr := s.conn.QueueSubscribe(sub, queue, cb)
 	if nil != subErr {
 		return subErr
 	}
@@ -194,7 +199,7 @@ func (s *Server) subscribeMethod(sw *serviceWrapper) error {
 	return nil
 }
 
-func (s *Server) handle(ctx context.Context, sw *serviceWrapper, method string, payload []byte, replySub string) error {
+func (s *Server) handle(ctx context.Context, sw *ServiceInfo, method string, payload []byte, replySub string) error {
 	if s.opt.recoverHandler != nil {
 		defer func() {
 			if e := recover(); e != nil {
@@ -203,7 +208,13 @@ func (s *Server) handle(ctx context.Context, sw *serviceWrapper, method string, 
 		}()
 	}
 
-	b, err := sw.Call(ctx, method, payload, sw.opt.interceptor)
+	dec := func(v any) error {
+		if v == nil {
+			return nil
+		}
+		return s.opt.encoder.Decode(payload, v)
+	}
+	b, err := sw.Call(ctx, method, dec, sw.opt.interceptor)
 	if err != nil {
 		return err
 	}

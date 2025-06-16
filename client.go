@@ -29,13 +29,8 @@ func NewClient(conn *nats.Conn, opts ...ClientOption) *Client {
 	return c
 }
 
-// Publish 发布
-func (c *Client) Publish(service, method string, req interface{}, opt ...CallOption) error {
-	return c.call(nil, service, method, req, nil, opt...)
-}
-
 // Request 请求
-func (c *Client) Request(ctx context.Context, service, method string, req interface{}, rep interface{}, opt ...CallOption) error {
+func (c *Client) Invoke(ctx context.Context, service, method string, req interface{}, rep interface{}, opt ...CallOption) error {
 	return c.call(ctx, service, method, req, rep, opt...)
 }
 

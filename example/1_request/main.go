@@ -27,9 +27,10 @@ func main() {
 
 	defer server.Close(context.Background())
 
-	svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{})
-	example.IfNotNilPanic(err)
-	defer svc.Close()
+	//svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{})
+	//example.IfNotNilPanic(err)
+	//defer svc.Close()
+	//select {}
 
 	cli := example.NewGreetingNRClient(client)
 
@@ -39,23 +40,18 @@ func main() {
 		Name: "bruce",
 	})
 	example.IfNotNilPanic(err)
-	println(reply.Message)
+	println("reply", reply.Message)
 
 	// unsub
-	svc.Close()
+	//svc.Close()
 
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	_, err = cli.Hello(ctx, &example.HelloRequest{
-		Name: "bruce",
-	})
-	fmt.Print(err.Error())
 }
 
 type HelloSvc struct {
 }
 
 func (s *HelloSvc) Hello(ctx context.Context, req *example.HelloRequest) (*example.HelloReply, error) {
+	fmt.Println("Server Handle Hello")
 	return &example.HelloReply{
 		Message: "hello " + req.Name,
 	}, nil

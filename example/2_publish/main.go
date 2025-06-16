@@ -37,7 +37,7 @@ func main() {
 	client := natsrpc.NewClient(conn)
 	cli := example.NewGreetingToAllNRClient(client)
 
-	err = cli.HelloToAll(&example.HelloRequest{
+	_, err = cli.HelloToAll(context.Background(), &example.HelloRequest{
 		Name: "bruce",
 	})
 	example.IfNotNilPanic(err)

@@ -1,3 +1,5 @@
+all: install types test
+
 types:
 	protoc --proto_path=. \
 	--proto_path=./third_party \

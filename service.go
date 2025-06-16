@@ -52,16 +52,13 @@ func NewService(server ServerInterface, sd ServiceDesc, i interface{}, options S
 	return s, nil
 }
 
-func (s *Service) Call(ctx context.Context, methodName string, b []byte, interceptor Interceptor) ([]byte, error) {
+func (s *Service) Call(ctx context.Context, methodName string, dec func(any) error, interceptor Interceptor) ([]byte, error) {
 	m, ok := s.methods[methodName]
 	if !ok {
 		return nil, ErrNoMethod
 	}
-	req := m.NewRequest()
-	if err := s.server.Decode(b, req); err != nil {
-		return nil, err
-	}
-	resp, err := s.call(ctx, m, req, interceptor)
+	//req := m.NewRequest()
+	resp, err := s.call(ctx, m, dec, interceptor)
 	if err != nil {
 		return nil, err
 	}
@@ -74,13 +71,13 @@ func (s *Service) Call(ctx context.Context, methodName string, b []byte, interce
 	return nil, nil
 }
 
-func (s *Service) call(ctx context.Context, m MethodDesc, req interface{}, interceptor Interceptor) (interface{}, error) {
+func (s *Service) call(ctx context.Context, m MethodDesc, dec func(any) error, interceptor Interceptor) (interface{}, error) {
 	if interceptor == nil {
-		return m.Handler(s.val, ctx, req)
+		return m.Handler(s.val, ctx, dec)
 	} else {
 		invoker := func(ctx1 context.Context, req1 interface{}) (interface{}, error) {
-			return m.Handler(s.val, ctx1, req1)
+			return m.Handler(s.val, ctx1, dec)
 		}
-		return interceptor(ctx, m.MethodName, req, invoker)
+		return interceptor(ctx, m.MethodName, dec, invoker)
 	}
 }

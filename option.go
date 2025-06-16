@@ -13,7 +13,7 @@ type ServerOptions struct {
 }
 
 type (
-	Handler func(svc interface{}, ctx context.Context, req interface{}) (interface{}, error)
+	Handler func(svc interface{}, ctx context.Context, dec func(any) error) (interface{}, error)
 
 	Invoker func(ctx context.Context, req interface{}) (interface{}, error)
 

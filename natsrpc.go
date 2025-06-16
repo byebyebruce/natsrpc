@@ -23,7 +23,8 @@ var (
 )
 
 const (
-	pubSuffix = "_nr_pub" // publish subject suffix
+	defaultQueue = "natsrpc" // 默认队列名称
+	pubSuffix    = "_nr_pub" // publish subject suffix
 )
 
 // ServiceRegistrar 注册服务
@@ -34,11 +35,8 @@ type ServiceRegistrar interface {
 
 // ClientInterface 客户端接口
 type ClientInterface interface {
-	// Publish 发布
-	Publish(service, method string, req interface{}, opt ...CallOption) error
-
-	// Request 请求
-	Request(ctx context.Context, service, method string, req interface{}, rep interface{}, opt ...CallOption) error
+	// Invoke 请求
+	Invoke(ctx context.Context, service, method string, req interface{}, rep interface{}, opt ...CallOption) error
 }
 
 // ServiceInterface 服务
