@@ -26,7 +26,7 @@ func main() {
 	example.IfNotNilPanic(err)
 	defer server.Close(context.Background())
 
-	client := natsrpc.NewClient(conn)
+	client, err := natsrpc.NewClient(conn)
 
 	svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{},
 		natsrpc.WithServiceSingleGoroutine())

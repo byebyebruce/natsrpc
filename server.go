@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/nats-io/nats.go"
 )
 
 const ()
 
 type ServiceInfo struct {
-	val     interface{}           // 值
-	methods map[string]MethodDesc // 方法集合
 	*Service
 	subscriptions []*nats.Subscription
 }
@@ -27,7 +27,6 @@ type Server struct {
 	opt      ServerOptions           // options
 	conn     *nats.Conn              // NATS Encode Conn
 	services map[string]*ServiceInfo // 服务 name->Service
-	Encoder
 }
 
 // NewServer 构造器
@@ -45,7 +44,6 @@ func NewServer(conn *nats.Conn, option ...ServerOption) (*Server, error) {
 		opt:      options,
 		conn:     conn,
 		services: map[string]*ServiceInfo{},
-		Encoder:  options.encoder,
 	}
 	return d, nil
 }
@@ -148,20 +146,9 @@ func (s *Server) subscribeMethod(sw *ServiceInfo) error {
 		call := func() {
 			defer s.wg.Done()
 
-			method, header, err := decodeHeader(msg.Header)
-			if err != nil {
-				s.opt.errorHandler(err.Error())
-				return
-			}
 			ctx, cancel := context.WithTimeout(context.Background(), sw.opt.timeout)
-			meta := &metaValue{
-				header: header,
-				reply:  msg.Reply,
-				server: s,
-			}
-			ctx = withMeta(ctx, meta)
-
-			err = s.handle(ctx, sw, method, msg.Data, msg.Reply)
+			defer cancel()
+			err := s.handle(ctx, sw, msg)
 			if err != nil {
 				if errors.Is(err, ErrReplyLater) {
 					// reply later
@@ -170,8 +157,6 @@ func (s *Server) subscribeMethod(sw *ServiceInfo) error {
 				}
 				s.opt.errorHandler(err.Error())
 			}
-			// 不能defer，因为有ErrReplyLater的情况
-			cancel()
 		}
 		if sw.opt.multiGoroutine {
 			// TODO 自定义携程池
@@ -199,7 +184,7 @@ func (s *Server) subscribeMethod(sw *ServiceInfo) error {
 	return nil
 }
 
-func (s *Server) handle(ctx context.Context, sw *ServiceInfo, method string, payload []byte, replySub string) error {
+func (s *Server) handle(ctx context.Context, sw *ServiceInfo, msg *nats.Msg) error {
 	if s.opt.recoverHandler != nil {
 		defer func() {
 			if e := recover(); e != nil {
@@ -208,24 +193,67 @@ func (s *Server) handle(ctx context.Context, sw *ServiceInfo, method string, pay
 		}()
 	}
 
-	dec := func(v any) error {
-		if v == nil {
-			return nil
-		}
-		return s.opt.encoder.Decode(payload, v)
-	}
-	b, err := sw.Call(ctx, method, dec, sw.opt.interceptor)
+	var replySub = msg.Reply
+	method, header, err := decodeHeader(msg.Header)
 	if err != nil {
 		return err
+	}
+	payload := msg.Data
+
+	dec := func(v any) error {
+		if len(payload) > 0 {
+			return s.opt.encoder.Decode(payload, v)
+		}
+		return nil
+	}
+	tr := &Transport{
+		operation:    method,
+		reqHeader:    Header(header),
+		replySubject: replySub,
+		request:      nil,
+	}
+
+	ctx = transport.NewServerContext(ctx, tr)
+	if replySub != "" {
+		tr.replyFunc = func(resp any, err error) error {
+			return s.reply(ctx, replySub, resp, err)
+		}
+	}
+	var h Invoker = func(ctx context.Context, _ any) (any, error) {
+		return sw.call(ctx, method, dec)
+	}
+	if len(s.opt.middleware) > 0 || len(sw.opt.middleware) > 0 {
+		mw := append(s.opt.middleware, sw.opt.middleware...)
+		h = middleware.Chain(mw...)(h)
+	}
+	resp, err := h(ctx, nil)
+	if err != nil {
+		if errors.Is(err, ErrReplyLater) {
+			// reply later
+			// 用户自己回复消息
+			return ErrReplyLater
+		}
+		//return err
+		// err 要返回给客户端
 	}
 
 	// publish 不需要回复
 	if len(replySub) == 0 {
 		return nil
 	}
+	return s.reply(ctx, replySub, resp, err)
+}
 
+func (s *Server) reply(ctx context.Context, sub string, resp any, err error) error {
+	var b []byte
+	if resp != nil {
+		b, err = s.opt.encoder.Encode(resp)
+		if err != nil {
+			return err
+		}
+	}
 	respMsg := &nats.Msg{
-		Subject: replySub,
+		Subject: sub,
 		Data:    b,
 		Header:  makeErrorHeader(err),
 	}

@@ -76,9 +76,3 @@ var DefaultServiceOptions = ServiceOptions{
 	multiGoroutine: false,
 	id:             "",
 }
-
-// DefaultClientOptions 默认client选项
-var DefaultClientOptions = ClientOptions{
-	namespace: "",
-	encoder:   defaultEncoder,
-}

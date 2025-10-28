@@ -3,6 +3,8 @@ package natsrpc
 import (
 	"context"
 	"time"
+
+	"github.com/go-kratos/kratos/v2/middleware"
 )
 
 // ServerOptions server 选项
@@ -10,40 +12,42 @@ type ServerOptions struct {
 	errorHandler   func(interface{}) // error handler
 	recoverHandler func(interface{}) // recover handler
 	encoder        Encoder           // 编码器
+	middleware     []middleware.Middleware
+	namespace      string // 空间(划分隔离)
 }
 
+type Invoker = middleware.Handler
 type (
 	Handler func(svc interface{}, ctx context.Context, dec func(any) error) (interface{}, error)
 
-	Invoker func(ctx context.Context, req interface{}) (interface{}, error)
+	//Invoker func(ctx context.Context, req interface{}) (interface{}, error)
 
-	Interceptor func(ctx context.Context, method string, req interface{}, invoker Invoker) (interface{}, error)
+	//Interceptor func(ctx context.Context, method string, req interface{}, invoker Invoker) (interface{}, error)
 )
 
 // ServiceOptions Service 选项
 type ServiceOptions struct {
-	namespace      string        // 空间(划分隔离)
-	id             string        // id
-	timeout        time.Duration // handle的超时,必须要大于0
-	interceptor    Interceptor   // handler's interceptor
-	multiGoroutine bool          // 是否多协程
-}
-
-// ClientOptions client 选项
-type ClientOptions struct {
-	namespace string  // 空间(划分隔离)
-	encoder   Encoder // 编码器
-	id        string  // id (不会覆盖clientOptions.id，只是用来标识这次调用)
-	//cm        callMiddleware // 调用中间件
-}
-
-// CallOptions 调用选项
-type CallOptions struct {
-	header map[string]string // header
+	id      string        // id
+	timeout time.Duration // handle的超时,必须要大于0
+	//interceptor    Interceptor   // handler's interceptor
+	middleware     []middleware.Middleware
+	multiGoroutine bool // 是否多协程
 }
 
 // ServerOption server option
 type ServerOption func(options *ServerOptions)
+
+func ServerMiddleware(m ...middleware.Middleware) ServerOption {
+	return func(o *ServerOptions) {
+		o.middleware = m
+	}
+}
+
+func ServiceMiddleware(m ...middleware.Middleware) ServiceOption {
+	return func(o *ServiceOptions) {
+		o.middleware = m
+	}
+}
 
 // WithErrorHandler error handler
 func WithErrorHandler(h func(interface{})) ServerOption {
@@ -62,9 +66,9 @@ func WithServerRecovery(h func(interface{})) ServerOption {
 // ServiceOption Service option
 type ServiceOption func(options *ServiceOptions)
 
-// WithServiceNamespace 空间集群
-func WithServiceNamespace(namespace string) ServiceOption {
-	return func(options *ServiceOptions) {
+// WithServerNamespace 空间集群
+func WithServerNamespace(namespace string) ServerOption {
+	return func(options *ServerOptions) {
 		options.namespace = namespace
 	}
 }
@@ -97,42 +101,32 @@ func WithServiceTimeout(timeout time.Duration) ServiceOption {
 	}
 }
 
-// WithServiceInterceptor handler 拦截器
-func WithServiceInterceptor(i Interceptor) ServiceOption {
-	return func(options *ServiceOptions) {
-		options.interceptor = i
-	}
-}
-
-type ClientOption func(options *ClientOptions)
+type ClientOption func(options *clientOptions)
 
 // WithClientNamespace 空间集群
 func WithClientNamespace(namespace string) ClientOption {
-	return func(options *ClientOptions) {
+	return func(options *clientOptions) {
 		options.namespace = namespace
+	}
+}
+
+// WithMiddleware with client middleware.
+func WithMiddleware(m ...middleware.Middleware) ClientOption {
+	return func(o *clientOptions) {
+		o.middleware = m
 	}
 }
 
 // WithClientEncoder 编码
 func WithClientEncoder(encoder Encoder) ClientOption {
-	return func(options *ClientOptions) {
+	return func(options *clientOptions) {
 		options.encoder = encoder
 	}
 }
 
-// WithClientID call id(不会覆盖clientOptions.id，只是用来标识这次调用)
-func WithClientID(id string) ClientOption {
-	return func(options *ClientOptions) {
+// WithCallID call id(不会覆盖clientOptions.id，只是用来标识这次调用)
+func WithCallID(id string) CallOption {
+	return func(options *callOptions) {
 		options.id = id
-	}
-}
-
-// CallOption call option
-type CallOption func(options *CallOptions)
-
-// WithCallHeader header
-func WithCallHeader(hd map[string]string) CallOption {
-	return func(options *CallOptions) {
-		options.header = hd
 	}
 }

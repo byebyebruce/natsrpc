@@ -26,7 +26,7 @@ func main() {
 	}))
 	example.IfNotNilPanic(err)
 	defer server.Close(context.Background())
-	client := natsrpc.NewClient(conn)
+	client, err := natsrpc.NewClient(conn)
 
 	svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{})
 	example.IfNotNilPanic(err)
@@ -39,7 +39,7 @@ func main() {
 	_, err = cli.Hello(ctx, &example.HelloRequest{
 		Name: "bruce",
 	})
-	fmt.Println("rpc got error: ", err.Error())
+	fmt.Println("expect got error: ", err.Error())
 }
 
 type HelloSvc struct {

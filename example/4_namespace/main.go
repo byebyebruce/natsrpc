@@ -20,19 +20,20 @@ func main() {
 	example.IfNotNilPanic(err)
 	defer conn.Close()
 
-	server, err := natsrpc.NewServer(conn)
+	const namespace = "example"
+
+	server, err := natsrpc.NewServer(conn,
+		natsrpc.WithServerNamespace(namespace))
 	example.IfNotNilPanic(err)
 
 	defer server.Close(context.Background())
 
-	const namespace = "example"
-
-	svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{namespace: namespace},
-		natsrpc.WithServiceNamespace(namespace))
+	svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{namespace: namespace})
 	example.IfNotNilPanic(err)
 	defer svc.Close()
 
-	client := natsrpc.NewClient(conn, natsrpc.WithClientNamespace(namespace))
+	client, err := natsrpc.NewClient(conn, natsrpc.WithClientNamespace(namespace))
+	example.IfNotNilPanic(err)
 
 	cli := example.NewGreetingNRClient(client)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -42,7 +43,9 @@ func main() {
 	})
 	example.IfNotNilPanic(err)
 
-	client = natsrpc.NewClient(conn, natsrpc.WithClientNamespace("wrong_namespace"))
+	client, err = natsrpc.NewClient(conn, natsrpc.WithClientNamespace("wrong_namespace"))
+	example.IfNotNilPanic(err)
+
 	cli1 := example.NewGreetingNRClient(client)
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

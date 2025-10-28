@@ -8,6 +8,7 @@ import (
 
 	"github.com/byebyebruce/natsrpc"
 	"github.com/byebyebruce/natsrpc/example"
+	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/nats-io/nats.go"
 )
 
@@ -22,7 +23,7 @@ func main() {
 
 	server, err := natsrpc.NewServer(conn)
 	example.IfNotNilPanic(err)
-	client := natsrpc.NewClient(conn)
+	client, err := natsrpc.NewClient(conn)
 
 	defer server.Close(context.Background())
 
@@ -36,7 +37,7 @@ func main() {
 	defer cancel()
 	reply, err := cli.Hello(ctx, &example.HelloRequest{
 		Name: "bruce",
-	}, natsrpc.WithCallHeader(map[string]string{"key": "value"}))
+	}, natsrpc.WithCallHeader(map[string][]string{"key": {"value"}}))
 	example.IfNotNilPanic(err)
 
 	println(reply.Message)
@@ -46,7 +47,11 @@ type HelloSvc struct {
 }
 
 func (s *HelloSvc) Hello(ctx context.Context, req *example.HelloRequest) (*example.HelloReply, error) {
-	header := natsrpc.CallHeader(ctx)
+	tr, ok := transport.FromServerContext(ctx)
+	if ok {
+		fmt.Println("transport header", tr.RequestHeader())
+	}
+	header := tr.RequestHeader()
 	fmt.Println("call header", header)
 
 	return &example.HelloReply{

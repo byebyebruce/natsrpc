@@ -74,7 +74,7 @@ func main() {
 			example.IfNotNilPanic(err)
 			defer conn.Close()
 
-			client := natsrpc.NewClient(conn)
+			client, err := natsrpc.NewClient(conn)
 			exampleClient := example.NewGreetingToAllNRClient(client)
 
 			example.IfNotNilPanic(err)

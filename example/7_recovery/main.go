@@ -26,7 +26,7 @@ func main() {
 		}),
 	)
 	example.IfNotNilPanic(err)
-	client := natsrpc.NewClient(conn)
+	client, err := natsrpc.NewClient(conn)
 
 	defer server.Close(context.Background())
 

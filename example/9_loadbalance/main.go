@@ -21,7 +21,7 @@ func main() {
 	conn, err := nats.Connect(*nats_url)
 	example.IfNotNilPanic(err)
 	defer conn.Close()
-	client := natsrpc.NewClient(conn)
+	client, err := natsrpc.NewClient(conn)
 
 	for i := 0; i < 3; i++ {
 		server, err := natsrpc.NewServer(conn)

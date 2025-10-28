@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"time"
+	"fmt"
 
 	"github.com/byebyebruce/natsrpc"
 	"github.com/byebyebruce/natsrpc/example"
@@ -21,35 +21,21 @@ func main() {
 
 	server, err := natsrpc.NewServer(conn)
 	example.IfNotNilPanic(err)
-	defer server.Close(context.Background())
 
-	client, err := natsrpc.NewClient(conn)
+	defer server.Close(context.Background())
 
 	svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{})
 	example.IfNotNilPanic(err)
 	defer svc.Close()
-
-	cli := example.NewGreetingNRClient(client)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-	reply, err := cli.Hello(ctx, &example.HelloRequest{
-		Name: "bruce",
-	})
-	example.IfNotNilPanic(err)
-
-	println(reply.Message)
+	select {}
 }
 
 type HelloSvc struct {
 }
 
 func (s *HelloSvc) Hello(ctx context.Context, req *example.HelloRequest) (*example.HelloReply, error) {
-	go func() {
-		time.Sleep(time.Second)
-		natsrpc.Reply(ctx, &example.HelloReply{
-			Message: "hello " + req.Name + " reply later",
-		}, nil)
-	}()
-	return nil, natsrpc.ErrReplyLater
+	fmt.Println("Server Handle Hello")
+	return &example.HelloReply{
+		Message: "hello " + req.Name,
+	}, nil
 }

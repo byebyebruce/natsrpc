@@ -8,6 +8,8 @@ import (
 
 	"github.com/byebyebruce/natsrpc"
 	"github.com/byebyebruce/natsrpc/example"
+	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/nats-io/nats.go"
 )
 
@@ -20,22 +22,28 @@ func main() {
 	example.IfNotNilPanic(err)
 	defer conn.Close()
 
-	server, err := natsrpc.NewServer(conn)
-	example.IfNotNilPanic(err)
-	defer server.Close(context.Background())
-	client := natsrpc.NewClient(conn)
+	mw := func(handler middleware.Handler) middleware.Handler {
+		return func(ctx context.Context, req any) (reply any, err error) {
+			tr, _ := transport.FromServerContext(ctx)
+			method := tr.Operation()
 
-	svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{},
-		natsrpc.WithServiceInterceptor(func(ctx context.Context, method string, req interface{}, next natsrpc.Invoker) (interface{}, error) {
 			fmt.Println("middle before", method)
 			defer fmt.Println("middle after", method)
 			fmt.Println("method", method)
 			fmt.Println("req", req)
 			start := time.Now()
-			rep, err := next(ctx, req)
+			rep, err := handler(ctx, req)
 			fmt.Println("elapse", time.Since(start).Milliseconds())
 			return rep, err
-		}))
+		}
+	}
+	server, err := natsrpc.NewServer(conn, natsrpc.ServerMiddleware(mw))
+	example.IfNotNilPanic(err)
+	defer server.Close(context.Background())
+	client, err := natsrpc.NewClient(conn)
+
+	svc, err := example.RegisterGreetingNRServer(server, &HelloSvc{})
+
 	example.IfNotNilPanic(err)
 	defer svc.Close()
 

@@ -34,7 +34,8 @@ func main() {
 		defer svc.Close()
 	}
 
-	client := natsrpc.NewClient(conn)
+	client, err := natsrpc.NewClient(conn)
+	example.IfNotNilPanic(err)
 	cli := example.NewGreetingToAllNRClient(client)
 
 	_, err = cli.HelloToAll(context.Background(), &example.HelloRequest{
