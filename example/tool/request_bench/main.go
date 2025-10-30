@@ -61,7 +61,10 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			client := natsrpc.NewClient(connClient)
+			client, err := natsrpc.NewClient(connClient)
+			if nil != err {
+				panic(err)
+			}
 			greetingNRClient := example.NewGreetingNRClient(client)
 			if nil != err {
 				panic(err)
