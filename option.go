@@ -110,8 +110,8 @@ func WithClientNamespace(namespace string) ClientOption {
 	}
 }
 
-// WithMiddleware with client middleware.
-func WithMiddleware(m ...middleware.Middleware) ClientOption {
+// WithClientMiddleware with client middleware.
+func WithClientMiddleware(m ...middleware.Middleware) ClientOption {
 	return func(o *clientOptions) {
 		o.middleware = m
 	}

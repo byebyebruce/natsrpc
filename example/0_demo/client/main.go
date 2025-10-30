@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"flag"
+	"os"
 	"time"
 
 	"github.com/byebyebruce/natsrpc"
 	"github.com/byebyebruce/natsrpc/example"
+	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/middleware/logging"
 	"github.com/nats-io/nats.go"
 )
 
@@ -19,7 +22,9 @@ func main() {
 	example.IfNotNilPanic(err)
 	defer conn.Close()
 
-	client, err := natsrpc.NewClient(conn)
+	logger := log.NewStdLogger(os.Stdout)
+	mw := logging.Client(logger)
+	client, err := natsrpc.NewClient(conn, natsrpc.WithClientMiddleware(mw))
 	example.IfNotNilPanic(err)
 	defer client.Close()
 

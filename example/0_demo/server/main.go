@@ -4,6 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
+
+	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/middleware/logging"
 
 	"github.com/byebyebruce/natsrpc"
 	"github.com/byebyebruce/natsrpc/example"
@@ -19,7 +23,9 @@ func main() {
 	example.IfNotNilPanic(err)
 	defer conn.Close()
 
-	server, err := natsrpc.NewServer(conn)
+	logger := log.NewStdLogger(os.Stdout)
+	wm := logging.Server(logger)
+	server, err := natsrpc.NewServer(conn, natsrpc.ServerMiddleware(wm))
 	example.IfNotNilPanic(err)
 
 	defer server.Close(context.Background())
