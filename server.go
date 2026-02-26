@@ -9,6 +9,7 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/nats-io/nats.go"
+	"github.com/panjf2000/ants/v2"
 )
 
 const ()
@@ -27,6 +28,7 @@ type Server struct {
 	opt      ServerOptions           // options
 	conn     *nats.Conn              // NATS Encode Conn
 	services map[string]*ServiceInfo // 服务 name->Service
+	pool     *ants.Pool              // 协程池
 }
 
 // NewServer 构造器
@@ -45,6 +47,16 @@ func NewServer(conn *nats.Conn, option ...ServerOption) (*Server, error) {
 		conn:     conn,
 		services: map[string]*ServiceInfo{},
 	}
+
+	// 初始化协程池
+	if options.poolSize > 0 {
+		pool, err := ants.NewPool(options.poolSize)
+		if err != nil {
+			return nil, fmt.Errorf("create goroutine pool failed: %w", err)
+		}
+		d.pool = pool
+	}
+
 	return d, nil
 }
 
@@ -52,6 +64,7 @@ func NewServer(conn *nats.Conn, option ...ServerOption) (*Server, error) {
 func (s *Server) Close(ctx context.Context) (err error) {
 	s.UnSubscribeAll()
 
+	// 先等待所有工作完成
 	over := make(chan struct{})
 	go func() {
 		s.wg.Wait()
@@ -62,6 +75,12 @@ func (s *Server) Close(ctx context.Context) (err error) {
 		err = ctx.Err()
 	case <-over:
 	}
+
+	// 再释放协程池
+	if s.pool != nil {
+		s.pool.Release()
+	}
+
 	return s.conn.FlushWithContext(ctx)
 }
 
@@ -125,6 +144,10 @@ func (s *Server) Register(sd ServiceDesc, val interface{}, opts ...ServiceOption
 	}
 	if err := s.subscribeMethod(sw); nil != err {
 		s.mu.Unlock()
+		// 清理已创建的订阅
+		for _, sub := range sw.subscriptions {
+			sub.Unsubscribe()
+		}
 		return nil, err
 	}
 
@@ -159,8 +182,14 @@ func (s *Server) subscribeMethod(sw *ServiceInfo) error {
 			}
 		}
 		if sw.opt.multiGoroutine {
-			// TODO 自定义携程池
-			go call()
+			if s.pool != nil {
+				if err := s.pool.Submit(call); err != nil {
+					// 提交失败时直接执行，避免 wg 泄漏
+					go call()
+				}
+			} else {
+				go call()
+			}
 		} else {
 			call()
 		}
@@ -176,7 +205,7 @@ func (s *Server) subscribeMethod(sw *ServiceInfo) error {
 	if sw.Service.sd.hasPublishMethod() {
 		pubSub, pubErr := s.conn.Subscribe(joinSubject(sub, pubSuffix), cb)
 		if pubErr != nil {
-			go reqSub.Unsubscribe()
+			reqSub.Unsubscribe() // 同步取消订阅，不需要goroutine
 			return pubErr
 		}
 		sw.subscriptions = append(sw.subscriptions, pubSub)
@@ -246,10 +275,12 @@ func (s *Server) handle(ctx context.Context, sw *ServiceInfo, msg *nats.Msg) err
 
 func (s *Server) reply(ctx context.Context, sub string, resp any, err error) error {
 	var b []byte
-	if resp != nil {
-		b, err = s.opt.encoder.Encode(resp)
-		if err != nil {
-			return err
+	if resp != nil && err == nil {
+		var encErr error
+		b, encErr = s.opt.encoder.Encode(resp)
+		if encErr != nil {
+			// 编码失败时，将错误发送给客户端，而不是直接返回
+			err = fmt.Errorf("encode response failed: %w", encErr)
 		}
 	}
 	respMsg := &nats.Msg{

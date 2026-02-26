@@ -2,9 +2,6 @@
 {{$ServiceType := .ServiceType}}
 {{$ServiceNameVar := print .ServiceType "_NRServiceName" }}
 {{$serviceInterface := print .ServiceType "NRServer"}}
-{{$serviceAsync := .ServiceAsync}}
-{{$serviceWrapperName := print .ServiceType "Wrapper"}}
-{{$clientAsync := .ClientAsync}}
 {{$clientInterface := print .ServiceType "NRClient"}}
 {{$clientWrapperName := print "_" .ServiceType "NRClientImpl"}}
 
@@ -14,13 +11,8 @@ const (
 
 type {{ $clientInterface }} interface {
 {{- range .Methods }}
-	{{- if eq .Publish false }}
-		{{ .Comment -}}
-		{{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error)
-	{{- else }}
-		{{ .Comment -}}
-		{{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error)
-	{{- end }}
+	{{ .Comment -}}
+	{{ .Name }}(ctx context.Context, req *{{ .Request }}, opt ...natsrpc.CallOption)(*{{ .Reply }}, error)
 {{- end }}
 }
 
@@ -45,13 +37,13 @@ func New{{ $clientInterface }}(c natsrpc.ClientInterface) {{ $clientInterface }}
 		if err != nil {
 			return nil, err
 		}
-		return rep, err
+		return rep, nil
 	{{- else }}
 		err := c.c.Invoke(ctx, {{ $ServiceNameVar }}, "{{ .Name }}", req, nil, opt...)
 		if err != nil {
 			return nil, err
 		}
-		return nil, err
+		return nil, nil
 	{{- end }}
 	}
 {{- end }}
@@ -60,18 +52,8 @@ func New{{ $clientInterface }}(c natsrpc.ClientInterface) {{ $clientInterface }}
 
 type {{ $serviceInterface }} interface {
 {{- range .Methods }}
-	{{- if eq .Publish false }}
-		{{- if eq $serviceAsync true }}
-			{{ .Comment -}}
-			{{ .Name }}(ctx context.Context, req *{{ .Request }}, cb func(*{{ .Reply }}, error))
-		{{- else }}
-			{{ .Comment -}}
-			{{ .Name }}(ctx context.Context, req *{{ .Request }}) (*{{ .Reply }}, error)
-		{{- end }}
-	{{- else }}
-		{{ .Comment -}}
-		{{ .Name }}(ctx context.Context, req *{{ .Request }}) (*{{ .Reply }}, error)
-	{{- end }}
+	{{ .Comment -}}
+	{{ .Name }}(ctx context.Context, req *{{ .Request }}) (*{{ .Reply }}, error)
 {{- end }}
 }
 

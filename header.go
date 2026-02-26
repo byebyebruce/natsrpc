@@ -20,7 +20,11 @@ func encodeHeader(method string, header Header) nats.Header {
 }
 
 func decodeHeader(h nats.Header) (method string, header Header, err error) {
-	method = h[headerMethod][0]
+	methods := h[headerMethod]
+	if len(methods) == 0 {
+		return "", nil, ErrHeaderFormat
+	}
+	method = methods[0]
 	header = Header(h)
 	return method, header, nil
 }

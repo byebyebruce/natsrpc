@@ -9,10 +9,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-var (
-	showVersion = flag.Bool("version", false, "print the version and exit")
-	omitempty   = flag.Bool("omitempty", true, "omit if google.api is empty")
-)
+var showVersion = flag.Bool("version", false, "print the version and exit")
 
 func main() {
 	flag.Parse()
@@ -28,7 +25,7 @@ func main() {
 			if !f.Generate {
 				continue
 			}
-			generateFile(gen, f, *omitempty)
+			generateFile(gen, f)
 		}
 		return nil
 	})

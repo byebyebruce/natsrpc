@@ -8,6 +8,7 @@ require (
 	github.com/go-kratos/kratos/v2 v2.9.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/nats-io/nats.go v1.31.0
+	github.com/panjf2000/ants/v2 v2.11.5
 	google.golang.org/protobuf v1.33.0
 )
 
@@ -19,6 +20,7 @@ require (
 	github.com/nats-io/nkeys v0.4.6 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	golang.org/x/crypto v0.15.0 // indirect
+	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240102182953-50ed04b92917 // indirect
 	google.golang.org/grpc v1.61.1 // indirect

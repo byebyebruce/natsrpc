@@ -38,7 +38,7 @@ func (c *_GreetingNRClientImpl) Hello(ctx context.Context, req *HelloRequest, op
 	if err != nil {
 		return nil, err
 	}
-	return rep, err
+	return rep, nil
 }
 
 type GreetingNRServer interface {
@@ -94,7 +94,7 @@ func (c *_GreetingToAllNRClientImpl) HelloToAll(ctx context.Context, req *HelloR
 	if err != nil {
 		return nil, err
 	}
-	return nil, err
+	return nil, nil
 }
 
 type GreetingToAllNRServer interface {

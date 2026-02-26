@@ -10,6 +10,9 @@ import (
 
 var ErrNotTransport = errors.New("not natsrpc transport")
 
+// ErrNoReplyFunc 当尝试在 publish 模式下调用 Reply 时返回此错误
+var ErrNoReplyFunc = errors.New("natsrpc: no reply function (publish mode)")
+
 // Reply 用手动回复消息. 当用户要延迟返回结果时，
 // 可以在当前handle函数 return nil, ErrReplyLater. 然后在其他地方调用Reply函数
 //
@@ -27,7 +30,13 @@ func Reply(ctx context.Context, rep any, repErr error) error {
 	if !ok {
 		return ErrNotTransport
 	}
-	st := tr.(*Transport)
+	st, ok := tr.(*Transport)
+	if !ok {
+		return ErrNotTransport
+	}
+	if st.replyFunc == nil {
+		return ErrNoReplyFunc
+	}
 	return st.replyFunc(rep, repErr)
 }
 

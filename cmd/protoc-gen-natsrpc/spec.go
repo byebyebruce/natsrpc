@@ -9,21 +9,16 @@ import (
 
 // fileSpec 文件描述
 type fileSpec struct {
-	PackageName   string
-	GoPackageName string
-	Services      []*serviceDesc
+	Services []*serviceDesc
 }
 
 // serviceDesc 服务描述
 type serviceDesc struct {
-	GoPackageName string
-	ServiceType   string // Greeter
-	ServiceName   string // helloworld.Greeter
-	Metadata      string // api/helloworld/helloworld.proto
-	Comment       string
-	Methods       []*methodDesc
-	ServiceAsync  bool // service 异步handler
-	ClientAsync   bool // client 异步handler
+	ServiceType string // Greeter
+	ServiceName string // helloworld.Greeter
+	Metadata    string // api/helloworld/helloworld.proto
+	Comment     string
+	Methods     []*methodDesc
 }
 
 // methodDesc 方法描述

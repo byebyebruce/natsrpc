@@ -66,7 +66,12 @@ func NewClientWithConnector(conncter func() (*nats.Conn, error), opts ...ClientO
 	if err != nil {
 		return nil, err
 	}
-	return NewClient(conn, opts...)
+	client, err := NewClient(conn, opts...)
+	if err != nil {
+		conn.Close() // 清理连接，避免泄漏
+		return nil, err
+	}
+	return client, nil
 }
 
 func (c *Client) Close() {

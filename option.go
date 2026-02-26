@@ -14,6 +14,7 @@ type ServerOptions struct {
 	encoder        Encoder           // 编码器
 	middleware     []middleware.Middleware
 	namespace      string // 空间(划分隔离)
+	poolSize       int    // 协程池大小，0表示不使用池
 }
 
 type Invoker = middleware.Handler
@@ -87,6 +88,15 @@ func WithServerEncoder(encoder Encoder) ServerOption {
 	}
 }
 
+// WithServerPoolSize 协程池大小，0表示不使用池
+func WithServerPoolSize(size int) ServerOption {
+	return func(options *ServerOptions) {
+		if size > 0 {
+			options.poolSize = size
+		}
+	}
+}
+
 // WithServiceID id
 func WithServiceID(id string) ServiceOption {
 	return func(options *ServiceOptions) {
@@ -94,10 +104,12 @@ func WithServiceID(id string) ServiceOption {
 	}
 }
 
-// WithServiceTimeout 超时时间
+// WithServiceTimeout 超时时间，必须大于0
 func WithServiceTimeout(timeout time.Duration) ServiceOption {
 	return func(options *ServiceOptions) {
-		options.timeout = timeout
+		if timeout > 0 {
+			options.timeout = timeout
+		}
 	}
 }
 

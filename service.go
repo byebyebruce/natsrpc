@@ -50,14 +50,5 @@ func (s *Service) call(ctx context.Context, methodName string, dec func(any) err
 	if !ok {
 		return nil, ErrNoMethod
 	}
-	resp, err := m.Handler(s.val, ctx, dec)
-	if err != nil {
-		return nil, err
-	}
-	/*
-		if m.IsPublish {
-			return nil, nil
-		}
-	*/
-	return resp, nil
+	return m.Handler(s.val, ctx, dec)
 }
