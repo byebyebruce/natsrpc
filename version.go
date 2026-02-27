@@ -1,7 +1,7 @@
 package natsrpc
 
 const (
-	Version = "v0.7.0"
+	Version = "v0.8.0"
 )
 
 /*
@@ -9,5 +9,6 @@ const (
 */
 
 const (
+	SupportVersion_0_8_0 = true
 	SupportVersion_0_7_0 = true
 )
